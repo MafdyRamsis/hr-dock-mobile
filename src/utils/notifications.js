@@ -30,9 +30,11 @@ export async function registerForPushNotifications() {
     })
   }
 
-  const token = (await Notifications.getExpoPushTokenAsync()).data
   try {
-    await api.patch('/auth/push-token', { push_token: token })
-  } catch {}
-  return token
+    const token = (await Notifications.getExpoPushTokenAsync()).data
+    await api.patch('/auth/push-token', { push_token: token }).catch(() => {})
+    return token
+  } catch {
+    return null
+  }
 }

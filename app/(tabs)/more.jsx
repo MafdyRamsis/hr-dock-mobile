@@ -4,6 +4,7 @@ import {
   RefreshControl, ActivityIndicator, Modal, TextInput, Alert
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useRouter } from 'expo-router'
 import { useAuth } from '../../src/context/AuthContext'
 import api from '../../src/services/api'
 import Card from '../../src/components/Card'
@@ -13,13 +14,18 @@ const fmt = d => d ? d.split('T')[0].split('-').reverse().join('/') : '—'
 
 export default function MoreScreen() {
   const { user, logout } = useAuth()
+  const router = useRouter()
   const [tickets,   setTickets]   = useState([])
   const [loading,   setLoading]   = useState(true)
   const [refreshing,setRefreshing]= useState(false)
-  const [showTicket,setShowTicket]= useState(false)
-  const [saving,    setSaving]    = useState(false)
-  const [form,      setForm]      = useState({ subject: '', description: '', priority: 'medium' })
-  const [formErr,   setFormErr]   = useState('')
+  const [showTicket,  setShowTicket]   = useState(false)
+  const [showPassword,setShowPassword] = useState(false)
+  const [saving,      setSaving]       = useState(false)
+  const [form,        setForm]         = useState({ subject: '', description: '', priority: 'medium' })
+  const [formErr,     setFormErr]      = useState('')
+  const [pwForm,      setPwForm]       = useState({ current: '', next: '', confirm: '' })
+  const [pwErr,       setPwErr]        = useState('')
+  const [pwSaving,    setPwSaving]     = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -44,6 +50,21 @@ export default function MoreScreen() {
     } catch (err) {
       setFormErr(err.response?.data?.message || 'Failed to submit request.')
     } finally { setSaving(false) }
+  }
+
+  const submitPassword = async () => {
+    if (!pwForm.current || !pwForm.next || !pwForm.confirm) { setPwErr('Please fill in all fields.'); return }
+    if (pwForm.next.length < 8) { setPwErr('New password must be at least 8 characters.'); return }
+    if (pwForm.next !== pwForm.confirm) { setPwErr('Passwords do not match.'); return }
+    setPwErr(''); setPwSaving(true)
+    try {
+      await api.put('/auth/change-password', { current_password: pwForm.current, new_password: pwForm.next })
+      setShowPassword(false)
+      setPwForm({ current: '', next: '', confirm: '' })
+      Alert.alert('Password changed', 'Your password has been updated successfully.')
+    } catch (err) {
+      setPwErr(err.response?.data?.message || 'Failed to change password.')
+    } finally { setPwSaving(false) }
   }
 
   const confirmLogout = () => {
@@ -111,9 +132,9 @@ export default function MoreScreen() {
         <View style={s.section}>
           <Text style={s.sectionTitle}>Account</Text>
           <Card style={{ padding: 0, overflow: 'hidden' }}>
-            <MenuItem icon="🔔" label="Notifications"    onPress={() => {}} />
+            <MenuItem icon="🔔" label="Announcements"    onPress={() => router.push('/announcements')} />
             <View style={s.divider}/>
-            <MenuItem icon="🔒" label="Change Password"  onPress={() => {}} />
+            <MenuItem icon="🔒" label="Change Password"  onPress={() => setShowPassword(true)} />
             <View style={s.divider}/>
             <MenuItem icon="🚪" label="Sign Out" danger  onPress={confirmLogout} />
           </Card>
@@ -121,6 +142,43 @@ export default function MoreScreen() {
 
         <Text style={s.version}>HR Dock v1.0 · Employee Self-Service</Text>
       </ScrollView>
+
+      {/* Change Password Modal */}
+      <Modal visible={showPassword} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowPassword(false)}>
+        <SafeAreaView style={s.modal}>
+          <View style={s.modalHeader}>
+            <Text style={s.modalTitle}>Change Password</Text>
+            <TouchableOpacity onPress={() => { setShowPassword(false); setPwErr(''); setPwForm({ current: '', next: '', confirm: '' }) }}>
+              <Text style={s.modalClose}>✕</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={s.modalScroll} keyboardShouldPersistTaps="handled">
+            {[
+              { label: 'Current Password', key: 'current', placeholder: '••••••••' },
+              { label: 'New Password',     key: 'next',    placeholder: 'At least 8 characters' },
+              { label: 'Confirm New Password', key: 'confirm', placeholder: '••••••••' },
+            ].map(({ label, key, placeholder }) => (
+              <View key={key} style={s.formField}>
+                <Text style={s.formLabel}>{label}</Text>
+                <TextInput
+                  style={s.formInput}
+                  placeholder={placeholder}
+                  placeholderTextColor="#94a3b8"
+                  value={pwForm[key]}
+                  onChangeText={v => setPwForm(f => ({ ...f, [key]: v }))}
+                  secureTextEntry
+                />
+              </View>
+            ))}
+
+            {!!pwErr && <View style={s.errBox}><Text style={s.errText}>{pwErr}</Text></View>}
+
+            <TouchableOpacity style={[s.submitBtn, pwSaving && s.submitDisabled]} onPress={submitPassword} disabled={pwSaving}>
+              {pwSaving ? <ActivityIndicator color="white" /> : <Text style={s.submitText}>Update Password</Text>}
+            </TouchableOpacity>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
 
       {/* New Ticket Modal */}
       <Modal visible={showTicket} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowTicket(false)}>

@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
     "scheme": "hrdock",
     "splash": {
@@ -29,17 +29,12 @@
       "expo-secure-store",
       "expo-router",
       "expo-font",
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/notification-icon.png",
-          "color": "#2BC4BE"
-        }
-      ]
+      "expo-notifications"
     ],
     "extra": {
+      "router": {},
       "eas": {
-        "projectId": "hr-dock-mobile"
+        "projectId": "ed462a1f-c86c-4fb0-b16c-80bfafa38691"
       }
     }
   }

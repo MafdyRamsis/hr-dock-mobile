@@ -1,25 +1,18 @@
 import { Tabs } from 'expo-router'
-import { View, Text } from 'react-native'
+import { Text } from 'react-native'
+import { useTheme } from '../../src/context/ThemeContext'
 
-const Icon = ({ name, focused }) => {
-  const icons = {
-    home:       focused ? '🏠' : '🏠',
-    attendance: focused ? '🕐' : '🕐',
-    leave:      focused ? '🏖' : '🏖',
-    payslips:   focused ? '💰' : '💰',
-    more:       focused ? '☰' : '☰',
-  }
-  return (
-    <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.45 }}>{icons[name]}</Text>
-  )
-}
+const Icon = ({ emoji, focused }) => (
+  <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.4 }}>{emoji}</Text>
+)
 
 export default function TabLayout() {
+  const { colors } = useTheme()
   return (
     <Tabs screenOptions={{
       headerShown: false,
       tabBarStyle: {
-        backgroundColor: '#0F1829',
+        backgroundColor: colors.tabBar,
         borderTopWidth: 0,
         height: 70,
         paddingBottom: 10,
@@ -34,11 +27,12 @@ export default function TabLayout() {
       tabBarInactiveTintColor: 'rgba(255,255,255,0.4)',
       tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginTop: 2 },
     }}>
-      <Tabs.Screen name="index"      options={{ title: 'Home',       tabBarIcon: ({ focused }) => <Icon name="home"       focused={focused} /> }} />
-      <Tabs.Screen name="attendance" options={{ title: 'Attendance', tabBarIcon: ({ focused }) => <Icon name="attendance" focused={focused} /> }} />
-      <Tabs.Screen name="leave"      options={{ title: 'Leave',      tabBarIcon: ({ focused }) => <Icon name="leave"      focused={focused} /> }} />
-      <Tabs.Screen name="payslips"   options={{ title: 'Payslips',   tabBarIcon: ({ focused }) => <Icon name="payslips"   focused={focused} /> }} />
-      <Tabs.Screen name="more"       options={{ title: 'More',       tabBarIcon: ({ focused }) => <Icon name="more"       focused={focused} /> }} />
+      <Tabs.Screen name="index"      options={{ title: 'Home',       tabBarIcon: ({ focused }) => <Icon emoji="🏠" focused={focused} /> }} />
+      <Tabs.Screen name="attendance" options={{ title: 'Attendance', tabBarIcon: ({ focused }) => <Icon emoji="🕐" focused={focused} /> }} />
+      <Tabs.Screen name="leave"      options={{ title: 'Leave',      tabBarIcon: ({ focused }) => <Icon emoji="🏖" focused={focused} /> }} />
+      <Tabs.Screen name="requests"   options={{ title: 'Requests',   tabBarIcon: ({ focused }) => <Icon emoji="📋" focused={focused} /> }} />
+      <Tabs.Screen name="payslips"   options={{ title: 'Payslips',   tabBarIcon: ({ focused }) => <Icon emoji="💰" focused={focused} /> }} />
+      <Tabs.Screen name="more"       options={{ href: null }} />
     </Tabs>
   )
 }

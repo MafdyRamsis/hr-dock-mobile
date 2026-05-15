@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Stack, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { AuthProvider, useAuth } from '../src/context/AuthContext'
+import { ThemeProvider, useTheme } from '../src/context/ThemeContext'
 import { registerForPushNotifications } from '../src/utils/notifications'
 
 function Guard() {
@@ -23,12 +24,23 @@ function Guard() {
   return null
 }
 
+function ThemedApp() {
+  const { isDark } = useTheme()
+  return (
+    <>
+      <StatusBar style={isDark ? 'light' : 'light'} />
+      <Stack screenOptions={{ headerShown: false }} />
+    </>
+  )
+}
+
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <Guard />
-      <StatusBar style="light" />
-      <Stack screenOptions={{ headerShown: false }} />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <Guard />
+        <ThemedApp />
+      </AuthProvider>
+    </ThemeProvider>
   )
 }
