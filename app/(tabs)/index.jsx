@@ -284,6 +284,11 @@ export default function HomeScreen() {
             <Text style={[s.name, { color: colors.text }]}>{user?.first_name} {user?.last_name}</Text>
           </View>
           <View style={s.headerRight}>
+            {['admin','hr_manager','manager'].includes(user?.role) && (
+              <TouchableOpacity style={[s.teamBtn, { backgroundColor: colors.card }]} onPress={() => router.push('/manager-dashboard')} activeOpacity={0.8}>
+                <Text style={[s.teamBtnText, { color: colors.text2 }]}>👥 Team</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity style={s.bellBtn} onPress={() => router.push('/notifications')}>
               <Text style={s.bellIcon}>🔔</Text>
               {notifBadge > 0 && (
@@ -477,7 +482,9 @@ const s = StyleSheet.create({
   header:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   greeting:      { fontSize: 12, color: '#64748b' },
   name:          { fontSize: 19, fontWeight: '800', color: '#0F1829' },
-  headerRight:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  headerRight:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  teamBtn:       { height: 36, borderRadius: 18, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 1 },
+  teamBtnText:   { fontSize: 13, fontWeight: '700' },
   bellBtn:       { width: 40, height: 40, borderRadius: 20, backgroundColor: 'white', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
   bellIcon:      { fontSize: 18 },
   badge:         { position: 'absolute', top: -2, right: -2, backgroundColor: '#E8583C', borderRadius: 8, minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3, borderWidth: 1.5, borderColor: '#F0F4FA' },
