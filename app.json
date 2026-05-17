@@ -8,6 +8,15 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
     "scheme": "hrdock",
+    "updates": {
+      "url": "https://u.expo.dev/ed462a1f-c86c-4fb0-b16c-80bfafa38691",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -29,7 +38,8 @@
       "expo-secure-store",
       "expo-router",
       "expo-font",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-updates"
     ],
     "extra": {
       "router": {},

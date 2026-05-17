@@ -102,6 +102,11 @@ export default function LeaveScreen() {
         <View style={s.header}>
           <Text style={[s.pageTitle, { color: colors.text }]}>Leave</Text>
           <View style={{ flexDirection: 'row', gap: 8 }}>
+            {['admin','hr_manager','manager'].includes(user?.role) && (
+              <TouchableOpacity style={[s.calBtn, { backgroundColor: colors.card }]} onPress={() => router.push('/leave-approvals')} activeOpacity={0.85}>
+                <Text style={s.calBtnText}>✓ Approvals</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity style={[s.calBtn, { backgroundColor: colors.card }]} onPress={() => router.push('/holidays')} activeOpacity={0.85}>
               <Text style={s.calBtnText}>🗓 Holidays</Text>
             </TouchableOpacity>
