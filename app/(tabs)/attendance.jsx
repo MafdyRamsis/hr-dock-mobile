@@ -163,7 +163,7 @@ export default function AttendanceScreen() {
     setActioning(true)
     try {
       const loc = await getLocation()
-      await api.post('/attendance/check-in', { ...(employeeId ? { employee_id: employeeId } : {}), ...loc })
+      await api.post('/attendance/check-in', { source: 'mobile', ...(employeeId ? { employee_id: employeeId } : {}), ...loc })
       await load()
     } catch (err) {
       Alert.alert('Check-in failed', err.response?.data?.message || 'Please try again.')
@@ -174,7 +174,7 @@ export default function AttendanceScreen() {
     setActioning(true)
     try {
       const loc = await getLocation()
-      await api.post('/attendance/check-out', { ...(employeeId ? { employee_id: employeeId } : {}), ...loc })
+      await api.post('/attendance/check-out', { source: 'mobile', ...(employeeId ? { employee_id: employeeId } : {}), ...loc })
       await load()
     } catch (err) {
       Alert.alert('Check-out failed', err.response?.data?.message || 'Please try again.')
