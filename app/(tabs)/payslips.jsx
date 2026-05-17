@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl, ActivityIndicator, Modal, Share } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl, ActivityIndicator, Modal, Share, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import * as Print from 'expo-print'
+import * as Sharing from 'expo-sharing'
 import api from '../../src/services/api'
 import Card from '../../src/components/Card'
 import Skeleton, { SkeletonCard } from '../../src/components/Skeleton'
@@ -68,15 +70,68 @@ const buildShareText = (slip, run) => {
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
+const buildPayslipHtml = (slip, run) => {
+  const empName = slip.employee_name || `${slip.first_name || ''} ${slip.last_name || ''}`.trim()
+  const period  = run ? `${MONTHS[run.month - 1]} ${run.year}` : '—'
+  const row = (label, val, color='#1e293b', bold=false) =>
+    val > 0 ? `<tr><td style="padding:6px 0;color:#64748b;font-size:13px">${label}</td><td style="padding:6px 0;text-align:right;font-size:13px;color:${color};font-weight:${bold?700:400}">EGP ${Number(val).toLocaleString('en-EG')}</td></tr>` : ''
+
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<style>body{font-family:Arial,sans-serif;margin:0;padding:24px;background:#f8fafc;color:#1e293b}
+.card{background:white;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+h1{color:#0F1829;font-size:22px;margin:0 0 4px}
+.sub{color:#94a3b8;font-size:12px}
+.net{background:#0F1829;border-radius:12px;padding:18px;text-align:center;margin-bottom:16px}
+.net-label{color:rgba(255,255,255,0.55);font-size:12px;margin-bottom:6px}
+.net-val{color:white;font-size:28px;font-weight:900}
+table{width:100%;border-collapse:collapse}
+h3{font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 8px}
+.total td{border-top:1px solid #e2e8f0;padding-top:8px;font-weight:700;color:#0F1829}
+.footer{text-align:center;font-size:10px;color:#94a3b8;margin-top:24px}
+</style></head><body>
+<div class="card">
+  <h1>Payslip</h1>
+  <div class="sub">${period} &nbsp;·&nbsp; ${empName}</div>
+</div>
+<div class="net"><div class="net-label">Net Salary</div><div class="net-val">EGP ${Number(slip.net_salary).toLocaleString('en-EG')}</div></div>
+<div class="card">
+  <h3>Earnings</h3>
+  <table>
+    ${row('Basic Salary', slip.basic_salary)}
+    ${row('Housing Allowance', slip.housing_allowance)}
+    ${row('Transport Allowance', slip.transport_allowance)}
+    ${row('Mobile Allowance', slip.mobile_allowance)}
+    ${row('Meal Allowance', slip.meal_allowance)}
+    ${row('Other Allowances', slip.other_allowances)}
+    ${row('Overtime', slip.overtime_pay)}
+    <tr class="total"><td>Gross Salary</td><td style="text-align:right">EGP ${Number(slip.gross_salary).toLocaleString('en-EG')}</td></tr>
+  </table>
+</div>
+<div class="card">
+  <h3>Deductions</h3>
+  <table>
+    ${row('Social Insurance (11%)', slip.social_insurance, '#dc2626')}
+    ${row('Income Tax', slip.income_tax, '#dc2626')}
+    ${row('Martyrs Fund (1%)', slip.martyrs_fund, '#dc2626')}
+    ${row('Loan Deduction', slip.loan_deduction, '#dc2626')}
+    ${row('Other Deductions', slip.other_deductions, '#dc2626')}
+    <tr class="total"><td>Total Deductions</td><td style="text-align:right;color:#dc2626">− EGP ${Number(slip.total_deductions).toLocaleString('en-EG')}</td></tr>
+  </table>
+</div>
+<div class="footer">Generated via HR Dock Employee Self-Service · ${new Date().toLocaleDateString('en-GB')}</div>
+</body></html>`
+}
+
 export default function PayslipsScreen() {
   const { colors } = useTheme()
   const [runs,       setRuns]       = useState([])
   const [loading,    setLoading]    = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  const [selected,   setSelected]   = useState(null)
-  const [slipLoad,   setSlipLoad]   = useState(false)
-  const [slip,       setSlip]       = useState(null)
-  const [activeYear, setActiveYear] = useState(new Date().getFullYear())
+  const [selected,    setSelected]    = useState(null)
+  const [slipLoad,    setSlipLoad]    = useState(false)
+  const [slip,        setSlip]        = useState(null)
+  const [activeYear,  setActiveYear]  = useState(new Date().getFullYear())
+  const [pdfLoading,  setPdfLoading]  = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -105,6 +160,23 @@ export default function PayslipsScreen() {
     try {
       await Share.share({ message: buildShareText(slip, selected), title: 'Payslip' })
     } catch {}
+  }
+
+  const downloadPdf = async () => {
+    if (!slip || !selected) return
+    setPdfLoading(true)
+    try {
+      const html = buildPayslipHtml(slip, selected)
+      const { uri } = await Print.printToFileAsync({ html, base64: false })
+      const canShare = await Sharing.isAvailableAsync()
+      if (canShare) {
+        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Save or share payslip PDF' })
+      } else {
+        Alert.alert('Saved', `PDF saved to: ${uri}`)
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Could not generate PDF. Please try again.')
+    } finally { setPdfLoading(false) }
   }
 
   // Build a map: "YYYY-MM" → run
@@ -232,10 +304,18 @@ export default function PayslipsScreen() {
             <Text style={s.modalTitle}>Payslip</Text>
             <View style={s.modalActions}>
               {slip && (
-                <TouchableOpacity style={s.shareBtn} onPress={shareSlip}>
-                  <Text style={s.shareIcon}>↑</Text>
-                  <Text style={s.shareText}>Share</Text>
-                </TouchableOpacity>
+                <>
+                  <TouchableOpacity style={s.pdfBtn} onPress={downloadPdf} disabled={pdfLoading}>
+                    {pdfLoading ? <ActivityIndicator size="small" color="#dc2626" /> : <>
+                      <Text style={s.pdfIcon}>⬇</Text>
+                      <Text style={s.pdfText}>PDF</Text>
+                    </>}
+                  </TouchableOpacity>
+                  <TouchableOpacity style={s.shareBtn} onPress={shareSlip}>
+                    <Text style={s.shareIcon}>↑</Text>
+                    <Text style={s.shareText}>Share</Text>
+                  </TouchableOpacity>
+                </>
               )}
               <TouchableOpacity onPress={() => { setSelected(null); setSlip(null) }}>
                 <Text style={s.modalClose}>✕</Text>
@@ -354,6 +434,9 @@ const s = StyleSheet.create({
   modalHeader:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   modalTitle:       { fontSize: 18, fontWeight: '800', color: '#0F1829' },
   modalActions:     { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  pdfBtn:           { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#fef2f2', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: '#fecaca', minWidth: 64, justifyContent: 'center' },
+  pdfIcon:          { fontSize: 14, color: '#dc2626', fontWeight: '800' },
+  pdfText:          { fontSize: 13, color: '#dc2626', fontWeight: '700' },
   shareBtn:         { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#f0fdf4', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: '#bbf7d0' },
   shareIcon:        { fontSize: 14, color: '#16a34a', fontWeight: '800' },
   shareText:        { fontSize: 13, color: '#16a34a', fontWeight: '700' },

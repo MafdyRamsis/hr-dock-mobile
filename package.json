@@ -20,6 +20,8 @@
     "expo-local-authentication": "^55.0.14",
     "expo-location": "^55.1.10",
     "expo-notifications": "~0.32.17",
+    "expo-print": "~14.0.5",
+    "expo-sharing": "~13.0.1",
     "expo-updates": "~0.27.4",
     "expo-router": "~6.0.23",
     "expo-secure-store": "~15.0.8",
