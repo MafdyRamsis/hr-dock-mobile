@@ -132,13 +132,17 @@ export default function MoreScreen() {
         <View style={s.section}>
           <Text style={s.sectionTitle}>Self-Service</Text>
           <Card style={{ padding: 0, overflow: 'hidden' }}>
-            <MenuItem icon="🧾" label="Expenses"         onPress={() => router.push('/expenses')} />
+            <MenuItem icon="🧾" label="Expenses"           onPress={() => router.push('/expenses')} />
             <View style={s.divider}/>
-            <MenuItem icon="💳" label="Loans"            onPress={() => router.push('/loans')} />
+            <MenuItem icon="💳" label="Loans"              onPress={() => router.push('/loans')} />
             <View style={s.divider}/>
-            <MenuItem icon="🎓" label="Training"         onPress={() => router.push('/training')} />
+            <MenuItem icon="🎁" label="Benefits"           onPress={() => router.push('/benefits')} />
             <View style={s.divider}/>
-            <MenuItem icon="📄" label="Documents"        onPress={() => router.push('/documents')} />
+            <MenuItem icon="🎓" label="Training"           onPress={() => router.push('/training')} />
+            <View style={s.divider}/>
+            <MenuItem icon="📋" label="Appraisals"         onPress={() => router.push('/appraisals')} />
+            <View style={s.divider}/>
+            <MenuItem icon="📄" label="Documents"          onPress={() => router.push('/documents')} />
             <View style={s.divider}/>
             <MenuItem icon="👥" label="Employee Directory" onPress={() => router.push('/directory')} />
           </Card>
