@@ -142,7 +142,7 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
                   <Text style={pf.iosPickerDone}>Done</Text>
                 </TouchableOpacity>
               </View>
-              <DateTimePicker value={pickerDate} mode="date" display="spinner" onChange={onDateChange} minimumDate={new Date()} />
+              <DateTimePicker value={pickerDate} mode="date" display="spinner" onChange={onDateChange} minimumDate={new Date()} textColor="#000000" themeVariant="light" />
             </View>
           )}
           {showPicker && Platform.OS === 'android' && (
@@ -537,8 +537,8 @@ const pf = StyleSheet.create({
   dateBtnLabel:   { fontSize: 10, fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4 },
   dateBtnVal:     { fontSize: 14, fontWeight: '600', color: '#1e293b' },
   datePlaceholder:{ color: '#94a3b8', fontWeight: '400' },
-  iosPicker:      { backgroundColor: '#f8fafc', borderRadius: 14, marginBottom: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#e2e8f0' },
-  iosPickerHeader:{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#e2e8f0' },
+  iosPicker:      { backgroundColor: '#ffffff', borderRadius: 14, marginBottom: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#e2e8f0' },
+  iosPickerHeader:{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#e2e8f0', backgroundColor: '#ffffff' },
   iosPickerLabel: { fontSize: 13, fontWeight: '600', color: '#374151' },
   iosPickerDone:  { fontSize: 14, fontWeight: '700', color: '#2BC4BE' },
   errBox:         { backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fecaca', borderRadius: 10, padding: 12, marginBottom: 14 },

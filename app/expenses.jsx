@@ -178,7 +178,7 @@ export default function ExpensesScreen() {
               <Text>📅</Text>
             </TouchableOpacity>
             {showPicker && Platform.OS === 'ios' && (
-              <DateTimePicker value={pickerDate} mode="date" display="spinner" onChange={onDateChange} maximumDate={new Date()} />
+              <DateTimePicker value={pickerDate} mode="date" display="spinner" onChange={onDateChange} maximumDate={new Date()} textColor="#000000" themeVariant="light" />
             )}
 
             {/* Category */}

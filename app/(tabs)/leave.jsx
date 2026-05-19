@@ -219,6 +219,8 @@ export default function LeaveScreen() {
                   display="spinner"
                   onChange={onDateChange}
                   minimumDate={new Date()}
+                  textColor="#000000"
+                  themeVariant="light"
                 />
               </View>
             )}
@@ -303,7 +305,7 @@ const s = StyleSheet.create({
   dateBtnText:       { fontSize: 15, color: '#1e293b', fontWeight: '500' },
   datePlaceholder:   { color: '#94a3b8', fontWeight: '400' },
   dateIcon:          { fontSize: 16 },
-  iosPickerWrap:     { backgroundColor: '#f8fafc', borderRadius: 14, marginBottom: 18, overflow: 'hidden', borderWidth: 1, borderColor: '#e2e8f0' },
+  iosPickerWrap:     { backgroundColor: '#ffffff', borderRadius: 14, marginBottom: 18, overflow: 'hidden', borderWidth: 1, borderColor: '#e2e8f0' },
   iosPickerHeader:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#e2e8f0' },
   iosPickerLabel:    { fontSize: 14, fontWeight: '600', color: '#374151' },
   iosPickerDone:     { fontSize: 15, fontWeight: '700', color: '#2BC4BE' },
