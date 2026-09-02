@@ -62,9 +62,12 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
   const [saving,  setSaving]  = useState(false)
 
   // date picker
-  const [pickerTarget, setPickerTarget] = useState(null)
-  const [pickerDate,   setPickerDate]   = useState(new Date())
-  const [showPicker,   setShowPicker]   = useState(false)
+  const [pickerTarget,   setPickerTarget]   = useState(null)
+  const [pickerDate,     setPickerDate]     = useState(new Date())
+  const [showPicker,     setShowPicker]     = useState(false)
+  // time picker
+  const [showTimePicker, setShowTimePicker] = useState(false)
+  const [pickerTime,     setPickerTime]     = useState(new Date())
 
   const openPicker = (target) => {
     const cur = target === 'end' ? endDate : date
@@ -77,6 +80,12 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
     if (e.type === 'dismissed' || !sel) return
     const iso = toISO(sel)
     if (pickerTarget === 'end') setEndDate(iso); else setDate(iso)
+  }
+  const onTimeChange = (e, sel) => {
+    if (Platform.OS === 'android') setShowTimePicker(false)
+    if (e.type === 'dismissed' || !sel) return
+    setPickerTime(sel)
+    setTime(sel.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }))
   }
 
   const submit = async () => {
@@ -142,11 +151,11 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
                   <Text style={pf.iosPickerDone}>Done</Text>
                 </TouchableOpacity>
               </View>
-              <DateTimePicker value={pickerDate} mode="date" display="spinner" onChange={onDateChange} minimumDate={new Date()} textColor="#000000" themeVariant="light" />
+              <DateTimePicker value={pickerDate} mode="date" display="spinner" onChange={onDateChange} textColor="#000000" themeVariant="light" />
             </View>
           )}
           {showPicker && Platform.OS === 'android' && (
-            <DateTimePicker value={pickerDate} mode="date" display="default" onChange={onDateChange} minimumDate={new Date()} />
+            <DateTimePicker value={pickerDate} mode="date" display="default" onChange={onDateChange} />
           )}
 
           {/* Overtime: hours */}
@@ -168,13 +177,26 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
           {(type === 'late' || type === 'early') && (
             <View style={pf.field}>
               <Text style={pf.label}>{type === 'late' ? 'Expected Arrival Time' : 'Expected Departure Time'}</Text>
-              <TextInput
-                style={pf.input}
-                placeholder="e.g. 10:00"
-                placeholderTextColor="#94a3b8"
-                value={time}
-                onChangeText={setTime}
-              />
+              <TouchableOpacity style={pf.dateBtn} onPress={() => { setPickerTime(new Date()); setShowTimePicker(true) }}>
+                <Text style={pf.dateBtnLabel}>{type === 'late' ? 'Arrival Time' : 'Departure Time'}</Text>
+                <Text style={[pf.dateBtnVal, !time && pf.datePlaceholder]}>
+                  {time || 'Select time'} 🕐
+                </Text>
+              </TouchableOpacity>
+              {showTimePicker && Platform.OS === 'ios' && (
+                <View style={pf.iosPicker}>
+                  <View style={pf.iosPickerHeader}>
+                    <Text style={pf.iosPickerLabel}>Select Time</Text>
+                    <TouchableOpacity onPress={() => setShowTimePicker(false)}>
+                      <Text style={pf.iosPickerDone}>Done</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <DateTimePicker value={pickerTime} mode="time" display="spinner" onChange={onTimeChange} textColor="#000000" themeVariant="light" />
+                </View>
+              )}
+              {showTimePicker && Platform.OS === 'android' && (
+                <DateTimePicker value={pickerTime} mode="time" display="default" onChange={onTimeChange} />
+              )}
             </View>
           )}
 

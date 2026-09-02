@@ -38,8 +38,7 @@
       "expo-secure-store",
       "expo-router",
       "expo-font",
-      "expo-notifications",
-      "expo-updates"
+      "expo-notifications"
     ],
     "extra": {
       "router": {},
