@@ -119,6 +119,13 @@ src/
 
 HR Dock Mobile uses [EAS Build](https://docs.expo.dev/build/introduction/) for production APK/IPA generation (see `eas.json`).
 
+Before a production submission:
+
+- Set `EXPO_PUBLIC_API_URL` in the EAS `production` environment to the production API URL.
+- Increment `ios.buildNumber` and `android.versionCode` for every store upload.
+- Verify sign-in, biometric unlock, location permission denial, clock-in/out, leave, payslips, Arabic/RTL, push notifications, and session expiry on physical iOS and Android devices.
+- Configure the App Store and Play Store support URL and privacy-policy URL as `https://hrdock.app` and `https://hrdock.app/privacy` after the custom domain is active.
+
 ```bash
 # Install EAS CLI
 npm install -g eas-cli

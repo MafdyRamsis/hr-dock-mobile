@@ -24,7 +24,12 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.hrdock.mobile"
+      "bundleIdentifier": "com.hrdock.mobile",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "HR Dock uses your location only when you clock in or out so your employer can verify the attendance location.",
+        "NSFaceIDUsageDescription": "HR Dock uses Face ID to unlock your saved employee session on this device."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -32,13 +37,32 @@
         "backgroundColor": "#0F1829"
       },
       "package": "com.hrdock.mobile",
+      "versionCode": 1,
       "edgeToEdgeEnabled": true
     },
     "plugins": [
       "expo-secure-store",
       "expo-router",
       "expo-font",
-      "expo-notifications"
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow HR Dock to use Face ID to unlock your saved employee session."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow HR Dock to use your location only when you clock in or out."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#0F1829",
+          "defaultChannel": "default"
+        }
+      ]
     ],
     "extra": {
       "router": {},

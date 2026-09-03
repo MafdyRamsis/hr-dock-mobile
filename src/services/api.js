@@ -1,7 +1,8 @@
 import axios from 'axios'
 import * as SecureStore from 'expo-secure-store'
 
-const BASE_URL = 'https://hr-dock-backend-production.up.railway.app/api/v1'
+const DEFAULT_BASE_URL = 'https://hr-dock-backend-production.up.railway.app/api/v1'
+const BASE_URL = (process.env.EXPO_PUBLIC_API_URL || DEFAULT_BASE_URL).replace(/\/$/, '')
 
 const api = axios.create({ baseURL: BASE_URL, timeout: 15000 })
 
