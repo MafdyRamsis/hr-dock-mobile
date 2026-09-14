@@ -7,6 +7,7 @@ const BASE_URL = (process.env.EXPO_PUBLIC_API_URL || DEFAULT_BASE_URL).replace(/
 const api = axios.create({ baseURL: BASE_URL, timeout: 15000 })
 
 api.interceptors.request.use(async (config) => {
+  config.headers['X-HRDock-Channel'] = 'mobile'
   const token = await SecureStore.getItemAsync('token')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
