@@ -6,7 +6,8 @@ import api from '../services/api'
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList:   true,
     shouldPlaySound: true,
     shouldSetBadge:  true,
   }),
@@ -37,7 +38,9 @@ export async function registerForPushNotifications() {
     const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data
     await api.patch('/auth/push-token', { push_token: token })
     return token
-  } catch {
+  } catch (e) {
+    // Most common cause on Android: Firebase/FCM credentials missing from the build.
+    console.warn('[push] registration failed:', e?.message)
     return null
   }
 }

@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router'
 import { Text } from 'react-native'
 import { useTheme } from '../../src/context/ThemeContext'
+import { useLang } from '../../src/context/LanguageContext'
 
 const Icon = ({ emoji, focused }) => (
   <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.4 }}>{emoji}</Text>
@@ -8,6 +9,7 @@ const Icon = ({ emoji, focused }) => (
 
 export default function TabLayout() {
   const { colors } = useTheme()
+  const { t } = useLang()
   return (
     <Tabs screenOptions={{
       headerShown: false,
@@ -27,11 +29,11 @@ export default function TabLayout() {
       tabBarInactiveTintColor: 'rgba(255,255,255,0.4)',
       tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginTop: 2 },
     }}>
-      <Tabs.Screen name="index"      options={{ title: 'Home',       tabBarIcon: ({ focused }) => <Icon emoji="🏠" focused={focused} /> }} />
-      <Tabs.Screen name="attendance" options={{ title: 'Attendance', tabBarIcon: ({ focused }) => <Icon emoji="🕐" focused={focused} /> }} />
-      <Tabs.Screen name="leave"      options={{ title: 'Leave',      tabBarIcon: ({ focused }) => <Icon emoji="🏖" focused={focused} /> }} />
-      <Tabs.Screen name="requests"   options={{ title: 'Requests',   tabBarIcon: ({ focused }) => <Icon emoji="📋" focused={focused} /> }} />
-      <Tabs.Screen name="payslips"   options={{ title: 'Payslips',   tabBarIcon: ({ focused }) => <Icon emoji="💰" focused={focused} /> }} />
+      <Tabs.Screen name="index"      options={{ title: t('tab_home'),       tabBarIcon: ({ focused }) => <Icon emoji="🏠" focused={focused} /> }} />
+      <Tabs.Screen name="attendance" options={{ title: t('tab_attendance'), tabBarIcon: ({ focused }) => <Icon emoji="🕐" focused={focused} /> }} />
+      <Tabs.Screen name="leave"      options={{ title: t('tab_leave'),      tabBarIcon: ({ focused }) => <Icon emoji="🏖" focused={focused} /> }} />
+      <Tabs.Screen name="requests"   options={{ title: t('tab_requests'),   tabBarIcon: ({ focused }) => <Icon emoji="📋" focused={focused} /> }} />
+      <Tabs.Screen name="payslips"   options={{ title: t('tab_payslips'),   tabBarIcon: ({ focused }) => <Icon emoji="💰" focused={focused} /> }} />
       <Tabs.Screen name="more"       options={{ href: null }} />
     </Tabs>
   )

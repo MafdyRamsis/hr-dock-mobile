@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router'
 import * as SecureStore from 'expo-secure-store'
 import * as LocalAuthentication from 'expo-local-authentication'
 import { useAuth } from '../src/context/AuthContext'
+import { useLang } from '../src/context/LanguageContext'
 import { useTheme } from '../src/context/ThemeContext'
 import Skeleton from '../src/components/Skeleton'
 import api from '../src/services/api'
@@ -47,7 +48,7 @@ export default function ProfileScreen() {
   const [bioAvailable,  setBioAvailable]  = useState(false)
   const [emp,           setEmp]           = useState(null)
   const [empLoading,    setEmpLoading]    = useState(true)
-  const [language,      setLanguage]      = useState('en')
+  const { lang: language, setLanguage } = useLang()
 
   useEffect(() => {
     const checkBio = async () => {
@@ -72,13 +73,8 @@ export default function ProfileScreen() {
       } catch (e) { console.log('EMP ERR:', e?.response?.data) }
       finally { setEmpLoading(false) }
     }
-    const loadLanguage = async () => {
-      const saved = await SecureStore.getItemAsync('app_language')
-      if (saved) setLanguage(saved)
-    }
     checkBio()
-    loadEmployee()
-    loadLanguage()
+    loadEmployee() // language is restored by LanguageProvider
   }, [])
 
   const changeLanguage = () => {
@@ -88,21 +84,11 @@ export default function ProfileScreen() {
       [
         {
           text: 'English',
-          onPress: async () => {
-            await SecureStore.setItemAsync('app_language', 'en')
-            setLanguage('en')
-            I18nManager.forceRTL(false)
-            Alert.alert('Language Changed', 'Please restart the app for changes to take effect.')
-          },
+          onPress: () => setLanguage('en'), // reloads the app if the layout direction changes
         },
         {
           text: 'العربية',
-          onPress: async () => {
-            await SecureStore.setItemAsync('app_language', 'ar')
-            setLanguage('ar')
-            I18nManager.forceRTL(true)
-            Alert.alert('تم تغيير اللغة', 'أعد تشغيل التطبيق لتطبيق التغييرات\nPlease restart the app for changes to take effect.')
-          },
+          onPress: () => setLanguage('ar'), // reloads the app if the layout direction changes
         },
         { text: 'Cancel', style: 'cancel' },
       ]
@@ -131,7 +117,7 @@ export default function ProfileScreen() {
     if (pwForm.next !== pwForm.confirm) { setPwErr('Passwords do not match.'); return }
     setPwErr(''); setPwSaving(true)
     try {
-      await api.put('/auth/change-password', { current_password: pwForm.current, new_password: pwForm.next })
+      await api.post('/auth/change-password', { current_password: pwForm.current, new_password: pwForm.next })
       setShowPassword(false)
       setPwForm({ current: '', next: '', confirm: '' })
       Alert.alert('Password changed', 'Your password has been updated successfully.')

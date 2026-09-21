@@ -7,9 +7,12 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import * as SecureStore from 'expo-secure-store'
 import * as LocalAuthentication from 'expo-local-authentication'
 import { useAuth } from '../../src/context/AuthContext'
+import { useLang } from '../../src/context/LanguageContext'
 
 export default function LoginScreen() {
-  const { login, loginWithBiometric } = useAuth()
+  const { login, loginWithBiometric, pending2fa, verify2fa, cancel2fa } = useAuth()
+  const { t, lang, setLanguage } = useLang()
+  const [code, setCode] = useState('')
   const [email,          setEmail]          = useState('')
   const [password,       setPassword]       = useState('')
   const [workspace,      setWorkspace]      = useState('')
@@ -30,18 +33,33 @@ export default function LoginScreen() {
       const hasHW     = await LocalAuthentication.hasHardwareAsync()
       const enrolled  = await LocalAuthentication.isEnrolledAsync()
       const hasToken  = !!(await SecureStore.getItemAsync('token'))
-      setBiometricReady(hasHW && enrolled && hasToken)
+      const ready = hasHW && enrolled && hasToken
+      setBiometricReady(ready)
+      if (ready) handleBiometric() // app lock: prompt straight away
     } catch {}
   }
 
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim() || !workspace.trim()) { setError('Please fill in all fields.'); return }
+    if (!email.trim() || !password.trim() || !workspace.trim()) { setError(t('fill_all')); return }
     setError(''); setLoading(true)
     try {
       await SecureStore.setItemAsync('workspace', workspace.trim())
       await login(email.trim().toLowerCase(), password, workspace.trim())
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials.')
+      setError(err.response?.data?.message || t('login_failed'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const submit2fa = async () => {
+    if (code.trim().length < 6) { setError(t('twofa_short')); return }
+    setError(''); setLoading(true)
+    try {
+      await verify2fa(code.trim())
+      setCode('')
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || t('twofa_invalid'))
     } finally {
       setLoading(false)
     }
@@ -52,7 +70,7 @@ export default function LoginScreen() {
     try {
       await loginWithBiometric()
     } catch (err) {
-      setError(err.message || 'Biometric authentication failed.')
+      setError(err.message || t('bio_failed'))
     } finally {
       setBioLoading(false)
     }
@@ -68,18 +86,54 @@ export default function LoginScreen() {
               <Text style={s.logoHR}>HR</Text>
               <Text style={s.logoDock}>Dock</Text>
             </View>
-            <Text style={s.tagline}>Employee Self-Service</Text>
+            <Text style={s.tagline}>{t('tagline')}</Text>
           </View>
 
-          <View style={s.card}>
-            <Text style={s.title}>Welcome back</Text>
-            <Text style={s.subtitle}>Sign in to your account</Text>
+          {pending2fa && (
+            <View style={s.card}>
+              <Text style={s.title}>{t('twofa_title')}</Text>
+              <Text style={s.subtitle}>{t('twofa_sub')}</Text>
+              <View style={s.field}>
+                <Text style={s.label}>{t('twofa_label')}</Text>
+                <TextInput
+                  style={s.input}
+                  placeholder="123456"
+                  placeholderTextColor="#94a3b8"
+                  value={code}
+                  onChangeText={setCode}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  autoFocus
+                />
+              </View>
+              {!!error && (
+                <View style={s.errorBox}>
+                  <Text style={s.errorText}>{error}</Text>
+                </View>
+              )}
+              <TouchableOpacity
+                style={[s.btn, loading && s.btnDisabled]}
+                onPress={submit2fa}
+                disabled={loading}
+                activeOpacity={0.85}
+              >
+                {loading ? <ActivityIndicator color="white" /> : <Text style={s.btnText}>{t('twofa_verify')}</Text>}
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { cancel2fa(); setCode(''); setError('') }} style={{ marginTop: 16, alignItems: 'center' }}>
+                <Text style={{ color: '#64748b', fontSize: 13 }}>{t('back_to_sign_in')}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <View style={[s.card, pending2fa && { display: 'none' }]}>
+            <Text style={s.title}>{t('welcome_back')}</Text>
+            <Text style={s.subtitle}>{t('sign_in_sub')}</Text>
 
             <View style={s.field}>
-              <Text style={s.label}>Workspace</Text>
+              <Text style={s.label}>{t('workspace')}</Text>
               <TextInput
                 style={s.input}
-                placeholder="e.g. hrdock8620"
+                placeholder={t('workspace_ph')}
                 placeholderTextColor="#94a3b8"
                 value={workspace}
                 onChangeText={setWorkspace}
@@ -89,10 +143,10 @@ export default function LoginScreen() {
             </View>
 
             <View style={s.field}>
-              <Text style={s.label}>Email address</Text>
+              <Text style={s.label}>{t('email')}</Text>
               <TextInput
                 style={s.input}
-                placeholder="you@company.eg"
+                placeholder={t('email_ph')}
                 placeholderTextColor="#94a3b8"
                 value={email}
                 onChangeText={setEmail}
@@ -103,7 +157,7 @@ export default function LoginScreen() {
             </View>
 
             <View style={s.field}>
-              <Text style={s.label}>Password</Text>
+              <Text style={s.label}>{t('password')}</Text>
               <TextInput
                 style={s.input}
                 placeholder="••••••••"
@@ -128,7 +182,7 @@ export default function LoginScreen() {
             >
               {loading
                 ? <ActivityIndicator color="white" />
-                : <Text style={s.btnText}>Sign In</Text>
+                : <Text style={s.btnText}>{t('sign_in')}</Text>
               }
             </TouchableOpacity>
 
@@ -136,7 +190,7 @@ export default function LoginScreen() {
               <>
                 <View style={s.dividerRow}>
                   <View style={s.dividerLine} />
-                  <Text style={s.dividerText}>or</Text>
+                  <Text style={s.dividerText}>{t('or')}</Text>
                   <View style={s.dividerLine} />
                 </View>
                 <TouchableOpacity
@@ -152,7 +206,7 @@ export default function LoginScreen() {
                           {Platform.OS === 'ios' ? '🔒' : '👆'}
                         </Text>
                         <Text style={s.bioBtnText}>
-                          {Platform.OS === 'ios' ? 'Sign in with Face ID' : 'Sign in with Fingerprint'}
+                          {Platform.OS === 'ios' ? t('bio_face') : t('bio_finger')}
                         </Text>
                       </>
                   }
@@ -161,7 +215,11 @@ export default function LoginScreen() {
             )}
           </View>
 
-          <Text style={s.footer}>HR Dock · Empowering Your Workforce</Text>
+          <TouchableOpacity onPress={() => setLanguage(lang === 'ar' ? 'en' : 'ar')} style={s.langBtn} activeOpacity={0.7}>
+            <Text style={s.langText}>{lang === 'ar' ? 'English' : 'العربية'}</Text>
+          </TouchableOpacity>
+
+          <Text style={s.footer}>{t('footer')}</Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -193,5 +251,7 @@ const s = StyleSheet.create({
   bioBtn:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: '#e2e8f0', borderRadius: 12, padding: 14, backgroundColor: '#f8fafc' },
   bioIcon:     { fontSize: 20 },
   bioBtnText:  { fontSize: 15, fontWeight: '700', color: '#0F1829' },
-  footer:      { textAlign: 'center', marginTop: 32, color: 'rgba(255,255,255,0.3)', fontSize: 12 },
+  langBtn:     { alignSelf: 'center', marginTop: 24, paddingVertical: 8, paddingHorizontal: 16 },
+  langText:    { color: '#2BC4BE', fontSize: 14, fontWeight: '700' },
+  footer:      { textAlign: 'center', marginTop: 16, color: 'rgba(255,255,255,0.3)', fontSize: 12 },
 })
