@@ -4,10 +4,12 @@ import {
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { LinearGradient } from 'expo-linear-gradient'
 import * as SecureStore from 'expo-secure-store'
 import * as LocalAuthentication from 'expo-local-authentication'
 import { useAuth } from '../../src/context/AuthContext'
 import { useLang } from '../../src/context/LanguageContext'
+import { GRADIENTS } from '../../src/context/ThemeContext'
 
 export default function LoginScreen() {
   const { login, loginWithBiometric, pending2fa, verify2fa, cancel2fa } = useAuth()
@@ -78,15 +80,21 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={s.safe}>
+      <LinearGradient colors={GRADIENTS.coral} style={s.blobTop} start={{ x: 0.2, y: 0 }} end={{ x: 1, y: 1 }} />
+      <LinearGradient colors={GRADIENTS.lavender} style={s.blobBottom} start={{ x: 0, y: 1 }} end={{ x: 1, y: 0 }} />
+      <LinearGradient colors={GRADIENTS.mint} style={s.blobMid} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} />
+
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
 
           <View style={s.logoArea}>
-            <View style={s.logoBox}>
-              <Text style={s.logoHR}>HR</Text>
+            <LinearGradient colors={GRADIENTS.coral} style={s.logoBubble} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+              <Text style={s.logoBubbleText}>HR</Text>
+            </LinearGradient>
+            <View style={s.logoTextWrap}>
               <Text style={s.logoDock}>Dock</Text>
+              <Text style={s.tagline}>{t('tagline')}</Text>
             </View>
-            <Text style={s.tagline}>{t('tagline')}</Text>
           </View>
 
           {pending2fa && (
@@ -98,7 +106,7 @@ export default function LoginScreen() {
                 <TextInput
                   style={s.input}
                   placeholder="123456"
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor="#B0B3C6"
                   value={code}
                   onChangeText={setCode}
                   keyboardType="number-pad"
@@ -111,16 +119,13 @@ export default function LoginScreen() {
                   <Text style={s.errorText}>{error}</Text>
                 </View>
               )}
-              <TouchableOpacity
-                style={[s.btn, loading && s.btnDisabled]}
-                onPress={submit2fa}
-                disabled={loading}
-                activeOpacity={0.85}
-              >
-                {loading ? <ActivityIndicator color="white" /> : <Text style={s.btnText}>{t('twofa_verify')}</Text>}
+              <TouchableOpacity onPress={submit2fa} disabled={loading} activeOpacity={0.85} style={s.btnWrap}>
+                <LinearGradient colors={GRADIENTS.coral} style={[s.btn, loading && s.btnDisabled]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                  {loading ? <ActivityIndicator color="white" /> : <Text style={s.btnText}>{t('twofa_verify')}</Text>}
+                </LinearGradient>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => { cancel2fa(); setCode(''); setError('') }} style={{ marginTop: 16, alignItems: 'center' }}>
-                <Text style={{ color: '#64748b', fontSize: 13 }}>{t('back_to_sign_in')}</Text>
+                <Text style={{ color: '#8A8DA3', fontSize: 13, fontWeight: '600' }}>{t('back_to_sign_in')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -134,7 +139,7 @@ export default function LoginScreen() {
               <TextInput
                 style={s.input}
                 placeholder={t('workspace_ph')}
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor="#B0B3C6"
                 value={workspace}
                 onChangeText={setWorkspace}
                 autoCapitalize="none"
@@ -147,7 +152,7 @@ export default function LoginScreen() {
               <TextInput
                 style={s.input}
                 placeholder={t('email_ph')}
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor="#B0B3C6"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -161,7 +166,7 @@ export default function LoginScreen() {
               <TextInput
                 style={s.input}
                 placeholder="••••••••"
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor="#B0B3C6"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
@@ -174,16 +179,13 @@ export default function LoginScreen() {
               </View>
             )}
 
-            <TouchableOpacity
-              style={[s.btn, loading && s.btnDisabled]}
-              onPress={handleLogin}
-              disabled={loading}
-              activeOpacity={0.85}
-            >
-              {loading
-                ? <ActivityIndicator color="white" />
-                : <Text style={s.btnText}>{t('sign_in')}</Text>
-              }
+            <TouchableOpacity onPress={handleLogin} disabled={loading} activeOpacity={0.85} style={s.btnWrap}>
+              <LinearGradient colors={GRADIENTS.coral} style={[s.btn, loading && s.btnDisabled]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                {loading
+                  ? <ActivityIndicator color="white" />
+                  : <Text style={s.btnText}>{t('sign_in')}</Text>
+                }
+              </LinearGradient>
             </TouchableOpacity>
 
             {biometricReady && (
@@ -200,7 +202,7 @@ export default function LoginScreen() {
                   activeOpacity={0.85}
                 >
                   {bioLoading
-                    ? <ActivityIndicator color="#0F1829" />
+                    ? <ActivityIndicator color="#2ED573" />
                     : <>
                         <Text style={s.bioIcon}>
                           {Platform.OS === 'ios' ? '🔒' : '👆'}
@@ -215,7 +217,7 @@ export default function LoginScreen() {
             )}
           </View>
 
-          <TouchableOpacity onPress={() => setLanguage(lang === 'ar' ? 'en' : 'ar')} style={s.langBtn} activeOpacity={0.7}>
+          <TouchableOpacity onPress={() => setLanguage(lang === 'ar' ? 'en' : 'ar')} style={s.langBtn} activeOpacity={0.8}>
             <Text style={s.langText}>{lang === 'ar' ? 'English' : 'العربية'}</Text>
           </TouchableOpacity>
 
@@ -227,31 +229,36 @@ export default function LoginScreen() {
 }
 
 const s = StyleSheet.create({
-  safe:        { flex: 1, backgroundColor: '#0F1829' },
+  safe:        { flex: 1, backgroundColor: '#F8F9FD' },
+  blobTop:     { position: 'absolute', top: -90, right: -70, width: 260, height: 260, borderRadius: 130, opacity: 0.28 },
+  blobBottom:  { position: 'absolute', bottom: -110, left: -90, width: 300, height: 300, borderRadius: 150, opacity: 0.22 },
+  blobMid:     { position: 'absolute', top: '38%', right: -110, width: 220, height: 220, borderRadius: 110, opacity: 0.14 },
   scroll:      { flexGrow: 1, justifyContent: 'center', padding: 24 },
-  logoArea:    { alignItems: 'center', marginBottom: 40 },
-  logoBox:     { flexDirection: 'row', alignItems: 'baseline', gap: 4, marginBottom: 8 },
-  logoHR:      { fontSize: 42, fontWeight: '900', color: '#E8583C', letterSpacing: -1 },
-  logoDock:    { fontSize: 42, fontWeight: '900', color: '#2BC4BE', letterSpacing: -1 },
-  tagline:     { fontSize: 13, color: 'rgba(255,255,255,0.45)', letterSpacing: 0.5 },
-  card:        { backgroundColor: 'white', borderRadius: 24, padding: 28, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 24, elevation: 10 },
-  title:       { fontSize: 22, fontWeight: '800', color: '#0F1829', marginBottom: 4 },
-  subtitle:    { fontSize: 14, color: '#64748b', marginBottom: 28 },
+  logoArea:    { flexDirection: 'row', alignItems: 'center', marginBottom: 36, gap: 14 },
+  logoBubble:  { width: 60, height: 60, borderRadius: 20, alignItems: 'center', justifyContent: 'center', shadowColor: '#FF6B6B', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 16, elevation: 6 },
+  logoBubbleText: { fontSize: 22, fontWeight: '900', color: 'white', letterSpacing: -0.5 },
+  logoTextWrap:{ flex: 1 },
+  logoDock:    { fontSize: 26, fontWeight: '900', color: '#1A1B2E', letterSpacing: -0.5 },
+  tagline:     { fontSize: 12.5, color: '#8A8DA3', letterSpacing: 0.2, marginTop: 2 },
+  card:        { backgroundColor: 'rgba(255,255,255,0.88)', borderRadius: 28, padding: 26, borderWidth: 1, borderColor: 'rgba(255,255,255,0.7)', shadowColor: '#8890B5', shadowOffset: { width: 0, height: 14 }, shadowOpacity: 0.18, shadowRadius: 28, elevation: 8 },
+  title:       { fontSize: 22, fontWeight: '900', color: '#1A1B2E', marginBottom: 4 },
+  subtitle:    { fontSize: 14, color: '#8A8DA3', marginBottom: 26 },
   field:       { marginBottom: 16 },
-  label:       { fontSize: 12, fontWeight: '600', color: '#374151', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.4 },
-  input:       { borderWidth: 1.5, borderColor: '#e2e8f0', borderRadius: 12, padding: 14, fontSize: 15, color: '#1e293b', backgroundColor: '#fafafa' },
-  errorBox:    { backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fecaca', borderRadius: 10, padding: 12, marginBottom: 16 },
-  errorText:   { color: '#dc2626', fontSize: 13 },
-  btn:         { backgroundColor: '#0F1829', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 8 },
-  btnDisabled: { opacity: 0.6 },
-  btnText:     { color: 'white', fontSize: 16, fontWeight: '700' },
-  dividerRow:  { flexDirection: 'row', alignItems: 'center', marginVertical: 16, gap: 10 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: '#e2e8f0' },
-  dividerText: { fontSize: 12, color: '#94a3b8', fontWeight: '600' },
-  bioBtn:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: '#e2e8f0', borderRadius: 12, padding: 14, backgroundColor: '#f8fafc' },
-  bioIcon:     { fontSize: 20 },
-  bioBtnText:  { fontSize: 15, fontWeight: '700', color: '#0F1829' },
-  langBtn:     { alignSelf: 'center', marginTop: 24, paddingVertical: 8, paddingHorizontal: 16 },
-  langText:    { color: '#2BC4BE', fontSize: 14, fontWeight: '700' },
-  footer:      { textAlign: 'center', marginTop: 16, color: 'rgba(255,255,255,0.3)', fontSize: 12 },
+  label:       { fontSize: 11.5, fontWeight: '700', color: '#6B6E85', marginBottom: 7, textTransform: 'uppercase', letterSpacing: 0.4 },
+  input:       { borderWidth: 1.5, borderColor: '#E3E6F3', borderRadius: 16, padding: 14, fontSize: 15, color: '#1A1B2E', backgroundColor: '#F5F6FC' },
+  errorBox:    { backgroundColor: '#FFE9E6', borderWidth: 1, borderColor: '#FFCFC9', borderRadius: 14, padding: 12, marginBottom: 16 },
+  errorText:   { color: '#E14F4A', fontSize: 13, fontWeight: '600' },
+  btnWrap:     { borderRadius: 16, marginTop: 6, shadowColor: '#FF6B6B', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 5 },
+  btn:         { borderRadius: 16, padding: 16, alignItems: 'center' },
+  btnDisabled: { opacity: 0.65 },
+  btnText:     { color: 'white', fontSize: 16, fontWeight: '800' },
+  dividerRow:  { flexDirection: 'row', alignItems: 'center', marginVertical: 18, gap: 10 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: '#E3E6F3' },
+  dividerText: { fontSize: 12, color: '#B0B3C6', fontWeight: '700' },
+  bioBtn:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: '#D4F5E9', borderRadius: 16, padding: 14, backgroundColor: '#EBFBF5' },
+  bioIcon:     { fontSize: 19 },
+  bioBtnText:  { fontSize: 15, fontWeight: '800', color: '#0E9F6E' },
+  langBtn:     { alignSelf: 'center', marginTop: 24, paddingVertical: 9, paddingHorizontal: 18, borderRadius: 999, backgroundColor: 'rgba(136,84,208,0.1)' },
+  langText:    { color: '#8854D0', fontSize: 13.5, fontWeight: '800' },
+  footer:      { textAlign: 'center', marginTop: 18, color: '#B0B3C6', fontSize: 12 },
 })

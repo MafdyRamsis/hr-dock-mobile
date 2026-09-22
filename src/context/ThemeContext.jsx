@@ -2,33 +2,61 @@ import { createContext, useContext, useState, useEffect, useMemo } from 'react'
 import { useColorScheme } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
 
+/* ── HR Dock brand system ──
+   Vibrant, friendly glassmorphism palette. Each brand color ships as a
+   gradient pair [start, end] plus a flat "solid" for text/icons/borders. */
+export const GRADIENTS = {
+  coral:    ['#FF8A75', '#FF6B6B'],
+  mint:     ['#54E3C4', '#2ED573'],
+  sunshine: ['#FFD32A', '#FFA801'],
+  lavender: ['#A55EEA', '#8854D0'],
+  navy:     ['#2A2E45', '#12121C'],
+}
+
+export const BRAND = {
+  coral:    '#FF6B6B',
+  mint:     '#2ED573',
+  sunshine: '#FFA801',
+  lavender: '#8854D0',
+}
+
+export const RADIUS = { sm: 12, md: 16, lg: 22, xl: 28, pill: 999 }
+
 export const LIGHT = {
-  bg:       '#F0F4FA',
+  bg:       '#F8F9FD',
   card:     '#ffffff',
-  cardAlt:  '#f8fafc',
-  text:     '#0F1829',
-  text2:    '#1e293b',
-  sub:      '#64748b',
-  muted:    '#94a3b8',
-  border:   '#f1f5f9',
-  border2:  '#e2e8f0',
-  input:    '#fafafa',
-  tabBar:   '#0F1829',
+  cardAlt:  '#F1F3FA',
+  text:     '#1A1B2E',
+  text2:    '#2E3142',
+  sub:      '#8A8DA3',
+  muted:    '#B0B3C6',
+  border:   '#EEF0F8',
+  border2:  '#E3E6F3',
+  input:    '#F5F6FC',
+  tabBar:   '#ffffff',
+  glass:       'rgba(255,255,255,0.72)',
+  glassBorder: 'rgba(255,255,255,0.6)',
+  glassTint:   'light',
+  ...BRAND,
   isDark:   false,
 }
 
 export const DARK = {
-  bg:       '#0d1421',
-  card:     '#1a2540',
-  cardAlt:  '#131f33',
-  text:     '#f1f5f9',
-  text2:    '#e2e8f0',
-  sub:      '#94a3b8',
-  muted:    '#64748b',
-  border:   '#1e2d42',
-  border2:  '#243351',
-  input:    '#0d1827',
-  tabBar:   '#080f1c',
+  bg:       '#12121C',
+  card:     '#1D1E2C',
+  cardAlt:  '#181924',
+  text:     '#F5F6FA',
+  text2:    '#E7E8F2',
+  sub:      '#9497AE',
+  muted:    '#6C6F87',
+  border:   '#262838',
+  border2:  '#2E3145',
+  input:    '#20212F',
+  tabBar:   '#1A1B28',
+  glass:       'rgba(29,30,44,0.72)',
+  glassBorder: 'rgba(255,255,255,0.08)',
+  glassTint:   'dark',
+  ...BRAND,
   isDark:   true,
 }
 

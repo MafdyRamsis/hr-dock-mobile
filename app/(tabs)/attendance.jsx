@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl, Alert, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { LinearGradient } from 'expo-linear-gradient'
 import * as Location from 'expo-location'
 import api from '../../src/services/api'
 import Card from '../../src/components/Card'
-import StatusBadge from '../../src/components/StatusBadge'
+import FeedItem from '../../src/components/FeedItem'
 import Skeleton, { SkeletonCard, SkeletonRow } from '../../src/components/Skeleton'
-import { useTheme } from '../../src/context/ThemeContext'
+import { useTheme, GRADIENTS } from '../../src/context/ThemeContext'
 
 const fmt     = d => d ? d.split('T')[0].split('-').reverse().join('/') : '—'
 const fmtTime = iso => {
@@ -19,11 +20,12 @@ const toDateStr = d => d ? d.split('T')[0] : ''
 const DAYS = ['S','M','T','W','T','F','S']
 
 const STATUS_COLOR = {
-  present: '#16a34a',
-  late:    '#f59e0b',
-  absent:  '#ef4444',
-  leave:   '#2BC4BE',
+  present: '#2ED573',
+  late:    '#FFA801',
+  absent:  '#FF6B6B',
+  leave:   '#8854D0',
 }
+const STATUS_ICON = { present: '✅', late: '⏱️', absent: '❌', leave: '🏖️' }
 
 function MonthCalendar({ logs, month, year, colors }) {
   const logMap = useMemo(() => {
@@ -46,7 +48,7 @@ function MonthCalendar({ logs, month, year, colors }) {
   return (
     <View style={cal.wrap}>
       <View style={cal.dayHeaders}>
-        {DAYS.map((d, i) => <Text key={i} style={cal.dayLabel}>{d}</Text>)}
+        {DAYS.map((d, i) => <Text key={i} style={[cal.dayLabel, { color: colors.muted }]}>{d}</Text>)}
       </View>
       <View style={cal.grid}>
         {cells.map((day, i) => {
@@ -60,16 +62,18 @@ function MonthCalendar({ logs, month, year, colors }) {
 
           return (
             <View key={iso} style={cal.cell}>
-              <View style={[
-                cal.dayCircle,
-                isToday && cal.todayCircle,
-              ]}>
-                <Text style={[
-                  cal.dayNum, { color: colors.text2 },
-                  isToday && cal.todayNum,
-                  (isFuture || isWeekend) && !isToday && cal.mutedNum,
-                ]}>{day}</Text>
-              </View>
+              {isToday ? (
+                <LinearGradient colors={GRADIENTS.coral} style={cal.dayCircle} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+                  <Text style={[cal.dayNum, cal.todayNum]}>{day}</Text>
+                </LinearGradient>
+              ) : (
+                <View style={cal.dayCircle}>
+                  <Text style={[
+                    cal.dayNum, { color: colors.text2 },
+                    (isFuture || isWeekend) && { color: colors.muted },
+                  ]}>{day}</Text>
+                </View>
+              )}
               {dotColor && !isFuture ? (
                 <View style={[cal.dot, { backgroundColor: dotColor }]} />
               ) : (
@@ -80,12 +84,11 @@ function MonthCalendar({ logs, month, year, colors }) {
         })}
       </View>
 
-      {/* Legend */}
       <View style={[cal.legend, { borderTopColor: colors.border }]}>
-        {Object.entries(STATUS_COLOR).map(([s, c]) => (
-          <View key={s} style={cal.legendItem}>
+        {Object.entries(STATUS_COLOR).map(([st, c]) => (
+          <View key={st} style={cal.legendItem}>
             <View style={[cal.legendDot, { backgroundColor: c }]} />
-            <Text style={[cal.legendText, { color: colors.sub }]}>{s}</Text>
+            <Text style={[cal.legendText, { color: colors.sub }]}>{st}</Text>
           </View>
         ))}
       </View>
@@ -188,8 +191,7 @@ export default function AttendanceScreen() {
     <SafeAreaView style={[s.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         <Skeleton width={160} height={28} borderRadius={8} style={{ marginBottom: 16 }} />
-        {/* Today card skeleton */}
-        <View style={{ backgroundColor: '#0F1829', borderRadius: 20, padding: 20, marginBottom: 16, alignItems: 'center', gap: 16 }}>
+        <View style={{ backgroundColor: '#12121C', borderRadius: 26, padding: 20, marginBottom: 16, alignItems: 'center', gap: 16 }}>
           <Skeleton width={140} height={12} style={{ backgroundColor: 'rgba(255,255,255,0.15)' }} />
           <View style={{ flexDirection: 'row', gap: 40 }}>
             <Skeleton width={70} height={36} borderRadius={8} style={{ backgroundColor: 'rgba(255,255,255,0.15)' }} />
@@ -197,7 +199,6 @@ export default function AttendanceScreen() {
           </View>
           <Skeleton width={160} height={52} borderRadius={16} style={{ backgroundColor: 'rgba(255,255,255,0.15)' }} />
         </View>
-        {/* Calendar skeleton */}
         <SkeletonCard rows={1} style={{ height: 260 }} />
         <Skeleton width={120} height={13} borderRadius={6} style={{ marginBottom: 10 }} />
         <SkeletonRow /><SkeletonRow /><SkeletonRow />
@@ -211,12 +212,13 @@ export default function AttendanceScreen() {
     <SafeAreaView style={[s.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       <ScrollView
         contentContainerStyle={s.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor="#2BC4BE" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor="#2ED573" />}
       >
         <Text style={[s.pageTitle, { color: colors.text }]}>Attendance</Text>
 
         {/* Today card */}
-        <Card style={s.todayCard}>
+        <View style={s.todayCard}>
+          <LinearGradient colors={GRADIENTS.navy} style={StyleSheet.absoluteFill} borderRadius={26} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} />
           <Text style={s.todayDate}>{now.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</Text>
 
           <View style={s.timesRow}>
@@ -232,22 +234,26 @@ export default function AttendanceScreen() {
           </View>
 
           {canCheckIn && (
-            <TouchableOpacity style={[s.actionBtn, s.checkInBtn]} onPress={handleCheckIn} disabled={actioning} activeOpacity={0.85}>
-              {actioning ? <ActivityIndicator color="white" /> : <>
-                <Text style={s.actionIcon}>✅</Text>
-                <Text style={s.actionText}>Check In</Text>
-                <Text style={s.actionTime}>{now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</Text>
-              </>}
+            <TouchableOpacity onPress={handleCheckIn} disabled={actioning} activeOpacity={0.85} style={s.actionTouchable}>
+              <LinearGradient colors={GRADIENTS.mint} style={s.actionBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                {actioning ? <ActivityIndicator color="white" /> : <>
+                  <Text style={s.actionIcon}>✅</Text>
+                  <Text style={s.actionText}>Check In</Text>
+                  <Text style={s.actionTime}>{now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</Text>
+                </>}
+              </LinearGradient>
             </TouchableOpacity>
           )}
 
           {canCheckOut && (
-            <TouchableOpacity style={[s.actionBtn, s.checkOutBtn]} onPress={handleCheckOut} disabled={actioning} activeOpacity={0.85}>
-              {actioning ? <ActivityIndicator color="white" /> : <>
-                <Text style={s.actionIcon}>🏁</Text>
-                <Text style={s.actionText}>Check Out</Text>
-                <Text style={s.actionTime}>{now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</Text>
-              </>}
+            <TouchableOpacity onPress={handleCheckOut} disabled={actioning} activeOpacity={0.85} style={s.actionTouchable}>
+              <LinearGradient colors={GRADIENTS.coral} style={s.actionBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                {actioning ? <ActivityIndicator color="white" /> : <>
+                  <Text style={s.actionIcon}>🏁</Text>
+                  <Text style={s.actionText}>Check Out</Text>
+                  <Text style={s.actionTime}>{now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</Text>
+                </>}
+              </LinearGradient>
             </TouchableOpacity>
           )}
 
@@ -256,7 +262,7 @@ export default function AttendanceScreen() {
               <Text style={s.doneText}>✓ Completed for today</Text>
             </View>
           )}
-        </Card>
+        </View>
 
         {/* Monthly Calendar */}
         <Card style={s.calCard}>
@@ -276,19 +282,24 @@ export default function AttendanceScreen() {
         {recentLogs.length > 0 && (
           <View>
             <Text style={[s.sectionTitle, { color: colors.sub }]}>Recent History</Text>
-            {recentLogs.map((log, i) => (
-              <Card key={i} style={s.logCard}>
-                <View style={s.logRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[s.logDate, { color: colors.text2 }]}>{fmt(log.date || log.created_at)}</Text>
-                    <Text style={[s.logTimes, { color: colors.sub }]}>
-                      {fmtTime(log.check_in)} → {fmtTime(log.check_out)}
-                    </Text>
-                  </View>
-                  <StatusBadge status={log.status || 'present'} />
-                </View>
-              </Card>
-            ))}
+            {recentLogs.map((log, i) => {
+              const st = (log.status || 'present').toLowerCase()
+              const gradient = st === 'present' ? 'mint' : st === 'late' ? 'sunshine' : st === 'leave' ? 'lavender' : 'coral'
+              return (
+                <FeedItem
+                  key={i}
+                  icon={STATUS_ICON[st] || '📅'}
+                  gradient={gradient}
+                  title={fmt(log.date || log.created_at)}
+                  subtitle={`${fmtTime(log.check_in)} → ${fmtTime(log.check_out)}`}
+                  right={
+                    <View style={[s.statusPill, { backgroundColor: `${STATUS_COLOR[st] || '#8A8DA3'}1A` }]}>
+                      <Text style={[s.statusPillText, { color: STATUS_COLOR[st] || '#8A8DA3' }]}>{log.status || 'present'}</Text>
+                    </View>
+                  }
+                />
+              )
+            })}
           </View>
         )}
       </ScrollView>
@@ -299,28 +310,26 @@ export default function AttendanceScreen() {
 const cal = StyleSheet.create({
   wrap:        { paddingTop: 8 },
   dayHeaders:  { flexDirection: 'row', marginBottom: 6 },
-  dayLabel:    { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '700', color: '#94a3b8' },
+  dayLabel:    { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '700' },
   grid:        { flexDirection: 'row', flexWrap: 'wrap' },
   cell:        { width: '14.28%', alignItems: 'center', marginBottom: 6 },
   dayCircle:   { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
-  todayCircle: { backgroundColor: '#0F1829' },
-  dayNum:      { fontSize: 13, fontWeight: '600', color: '#1e293b' },
+  dayNum:      { fontSize: 13, fontWeight: '600' },
   todayNum:    { color: 'white', fontWeight: '800' },
-  mutedNum:    { color: '#cbd5e1' },
   dot:         { width: 5, height: 5, borderRadius: 3, marginTop: 1 },
   dotEmpty:    { width: 5, height: 5, marginTop: 1 },
-  legend:      { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f1f5f9', justifyContent: 'center' },
+  legend:      { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 12, paddingTop: 12, borderTopWidth: 1, justifyContent: 'center' },
   legendItem:  { flexDirection: 'row', alignItems: 'center', gap: 5 },
   legendDot:   { width: 8, height: 8, borderRadius: 4 },
-  legendText:  { fontSize: 11, color: '#64748b', textTransform: 'capitalize' },
+  legendText:  { fontSize: 11, textTransform: 'capitalize' },
 })
 
 const s = StyleSheet.create({
-  safe:        { flex: 1, backgroundColor: '#F0F4FA' },
-  scroll:      { padding: 16, paddingBottom: 32 },
+  safe:        { flex: 1 },
+  scroll:      { padding: 16, paddingBottom: 130 },
   center:      { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  pageTitle:   { fontSize: 26, fontWeight: '900', color: '#0F1829', marginBottom: 16 },
-  todayCard:   { backgroundColor: '#0F1829', marginBottom: 16 },
+  pageTitle:   { fontSize: 26, fontWeight: '900', marginBottom: 16 },
+  todayCard:   { borderRadius: 26, padding: 22, marginBottom: 16, overflow: 'hidden', shadowColor: '#12121C', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.22, shadowRadius: 20, elevation: 6 },
   todayDate:   { color: 'rgba(255,255,255,0.5)', fontSize: 13, marginBottom: 20, textAlign: 'center' },
   timesRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
   timeBox:     { flex: 1, alignItems: 'center' },
@@ -328,22 +337,19 @@ const s = StyleSheet.create({
   timeVal:     { color: 'white', fontSize: 32, fontWeight: '900' },
   timeEmpty:   { color: 'rgba(255,255,255,0.2)' },
   timeSep:     { width: 1, height: 50, backgroundColor: 'rgba(255,255,255,0.15)', marginHorizontal: 20 },
-  actionBtn:   { borderRadius: 16, paddingVertical: 18, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 10 },
-  checkInBtn:  { backgroundColor: '#16a34a' },
-  checkOutBtn: { backgroundColor: '#E8583C' },
+  actionTouchable: { borderRadius: 18, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 4 },
+  actionBtn:   { borderRadius: 18, paddingVertical: 18, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 10 },
   actionIcon:  { fontSize: 22 },
   actionText:  { color: 'white', fontSize: 18, fontWeight: '800' },
-  actionTime:  { color: 'rgba(255,255,255,0.7)', fontSize: 13 },
-  doneBox:     { backgroundColor: 'rgba(43,196,190,0.15)', borderRadius: 12, padding: 14, alignItems: 'center' },
-  doneText:    { color: '#2BC4BE', fontWeight: '700', fontSize: 14 },
+  actionTime:  { color: 'rgba(255,255,255,0.75)', fontSize: 13 },
+  doneBox:     { backgroundColor: 'rgba(84,227,196,0.15)', borderRadius: 14, padding: 14, alignItems: 'center' },
+  doneText:    { color: '#54E3C4', fontWeight: '800', fontSize: 14 },
   calCard:     { marginBottom: 16 },
   calNav:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  calTitle:    { fontSize: 15, fontWeight: '800', color: '#0F1829' },
+  calTitle:    { fontSize: 15, fontWeight: '800' },
   navBtn:      { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-  navArrow:    { fontSize: 24, color: '#475569', fontWeight: '300' },
-  sectionTitle:{ fontSize: 13, fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
-  logCard:     { marginBottom: 8, padding: 14 },
-  logRow:      { flexDirection: 'row', alignItems: 'center' },
-  logDate:     { fontSize: 14, fontWeight: '600', color: '#1e293b', marginBottom: 2 },
-  logTimes:    { fontSize: 13, color: '#64748b' },
+  navArrow:    { fontSize: 24, fontWeight: '300' },
+  sectionTitle:{ fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
+  statusPill:  { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  statusPillText: { fontSize: 11, fontWeight: '700', textTransform: 'capitalize' },
 })

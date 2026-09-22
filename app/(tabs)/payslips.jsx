@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl, ActivityIndicator, Modal, Share, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { LinearGradient } from 'expo-linear-gradient'
 import * as Print from 'expo-print'
 import * as Sharing from 'expo-sharing'
 import api from '../../src/services/api'
 import Card from '../../src/components/Card'
 import Skeleton, { SkeletonCard } from '../../src/components/Skeleton'
-import { useTheme } from '../../src/context/ThemeContext'
+import { useTheme, GRADIENTS } from '../../src/context/ThemeContext'
 
 const fmtNum     = n => n != null ? Number(n).toLocaleString('en-EG') : '—'
 const fmt        = d => d ? d.split('T')[0].split('-').reverse().join('/') : '—'
@@ -77,17 +78,17 @@ const buildPayslipHtml = (slip, run) => {
     val > 0 ? `<tr><td style="padding:6px 0;color:#64748b;font-size:13px">${label}</td><td style="padding:6px 0;text-align:right;font-size:13px;color:${color};font-weight:${bold?700:400}">EGP ${Number(val).toLocaleString('en-EG')}</td></tr>` : ''
 
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<style>body{font-family:Arial,sans-serif;margin:0;padding:24px;background:#f8fafc;color:#1e293b}
-.card{background:white;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
-h1{color:#0F1829;font-size:22px;margin:0 0 4px}
-.sub{color:#94a3b8;font-size:12px}
-.net{background:#0F1829;border-radius:12px;padding:18px;text-align:center;margin-bottom:16px}
+<style>body{font-family:Arial,sans-serif;margin:0;padding:24px;background:#F8F9FD;color:#1A1B2E}
+.card{background:white;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+h1{color:#1A1B2E;font-size:22px;margin:0 0 4px}
+.sub{color:#8A8DA3;font-size:12px}
+.net{background:#12121C;border-radius:16px;padding:18px;text-align:center;margin-bottom:16px}
 .net-label{color:rgba(255,255,255,0.55);font-size:12px;margin-bottom:6px}
 .net-val{color:white;font-size:28px;font-weight:900}
 table{width:100%;border-collapse:collapse}
-h3{font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 8px}
-.total td{border-top:1px solid #e2e8f0;padding-top:8px;font-weight:700;color:#0F1829}
-.footer{text-align:center;font-size:10px;color:#94a3b8;margin-top:24px}
+h3{font-size:11px;color:#8A8DA3;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 8px}
+.total td{border-top:1px solid #E3E6F3;padding-top:8px;font-weight:700;color:#1A1B2E}
+.footer{text-align:center;font-size:10px;color:#8A8DA3;margin-top:24px}
 </style></head><body>
 <div class="card">
   <h1>Payslip</h1>
@@ -194,22 +195,19 @@ export default function PayslipsScreen() {
     <SafeAreaView style={[s.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         <Skeleton width={120} height={28} borderRadius={8} style={{ marginBottom: 16 }} />
-        {/* Featured card skeleton */}
-        <View style={{ backgroundColor: '#0F1829', borderRadius: 20, padding: 22, marginBottom: 20, gap: 12 }}>
+        <View style={{ backgroundColor: '#12121C', borderRadius: 26, padding: 22, marginBottom: 20, gap: 12 }}>
           <Skeleton width={100} height={11} style={{ backgroundColor: 'rgba(255,255,255,0.15)' }} />
           <Skeleton width={180} height={28} borderRadius={8} style={{ backgroundColor: 'rgba(255,255,255,0.15)' }} />
           <Skeleton width={140} height={12} style={{ backgroundColor: 'rgba(255,255,255,0.15)' }} />
         </View>
         <Skeleton width={60}  height={13} borderRadius={6} style={{ marginBottom: 12 }} />
-        {/* Year tabs skeleton */}
         <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
           <Skeleton width={60} height={34} borderRadius={20} />
           <Skeleton width={60} height={34} borderRadius={20} />
         </View>
-        {/* Month grid skeleton */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
           {Array.from({ length: 12 }).map((_, i) => (
-            <Skeleton key={i} width="22%" height={52} borderRadius={14} />
+            <Skeleton key={i} width="22%" height={52} borderRadius={16} />
           ))}
         </View>
       </ScrollView>
@@ -220,19 +218,20 @@ export default function PayslipsScreen() {
     <SafeAreaView style={[s.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       <ScrollView
         contentContainerStyle={s.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor="#2BC4BE" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor="#2ED573" />}
         showsVerticalScrollIndicator={false}
       >
         <Text style={[s.pageTitle, { color: colors.text }]}>Payslips</Text>
 
         {runs.length === 0 ? (
-          <Card><Text style={s.empty}>No payslips available yet.</Text></Card>
+          <Card><Text style={[s.empty, { color: colors.muted }]}>No payslips available yet.</Text></Card>
         ) : (
           <>
             {/* Current month featured card */}
             {latestRun && (
               <TouchableOpacity onPress={() => openSlip(latestRun)} activeOpacity={0.88}>
                 <View style={s.featCard}>
+                  <LinearGradient colors={GRADIENTS.navy} style={StyleSheet.absoluteFill} borderRadius={26} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} />
                   <View style={s.featTop}>
                     <Text style={s.featLabel}>Latest Payslip</Text>
                     <Text style={s.featStatus}>{(latestRun.status || '').replace('_', ' ')}</Text>
@@ -253,16 +252,22 @@ export default function PayslipsScreen() {
               <View style={s.section}>
                 <Text style={[s.sectionTitle, { color: colors.sub }]}>History</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.yearScroll} contentContainerStyle={s.yearContent}>
-                  {years.map(y => (
-                    <TouchableOpacity
-                      key={y}
-                      style={[s.yearTab, { backgroundColor: colors.card, borderColor: colors.border2 }, activeYear === y && s.yearTabActive]}
-                      onPress={() => setActiveYear(y)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[s.yearTabText, { color: colors.sub }, activeYear === y && s.yearTabTextActive]}>{y}</Text>
-                    </TouchableOpacity>
-                  ))}
+                  {years.map(y => {
+                    const active = activeYear === y
+                    return (
+                      <TouchableOpacity key={y} onPress={() => setActiveYear(y)} activeOpacity={0.85}>
+                        {active ? (
+                          <LinearGradient colors={GRADIENTS.mint} style={s.yearTab} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                            <Text style={s.yearTabTextActive}>{y}</Text>
+                          </LinearGradient>
+                        ) : (
+                          <View style={[s.yearTab, { backgroundColor: colors.card, borderColor: colors.glassBorder, borderWidth: 1.5 }]}>
+                            <Text style={[s.yearTabText, { color: colors.sub }]}>{y}</Text>
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    )
+                  })}
                 </ScrollView>
 
                 {/* Month grid */}
@@ -276,16 +281,20 @@ export default function PayslipsScreen() {
                     return (
                       <TouchableOpacity
                         key={name}
-                        style={[s.monthCell, { backgroundColor: colors.card, borderColor: colors.border }, run && s.monthCellActive, isFuture && { backgroundColor: colors.cardAlt, borderColor: colors.border }]}
                         onPress={() => run && openSlip(run)}
                         disabled={!run}
-                        activeOpacity={0.75}
+                        activeOpacity={0.8}
+                        style={s.monthCellWrap}
                       >
-                        <Text style={[s.monthName, { color: colors.sub }, run && s.monthNameActive, isFuture && s.monthNameFuture]}>
-                          {name}
-                        </Text>
-                        {run && (
-                          <View style={[s.monthDot, { backgroundColor: run.status === 'processed' || run.status === 'published' ? '#2BC4BE' : '#f59e0b' }]} />
+                        {run ? (
+                          <LinearGradient colors={GRADIENTS.mint} style={s.monthCell} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+                            <Text style={s.monthNameActive}>{name}</Text>
+                            <View style={[s.monthDot, { backgroundColor: 'white' }]} />
+                          </LinearGradient>
+                        ) : (
+                          <View style={[s.monthCell, { backgroundColor: colors.cardAlt, borderColor: colors.border, borderWidth: 1.5 }]}>
+                            <Text style={[s.monthName, { color: isFuture ? colors.muted : colors.sub }]}>{name}</Text>
+                          </View>
                         )}
                       </TouchableOpacity>
                     )
@@ -306,7 +315,7 @@ export default function PayslipsScreen() {
               {slip && (
                 <>
                   <TouchableOpacity style={s.pdfBtn} onPress={downloadPdf} disabled={pdfLoading}>
-                    {pdfLoading ? <ActivityIndicator size="small" color="#dc2626" /> : <>
+                    {pdfLoading ? <ActivityIndicator size="small" color="#FF6B6B" /> : <>
                       <Text style={s.pdfIcon}>⬇</Text>
                       <Text style={s.pdfText}>PDF</Text>
                     </>}
@@ -324,7 +333,7 @@ export default function PayslipsScreen() {
           </View>
 
           {slipLoad ? (
-            <View style={s.center}><ActivityIndicator color="#2BC4BE" size="large" /></View>
+            <View style={s.center}><ActivityIndicator color="#2ED573" size="large" /></View>
           ) : slip ? (
             <ScrollView contentContainerStyle={s.slipScroll}>
               {/* Period */}
@@ -338,6 +347,7 @@ export default function PayslipsScreen() {
 
               {/* Net salary highlight */}
               <View style={s.netBox}>
+                <LinearGradient colors={GRADIENTS.navy} style={StyleSheet.absoluteFill} borderRadius={20} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} />
                 <Text style={s.netLabel}>Net Salary</Text>
                 <Text style={s.netVal}>EGP {fmtNum(slip.net_salary)}</Text>
               </View>
@@ -391,75 +401,68 @@ const Row = ({ label, val, bold, minus }) => (
 )
 
 const s = StyleSheet.create({
-  safe:             { flex: 1, backgroundColor: '#F0F4FA' },
-  scroll:           { padding: 16, paddingBottom: 40 },
+  safe:             { flex: 1 },
+  scroll:           { padding: 16, paddingBottom: 130 },
   center:           { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  pageTitle:        { fontSize: 26, fontWeight: '900', color: '#0F1829', marginBottom: 16 },
-  empty:            { color: '#94a3b8', textAlign: 'center', paddingVertical: 8 },
+  pageTitle:        { fontSize: 26, fontWeight: '900', marginBottom: 16 },
+  empty:            { color: '#8A8DA3', textAlign: 'center', paddingVertical: 8 },
 
-  // Featured card
-  featCard:         { backgroundColor: '#0F1829', borderRadius: 20, padding: 22, marginBottom: 20 },
+  featCard:         { borderRadius: 26, padding: 22, marginBottom: 20, overflow: 'hidden', shadowColor: '#12121C', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.22, shadowRadius: 20, elevation: 6 },
   featTop:          { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   featLabel:        { color: 'rgba(255,255,255,0.45)', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6 },
-  featStatus:       { color: '#2BC4BE', fontSize: 11, fontWeight: '700', textTransform: 'capitalize' },
+  featStatus:       { color: '#54E3C4', fontSize: 11, fontWeight: '700', textTransform: 'capitalize' },
   featMonth:        { color: 'white', fontSize: 28, fontWeight: '900', marginBottom: 4 },
   featPeriod:       { color: 'rgba(255,255,255,0.4)', fontSize: 12 },
   featFooter:       { marginTop: 18, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)', paddingTop: 14 },
-  featAction:       { color: '#2BC4BE', fontSize: 13, fontWeight: '700' },
+  featAction:       { color: '#54E3C4', fontSize: 13, fontWeight: '800' },
 
-  // History section
   section:          { marginBottom: 8 },
-  sectionTitle:     { fontSize: 11, fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
+  sectionTitle:     { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
 
-  // Year tabs
   yearScroll:       { marginBottom: 16, marginHorizontal: -4 },
   yearContent:      { paddingHorizontal: 4, gap: 8 },
-  yearTab:          { paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20, backgroundColor: 'white', borderWidth: 1.5, borderColor: '#e2e8f0' },
-  yearTabActive:    { backgroundColor: '#0F1829', borderColor: '#0F1829' },
-  yearTabText:      { fontSize: 14, fontWeight: '700', color: '#64748b' },
-  yearTabTextActive:{ color: 'white' },
+  yearTab:          { paddingHorizontal: 20, paddingVertical: 8, borderRadius: 999 },
+  yearTabText:      { fontSize: 14, fontWeight: '700' },
+  yearTabTextActive:{ color: 'white', fontSize: 14, fontWeight: '800' },
 
-  // Month grid
+
   monthGrid:        { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  monthCell:        { width: '22%', aspectRatio: 1, borderRadius: 14, backgroundColor: 'white', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#f1f5f9' },
-  monthCellActive:  { backgroundColor: '#0F1829', borderColor: '#0F1829' },
-  monthCellFuture:  { backgroundColor: '#f8fafc', borderColor: '#f1f5f9' },
-  monthName:        { fontSize: 13, fontWeight: '700', color: '#64748b' },
-  monthNameActive:  { color: 'white' },
-  monthNameFuture:  { color: '#cbd5e1' },
+  monthCellWrap:    { width: '22%' },
+  monthCell:        { aspectRatio: 1, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  monthName:        { fontSize: 13, fontWeight: '700' },
+  monthNameActive:  { color: 'white', fontSize: 13, fontWeight: '800' },
   monthDot:         { width: 5, height: 5, borderRadius: 3, marginTop: 4 },
 
-  // Modal
   modal:            { flex: 1, backgroundColor: 'white' },
-  modalHeader:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  modalTitle:       { fontSize: 18, fontWeight: '800', color: '#0F1829' },
+  modalHeader:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#EEF0F8' },
+  modalTitle:       { fontSize: 18, fontWeight: '800', color: '#1A1B2E' },
   modalActions:     { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  pdfBtn:           { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#fef2f2', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: '#fecaca', minWidth: 64, justifyContent: 'center' },
-  pdfIcon:          { fontSize: 14, color: '#dc2626', fontWeight: '800' },
-  pdfText:          { fontSize: 13, color: '#dc2626', fontWeight: '700' },
-  shareBtn:         { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#f0fdf4', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: '#bbf7d0' },
-  shareIcon:        { fontSize: 14, color: '#16a34a', fontWeight: '800' },
-  shareText:        { fontSize: 13, color: '#16a34a', fontWeight: '700' },
-  modalClose:       { fontSize: 22, color: '#64748b' },
+  pdfBtn:           { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#FFE9E6', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: '#FFCFC9', minWidth: 64, justifyContent: 'center' },
+  pdfIcon:          { fontSize: 14, color: '#E14F4A', fontWeight: '800' },
+  pdfText:          { fontSize: 13, color: '#E14F4A', fontWeight: '700' },
+  shareBtn:         { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#E3FBF3', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: '#D4F5E9' },
+  shareIcon:        { fontSize: 14, color: '#0E9F6E', fontWeight: '800' },
+  shareText:        { fontSize: 13, color: '#0E9F6E', fontWeight: '700' },
+  modalClose:       { fontSize: 22, color: '#8A8DA3' },
   slipScroll:       { padding: 20, paddingBottom: 40 },
   slipHeader:       { marginBottom: 20 },
-  slipMonth:        { fontSize: 22, fontWeight: '900', color: '#0F1829', marginBottom: 2 },
-  slipPeriod:       { fontSize: 12, color: '#94a3b8', marginBottom: 6 },
+  slipMonth:        { fontSize: 22, fontWeight: '900', color: '#1A1B2E', marginBottom: 2 },
+  slipPeriod:       { fontSize: 12, color: '#8A8DA3', marginBottom: 6 },
   slipEmp:          { fontSize: 15, fontWeight: '600', color: '#475569' },
-  netBox:           { backgroundColor: '#0F1829', borderRadius: 16, padding: 20, alignItems: 'center', marginBottom: 24 },
+  netBox:           { borderRadius: 20, padding: 20, alignItems: 'center', marginBottom: 24, overflow: 'hidden' },
   netLabel:         { color: 'rgba(255,255,255,0.6)', fontSize: 12, marginBottom: 6 },
   netVal:           { color: 'white', fontSize: 32, fontWeight: '900' },
   section2:         { marginBottom: 20 },
   sectionTitle2:    { fontSize: 12, fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
-  netRow:           { backgroundColor: '#f0fdf4', borderRadius: 12, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  netRowLabel:      { fontSize: 15, fontWeight: '700', color: '#166534' },
-  netRowVal:        { fontSize: 18, fontWeight: '900', color: '#166534' },
+  netRow:           { backgroundColor: '#E3FBF3', borderRadius: 16, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  netRowLabel:      { fontSize: 15, fontWeight: '700', color: '#0E9F6E' },
+  netRowVal:        { fontSize: 18, fontWeight: '900', color: '#0E9F6E' },
 })
 
 const sr = StyleSheet.create({
-  row:   { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f8fafc' },
+  row:   { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#F5F6FC' },
   label: { fontSize: 13, color: '#64748b' },
   val:   { fontSize: 13, color: '#1e293b', fontWeight: '500' },
-  bold:  { fontWeight: '800', color: '#0F1829', fontSize: 14 },
-  minus: { color: '#dc2626' },
+  bold:  { fontWeight: '800', color: '#1A1B2E', fontSize: 14 },
+  minus: { color: '#E14F4A' },
 })

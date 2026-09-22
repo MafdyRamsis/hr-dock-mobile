@@ -5,12 +5,15 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
+import { LinearGradient } from 'expo-linear-gradient'
 import * as Location from 'expo-location'
 import { useAuth } from '../../src/context/AuthContext'
-import { useTheme } from '../../src/context/ThemeContext'
+import { useTheme, GRADIENTS } from '../../src/context/ThemeContext'
 import api from '../../src/services/api'
-import Card from '../../src/components/Card'
 import StatusBadge from '../../src/components/StatusBadge'
+import PillTag from '../../src/components/PillTag'
+import StatWidget from '../../src/components/StatWidget'
+import FeedItem from '../../src/components/FeedItem'
 import Skeleton, { SkeletonCard, SkeletonRow } from '../../src/components/Skeleton'
 
 const fmt      = d => d ? d.split('T')[0].split('-').reverse().join('/') : '—'
@@ -21,7 +24,8 @@ const fmtTime  = iso => {
   return isNaN(d) ? iso.slice(0, 5) : d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
 }
 const todayISO = () => new Date().toISOString().split('T')[0]
-const CAT_COLORS = { event: '#1d4ed8', policy: '#92400e', hr: '#166534', general: '#475569' }
+const CAT_COLORS  = { event: '#8854D0', policy: '#FFA801', hr: '#2ED573', general: '#8A8DA3' }
+const CAT_GRADIENT = { event: 'lavender', policy: 'sunshine', hr: 'mint', general: 'coral' }
 
 function useClock() {
   const [time, setTime] = useState(new Date())
@@ -55,7 +59,7 @@ function CheckInOutCard({ todayLog, onCheckIn, onCheckOut, actioning, employeeId
   const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
   const dateStr = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
 
-  const btnColor  = canCheckIn ? '#16a34a' : canCheckOut ? '#E8583C' : '#2BC4BE'
+  const gradient  = canCheckIn ? GRADIENTS.mint : canCheckOut ? GRADIENTS.coral : GRADIENTS.lavender
   const btnLabel  = canCheckIn ? 'Check In' : canCheckOut ? 'Check Out' : 'Done'
   const btnAction = canCheckIn ? onCheckIn : canCheckOut ? onCheckOut : null
 
@@ -64,10 +68,10 @@ function CheckInOutCard({ todayLog, onCheckIn, onCheckOut, actioning, employeeId
 
   return (
     <View style={ci.card}>
+      <LinearGradient colors={GRADIENTS.navy} style={StyleSheet.absoluteFill} borderRadius={26} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} />
       <Text style={ci.date}>{dateStr}</Text>
       <Text style={ci.clock}>{timeStr}</Text>
 
-      {/* Shift info */}
       {(shiftIn || shiftOut) && (
         <View style={ci.shiftRow}>
           <Text style={ci.shiftText}>Shift  {shiftIn} – {shiftOut}</Text>
@@ -96,15 +100,17 @@ function CheckInOutCard({ todayLog, onCheckIn, onCheckOut, actioning, employeeId
 
       <View style={ci.btnWrap}>
         {!done && (
-          <Animated.View style={[ci.pulseRing, { backgroundColor: `${btnColor}30`, transform: [{ scale: pulse }] }]} />
+          <Animated.View style={[ci.pulseRing, { backgroundColor: `${gradient[1]}33`, transform: [{ scale: pulse }] }]} />
         )}
         <TouchableOpacity
-          style={[ci.btn, { backgroundColor: btnColor }, (!btnAction || actioning) && ci.btnDisabled]}
           onPress={btnAction}
           disabled={!btnAction || actioning}
           activeOpacity={0.85}
+          style={ci.btnTouchable}
         >
-          <Text style={ci.btnLabel}>{actioning ? '…' : btnLabel}</Text>
+          <LinearGradient colors={gradient} style={[ci.btn, (!btnAction || actioning) && ci.btnDisabled]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+            <Text style={ci.btnLabel}>{actioning ? '…' : btnLabel}</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
 
@@ -248,13 +254,17 @@ export default function HomeScreen() {
             <Skeleton width={80} height={11} />
             <Skeleton width={140} height={20} />
           </View>
-          <Skeleton width={40} height={40} borderRadius={20} />
+          <Skeleton width={44} height={44} borderRadius={22} />
         </View>
-        {/* Check-in card skeleton */}
-        <View style={{ backgroundColor: '#0F1829', borderRadius: 20, padding: 20, marginBottom: 14, alignItems: 'center', gap: 14 }}>
+        <View style={{ backgroundColor: '#12121C', borderRadius: 26, padding: 20, marginBottom: 14, alignItems: 'center', gap: 14 }}>
           <Skeleton width={120} height={11} style={{ backgroundColor: 'rgba(255,255,255,0.15)' }} />
           <Skeleton width={180} height={40} borderRadius={10} style={{ backgroundColor: 'rgba(255,255,255,0.15)' }} />
           <Skeleton width={96} height={96} borderRadius={48} style={{ backgroundColor: 'rgba(255,255,255,0.15)' }} />
+        </View>
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
+          <Skeleton width="31%" height={92} borderRadius={20} />
+          <Skeleton width="31%" height={92} borderRadius={20} />
+          <Skeleton width="31%" height={92} borderRadius={20} />
         </View>
         <SkeletonCard rows={1} style={{ marginBottom: 10 }} />
         <SkeletonCard rows={2} />
@@ -267,29 +277,33 @@ export default function HomeScreen() {
     <SafeAreaView style={[s.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       <ScrollView
         contentContainerStyle={s.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor="#2BC4BE" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor="#2ED573" />}
         showsVerticalScrollIndicator={false}
       >
-        {/* Offline / error banner */}
         {loadError && (
           <View style={s.errorBanner}>
             <Text style={s.errorBannerText}>⚠️  Could not load data — pull down to retry</Text>
           </View>
         )}
 
-        {/* Header */}
+        {/* Header — avatar + greeting left, actions right */}
         <View style={s.header}>
-          <View>
-            <Text style={[s.greeting, { color: colors.sub }]}>{greeting()}</Text>
-            <Text style={[s.name, { color: colors.text }]}>{user?.first_name} {user?.last_name}</Text>
-          </View>
+          <TouchableOpacity style={s.headerLeft} onPress={() => router.push('/profile')} activeOpacity={0.85}>
+            <LinearGradient colors={GRADIENTS.coral} style={s.avatar} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+              <Text style={s.avatarText}>{user?.first_name?.[0]}{user?.last_name?.[0]}</Text>
+            </LinearGradient>
+            <View>
+              <Text style={[s.greeting, { color: colors.sub }]}>{greeting()} 👋</Text>
+              <Text style={[s.name, { color: colors.text }]}>{user?.first_name} {user?.last_name}</Text>
+            </View>
+          </TouchableOpacity>
           <View style={s.headerRight}>
             {['admin','hr_manager','manager'].includes(user?.role) && (
-              <TouchableOpacity style={[s.teamBtn, { backgroundColor: colors.card }]} onPress={() => router.push('/manager-dashboard')} activeOpacity={0.8}>
+              <TouchableOpacity style={[s.teamBtn, { backgroundColor: colors.card, borderColor: colors.glassBorder }]} onPress={() => router.push('/manager-dashboard')} activeOpacity={0.8}>
                 <Text style={[s.teamBtnText, { color: colors.text2 }]}>👥 Team</Text>
               </TouchableOpacity>
             )}
-            <TouchableOpacity style={s.bellBtn} onPress={() => router.push('/notifications')}>
+            <TouchableOpacity style={[s.bellBtn, { backgroundColor: colors.card, borderColor: colors.glassBorder }]} onPress={() => router.push('/notifications')}>
               <Text style={s.bellIcon}>🔔</Text>
               {notifBadge > 0 && (
                 <View style={s.badge}>
@@ -297,13 +311,10 @@ export default function HomeScreen() {
                 </View>
               )}
             </TouchableOpacity>
-            <TouchableOpacity style={s.avatar} onPress={() => router.push('/profile')}>
-              <Text style={s.avatarText}>{user?.first_name?.[0]}{user?.last_name?.[0]}</Text>
-            </TouchableOpacity>
           </View>
         </View>
 
-        {/* 1. Check In / Out */}
+        {/* Check In / Out */}
         <CheckInOutCard
           todayLog={todayLog}
           onCheckIn={handleCheckIn}
@@ -312,46 +323,62 @@ export default function HomeScreen() {
           employeeId={employeeId}
         />
 
-        {/* Correction link */}
         {todayLog && (
           <TouchableOpacity style={s.corrLink} onPress={() => setShowCorrection(true)}>
             <Text style={s.corrLinkText}>Incorrect record? Request a correction →</Text>
           </TouchableOpacity>
         )}
 
-        {/* 2. Leave Balance */}
-        <TouchableOpacity style={[s.leaveCard, { backgroundColor: colors.card }]} onPress={() => router.push('/leave-balance')} activeOpacity={0.85}>
-          <View style={s.leaveLeft}>
-            <Text style={s.leaveIcon}>🏖️</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={[s.leaveTitle, { color: colors.text }]}>Leave Balance</Text>
-              <Text style={s.leaveSub} numberOfLines={1}>{balances.length} types · tap for details</Text>
-            </View>
-          </View>
-          <View style={s.leaveRight}>
-            <Text style={s.leaveDays}>{totalLeft}</Text>
-            <View>
-              <Text style={s.leaveDaysLabel}>days</Text>
-              <Text style={s.leaveDaysLabel}>left</Text>
-            </View>
-            <Text style={s.leaveArrow}>›</Text>
-          </View>
-        </TouchableOpacity>
+        {/* Quick Stats */}
+        <View style={s.statsRow}>
+          <StatWidget icon="🏖️" value={`${totalLeft}d`} label="Leave left" gradient="sunshine" onPress={() => router.push('/leave-balance')} />
+          <StatWidget icon="📋" value={pending.length} label="Pending" gradient="lavender" onPress={() => router.push('/(tabs)/leave')} />
+          <StatWidget icon="📣" value={announcements.length} label="News" gradient="mint" onPress={() => router.push('/announcements')} />
+        </View>
+
+        {/* Today's Flow */}
+        <View style={s.sectionRow}>
+          <Text style={[s.sectionTitle, { color: colors.sub }]}>Your Today's Flow</Text>
+        </View>
+
+        {/* Leave balance summary */}
+        <FeedItem
+          icon="🏖️"
+          gradient="sunshine"
+          title="Leave Balance"
+          subtitle={`${balances.length} type${balances.length === 1 ? '' : 's'} · tap for details`}
+          progress={null}
+          onPress={() => router.push('/leave-balance')}
+          right={<PillTag label={`${totalLeft}d left`} color="#FFA801" size="sm" />}
+        />
 
         {balances.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.pillsScroll} contentContainerStyle={s.pillsContent}>
             {balances.map((b, i) => (
-              <TouchableOpacity key={i} style={[s.pill, { backgroundColor: colors.card }]} onPress={() => router.push('/leave-balance')} activeOpacity={0.8}>
+              <TouchableOpacity key={i} style={[s.pill, { backgroundColor: colors.card, borderColor: colors.glassBorder }]} onPress={() => router.push('/leave-balance')} activeOpacity={0.8}>
                 <Text style={[s.pillNum, { color: colors.text }]}>{b.remaining}</Text>
-                <Text style={s.pillName} numberOfLines={2}>{b.name}</Text>
+                <Text style={[s.pillName, { color: colors.sub }]} numberOfLines={2}>{b.name}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
         )}
 
-        {/* 3. Announcements */}
+        {/* Pending leave */}
+        {pending.map((p, i) => (
+          <FeedItem
+            key={`pend-${i}`}
+            icon="📝"
+            gradient="lavender"
+            title={p.leave_type}
+            subtitle={`${fmt(p.start_date)} → ${fmt(p.end_date)} · ${p.days_requested}d`}
+            onPress={() => router.push('/(tabs)/leave')}
+            right={<StatusBadge status={p.status} />}
+          />
+        ))}
+
+        {/* Announcements */}
         {announcements.length > 0 && (
-          <View style={s.section}>
+          <>
             <View style={s.sectionRow}>
               <Text style={[s.sectionTitle, { color: colors.sub }]}>Announcements</Text>
               <TouchableOpacity onPress={() => router.push('/announcements')}>
@@ -359,64 +386,35 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
             {announcements.map(a => (
-              <TouchableOpacity key={a.id} style={[s.annCard, { backgroundColor: colors.card }]} onPress={() => router.push('/announcements')} activeOpacity={0.85}>
-                <View style={s.annTop}>
-                  <Text style={[s.annCat, { color: CAT_COLORS[a.category] || '#475569' }]}>
-                    {a.category?.toUpperCase()}
-                  </Text>
-                  {a.pinned && <Text style={s.annPin}>📌</Text>}
-                  {a.priority === 'high' && (
-                    <View style={s.highBadge}><Text style={s.highText}>HIGH</Text></View>
-                  )}
-                </View>
-                <Text style={[s.annTitle, { color: colors.text }]} numberOfLines={1}>{a.title}</Text>
-                <Text style={[s.annBody, { color: colors.sub }]}  numberOfLines={2}>{a.body}</Text>
-              </TouchableOpacity>
+              <FeedItem
+                key={a.id}
+                icon={a.pinned ? '📌' : '📣'}
+                gradient={CAT_GRADIENT[a.category] || 'coral'}
+                title={a.title}
+                subtitle={a.body}
+                onPress={() => router.push('/announcements')}
+                right={a.priority === 'high'
+                  ? <PillTag label="HIGH" color="#E14F4A" size="sm" />
+                  : <PillTag label={(a.category || 'general').toUpperCase()} color={CAT_COLORS[a.category] || '#8A8DA3'} size="sm" />
+                }
+              />
             ))}
-          </View>
-        )}
-
-        {/* 4. Pending requests */}
-        {pending.length > 0 && (
-          <View style={s.section}>
-            <Text style={[s.sectionTitle, { color: colors.sub }]}>Pending Leave</Text>
-            {pending.map((p, i) => (
-              <Card key={i} style={s.pendCard}>
-                <View style={s.pendRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[s.pendType, { color: colors.text2 }]} numberOfLines={1}>{p.leave_type}</Text>
-                    <Text style={s.pendDate}>{fmt(p.start_date)} → {fmt(p.end_date)} · {p.days_requested}d</Text>
-                  </View>
-                  <StatusBadge status={p.status} />
-                </View>
-              </Card>
-            ))}
-          </View>
+          </>
         )}
 
         {/* Last payslip */}
         {payslip && (
-          <TouchableOpacity onPress={() => router.push('/(tabs)/payslips')} activeOpacity={0.85} style={{ marginBottom: 8 }}>
-            <Card>
-              <View style={s.sectionRow}>
-                <Text style={[s.sectionTitle, { color: colors.sub }]}>Last Payslip</Text>
-                <Text style={s.seeAll}>View →</Text>
-              </View>
-              <Text style={s.payPeriod}>{fmt(payslip.period_start)} – {fmt(payslip.period_end)}</Text>
-              <View style={s.payRow}>
-                <View>
-                  <Text style={s.payLabel}>Net Salary</Text>
-                  <Text style={[s.payNet, { color: colors.text }]}>EGP {fmtNum(payslip.net_salary)}</Text>
-                </View>
-                <View>
-                  <Text style={s.payLabel}>Basic</Text>
-                  <Text style={[s.payBasic, { color: colors.sub }]}>EGP {fmtNum(payslip.basic_salary)}</Text>
-                </View>
-              </View>
-            </Card>
-          </TouchableOpacity>
+          <FeedItem
+            icon="💰"
+            gradient="mint"
+            title="Last Payslip"
+            subtitle={`${fmt(payslip.period_start)} – ${fmt(payslip.period_end)}`}
+            onPress={() => router.push('/(tabs)/payslips')}
+            right={<PillTag label={`EGP ${fmtNum(payslip.net_salary)}`} color="#0E9F6E" size="sm" />}
+          />
         )}
       </ScrollView>
+
       {/* Correction Modal */}
       <Modal visible={showCorrection} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowCorrection(false)}>
         <SafeAreaView style={m.safe}>
@@ -436,7 +434,7 @@ export default function HomeScreen() {
             <TextInput
               style={m.input}
               placeholder="e.g. Forgot to check out, checked in at wrong time…"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor="#B0B3C6"
               value={corrReason}
               onChangeText={setCorrReason}
               multiline
@@ -444,8 +442,10 @@ export default function HomeScreen() {
               textAlignVertical="top"
             />
             <Text style={m.hint}>Your request will be sent to HR for review and manual adjustment.</Text>
-            <TouchableOpacity style={[m.btn, corrSaving && m.btnDisabled]} onPress={submitCorrection} disabled={corrSaving}>
-              {corrSaving ? <ActivityIndicator color="white" /> : <Text style={m.btnText}>Send to HR</Text>}
+            <TouchableOpacity onPress={submitCorrection} disabled={corrSaving} activeOpacity={0.85}>
+              <LinearGradient colors={GRADIENTS.coral} style={[m.btn, corrSaving && m.btnDisabled]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                {corrSaving ? <ActivityIndicator color="white" /> : <Text style={m.btnText}>Send to HR</Text>}
+              </LinearGradient>
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
@@ -456,7 +456,7 @@ export default function HomeScreen() {
 }
 
 const ci = StyleSheet.create({
-  card:        { backgroundColor: '#0F1829', borderRadius: 20, padding: 20, marginBottom: 14, alignItems: 'center' },
+  card:        { borderRadius: 26, padding: 22, marginBottom: 14, alignItems: 'center', overflow: 'hidden', shadowColor: '#12121C', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.25, shadowRadius: 22, elevation: 8 },
   date:        { color: 'rgba(255,255,255,0.4)', fontSize: 12, marginBottom: 2 },
   clock:       { color: 'white', fontSize: 34, fontWeight: '900', letterSpacing: 2, marginBottom: 18 },
   timesRow:    { flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: 22 },
@@ -468,90 +468,63 @@ const ci = StyleSheet.create({
   statusCenter:{ flex: 1, alignItems: 'center' },
   btnWrap:     { alignItems: 'center', justifyContent: 'center', width: 120, height: 120 },
   pulseRing:   { position: 'absolute', width: 120, height: 120, borderRadius: 60 },
-  btn:         { width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 10 },
+  btnTouchable:{ shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 10, borderRadius: 48 },
+  btn:         { width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center' },
   btnDisabled: { opacity: 0.55 },
   btnLabel:    { color: 'white', fontSize: 13, fontWeight: '800', letterSpacing: 0.3 },
-  shiftRow:    { backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5, marginBottom: 16 },
+  shiftRow:    { backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 5, marginBottom: 16 },
   shiftText:   { color: 'rgba(255,255,255,0.55)', fontSize: 12, fontWeight: '600', letterSpacing: 0.3 },
-  doneNote:    { color: '#2BC4BE', fontSize: 12, fontWeight: '600', marginTop: 14 },
+  doneNote:    { color: '#54E3C4', fontSize: 12, fontWeight: '700', marginTop: 14 },
 })
 
 const s = StyleSheet.create({
-  safe:          { flex: 1, backgroundColor: '#F0F4FA' },
-  scroll:        { padding: 14, paddingBottom: 40 },
-  header:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  greeting:      { fontSize: 12, color: '#64748b' },
-  name:          { fontSize: 19, fontWeight: '800', color: '#0F1829' },
+  safe:          { flex: 1 },
+  scroll:        { padding: 16, paddingBottom: 130 },
+  header:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 },
+  headerLeft:    { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },
+  greeting:      { fontSize: 12, fontWeight: '600' },
+  name:          { fontSize: 18, fontWeight: '900' },
   headerRight:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  teamBtn:       { height: 36, borderRadius: 18, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 1 },
+  teamBtn:       { height: 40, borderRadius: 20, paddingHorizontal: 13, alignItems: 'center', justifyContent: 'center', borderWidth: 1, shadowColor: '#8890B5', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 1 },
   teamBtnText:   { fontSize: 13, fontWeight: '700' },
-  bellBtn:       { width: 40, height: 40, borderRadius: 20, backgroundColor: 'white', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
+  bellBtn:       { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1, shadowColor: '#8890B5', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 2 },
   bellIcon:      { fontSize: 18 },
-  badge:         { position: 'absolute', top: -2, right: -2, backgroundColor: '#E8583C', borderRadius: 8, minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3, borderWidth: 1.5, borderColor: '#F0F4FA' },
+  badge:         { position: 'absolute', top: -2, right: -2, backgroundColor: '#FF6B6B', borderRadius: 8, minWidth: 17, height: 17, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3, borderWidth: 2, borderColor: 'white' },
   badgeText:     { color: 'white', fontSize: 9, fontWeight: '800' },
-  avatar:        { width: 40, height: 40, borderRadius: 20, backgroundColor: '#E8583C', alignItems: 'center', justifyContent: 'center' },
-  avatarText:    { color: 'white', fontWeight: '700', fontSize: 14 },
+  avatar:        { width: 44, height: 44, borderRadius: 16, alignItems: 'center', justifyContent: 'center', shadowColor: '#FF6B6B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 3 },
+  avatarText:    { color: 'white', fontWeight: '800', fontSize: 14 },
 
-  leaveCard:     { backgroundColor: 'white', borderRadius: 16, padding: 14, flexDirection: 'row', alignItems: 'center', marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
-  leaveLeft:     { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 },
-  leaveIcon:     { fontSize: 24 },
-  leaveTitle:    { fontSize: 14, fontWeight: '800', color: '#0F1829', marginBottom: 1 },
-  leaveSub:      { fontSize: 11, color: '#94a3b8' },
-  leaveRight:    { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 },
-  leaveDays:     { fontSize: 30, fontWeight: '900', color: '#2BC4BE' },
-  leaveDaysLabel:{ fontSize: 10, color: '#94a3b8', lineHeight: 14 },
-  leaveArrow:    { fontSize: 20, color: '#cbd5e1' },
+  statsRow:      { flexDirection: 'row', gap: 10, marginBottom: 18 },
 
-  pillsScroll:   { marginBottom: 14, marginHorizontal: -4 },
+  pillsScroll:   { marginTop: 4, marginBottom: 16, marginHorizontal: -4 },
   pillsContent:  { paddingHorizontal: 4, gap: 8 },
-  pill:          { backgroundColor: 'white', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, alignItems: 'center', minWidth: 76, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
-  pillNum:       { fontSize: 20, fontWeight: '900', color: '#0F1829', marginBottom: 3 },
-  pillName:      { fontSize: 10, color: '#64748b', textAlign: 'center', maxWidth: 68 },
+  pill:          { borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10, alignItems: 'center', minWidth: 76, borderWidth: 1, shadowColor: '#8890B5', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 1 },
+  pillNum:       { fontSize: 20, fontWeight: '900', marginBottom: 3 },
+  pillName:      { fontSize: 10, textAlign: 'center', maxWidth: 68 },
 
-  section:       { marginBottom: 6 },
-  sectionRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  sectionTitle:  { fontSize: 11, fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5 },
-  seeAll:        { fontSize: 12, fontWeight: '600', color: '#2BC4BE' },
+  sectionRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, marginTop: 6 },
+  sectionTitle:  { fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
+  seeAll:        { fontSize: 12, fontWeight: '700', color: '#2ED573' },
 
-  annCard:       { backgroundColor: 'white', borderRadius: 14, padding: 14, marginBottom: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 1 },
-  annTop:        { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
-  annCat:        { fontSize: 10, fontWeight: '800', letterSpacing: 0.6 },
-  annPin:        { fontSize: 11 },
-  highBadge:     { backgroundColor: '#fef2f2', borderRadius: 5, paddingHorizontal: 5, paddingVertical: 1 },
-  highText:      { fontSize: 9, fontWeight: '800', color: '#ef4444', letterSpacing: 0.4 },
-  annTitle:      { fontSize: 13, fontWeight: '800', color: '#0F1829', marginBottom: 4 },
-  annBody:       { fontSize: 12, color: '#475569', lineHeight: 17 },
-
-  pendCard:      { marginBottom: 8 },
-  pendRow:       { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  pendType:      { fontSize: 13, fontWeight: '600', color: '#1e293b', marginBottom: 2 },
-  pendDate:      { fontSize: 11, color: '#94a3b8' },
-
-  errorBanner:     { backgroundColor: '#fef3c7', borderRadius: 12, padding: 12, marginBottom: 14, borderWidth: 1, borderColor: '#fcd34d' },
+  errorBanner:     { backgroundColor: '#FFF6DD', borderRadius: 14, padding: 12, marginBottom: 14, borderWidth: 1, borderColor: '#FFE9AE' },
   errorBannerText: { fontSize: 12, color: '#92400e', fontWeight: '600', textAlign: 'center' },
-  corrLink:      { alignSelf: 'center', marginTop: -8, marginBottom: 14, paddingVertical: 4 },
-  corrLinkText:  { fontSize: 11, color: '#94a3b8', textDecorationLine: 'underline' },
-
-  payPeriod:     { fontSize: 12, color: '#94a3b8', marginBottom: 8 },
-  payRow:        { flexDirection: 'row', gap: 28 },
-  payLabel:      { fontSize: 10, color: '#94a3b8', marginBottom: 2 },
-  payNet:        { fontSize: 18, fontWeight: '800', color: '#0F1829' },
-  payBasic:      { fontSize: 14, fontWeight: '600', color: '#475569' },
+  corrLink:      { alignSelf: 'center', marginTop: -6, marginBottom: 16, paddingVertical: 4 },
+  corrLinkText:  { fontSize: 11, color: '#8A8DA3', textDecorationLine: 'underline' },
 })
 
 const m = StyleSheet.create({
   safe:       { flex: 1, backgroundColor: 'white' },
-  header:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  title:      { fontSize: 16, fontWeight: '800', color: '#0F1829', flex: 1, marginRight: 12 },
-  close:      { fontSize: 22, color: '#64748b' },
+  header:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#EEF0F8' },
+  title:      { fontSize: 16, fontWeight: '800', color: '#1A1B2E', flex: 1, marginRight: 12 },
+  close:      { fontSize: 22, color: '#8A8DA3' },
   scroll:     { padding: 20 },
-  infoBox:    { backgroundColor: '#f8fafc', borderRadius: 12, padding: 14, marginBottom: 20 },
-  infoLabel:  { fontSize: 11, fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 },
-  infoRow:    { fontSize: 14, color: '#1e293b', fontWeight: '500', marginBottom: 4 },
+  infoBox:    { backgroundColor: '#F5F6FC', borderRadius: 16, padding: 14, marginBottom: 20 },
+  infoLabel:  { fontSize: 11, fontWeight: '700', color: '#8A8DA3', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 },
+  infoRow:    { fontSize: 14, color: '#1A1B2E', fontWeight: '500', marginBottom: 4 },
   label:      { fontSize: 12, fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 },
-  input:      { borderWidth: 1.5, borderColor: '#e2e8f0', borderRadius: 12, padding: 14, fontSize: 14, color: '#1e293b', backgroundColor: '#fafafa', minHeight: 100 },
-  hint:       { fontSize: 12, color: '#94a3b8', marginTop: 10, marginBottom: 24, lineHeight: 18 },
-  btn:        { backgroundColor: '#E8583C', borderRadius: 12, padding: 16, alignItems: 'center' },
+  input:      { borderWidth: 1.5, borderColor: '#E3E6F3', borderRadius: 16, padding: 14, fontSize: 14, color: '#1A1B2E', backgroundColor: '#F5F6FC', minHeight: 100 },
+  hint:       { fontSize: 12, color: '#8A8DA3', marginTop: 10, marginBottom: 24, lineHeight: 18 },
+  btn:        { borderRadius: 16, padding: 16, alignItems: 'center' },
   btnDisabled:{ opacity: 0.6 },
-  btnText:    { color: 'white', fontSize: 15, fontWeight: '700' },
+  btnText:    { color: 'white', fontSize: 15, fontWeight: '800' },
 })
