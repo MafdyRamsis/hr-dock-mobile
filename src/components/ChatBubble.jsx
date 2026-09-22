@@ -30,10 +30,10 @@ export default function ChatBubble({ role, text }) {
 
 const cb = StyleSheet.create({
   row:       { flexDirection: 'row', marginBottom: 12, alignItems: 'flex-end' },
-  bubble:    { maxWidth: '78%', borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10 },
+  bubble:    { maxWidth: '78%', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10 },
   userBubble:{ borderBottomRightRadius: 4 },
   userText:  { color: 'white', fontSize: 13.5, lineHeight: 19, fontWeight: '600' },
-  aiAvatar:  { width: 24, height: 24, borderRadius: 8, backgroundColor: 'rgba(124,108,255,0.18)', alignItems: 'center', justifyContent: 'center', marginRight: 6, marginBottom: 2 },
+  aiAvatar:  { width: 24, height: 24, borderRadius: 8, backgroundColor: 'rgba(79,70,229,0.12)', alignItems: 'center', justifyContent: 'center', marginRight: 6, marginBottom: 2 },
   aiBubble:  { borderBottomLeftRadius: 4, borderWidth: 1, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 1 },
   aiText:    { fontSize: 13.5, lineHeight: 19, fontWeight: '500' },
 })

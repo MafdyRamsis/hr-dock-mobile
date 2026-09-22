@@ -28,7 +28,7 @@ export default function KudosCard({ emoji, fromName, toName, category, message, 
 }
 
 const k = StyleSheet.create({
-  card:    { borderRadius: 18, borderWidth: 1, padding: 13, marginBottom: 9 },
+  card:    { borderRadius: 14, borderWidth: 1, padding: 13, marginBottom: 9 },
   top:     { flexDirection: 'row', alignItems: 'center', gap: 8 },
   emoji:   { fontSize: 18 },
   names:   { flex: 1, fontSize: 13 },

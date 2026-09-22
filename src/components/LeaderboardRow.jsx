@@ -28,11 +28,11 @@ export default function LeaderboardRow({ rank, name, department, points, kudosCo
 }
 
 const r = StyleSheet.create({
-  row:       { flexDirection: 'row', alignItems: 'center', borderRadius: 16, borderWidth: 1, padding: 11, marginBottom: 8, gap: 10 },
+  row:       { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, padding: 11, marginBottom: 8, gap: 10 },
   rankWrap:  { width: 22, alignItems: 'center' },
   medal:     { fontSize: 17 },
   rankNum:   { fontSize: 13, fontWeight: '800' },
-  avatar:    { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  avatar:    { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   avatarText:{ color: 'white', fontWeight: '800', fontSize: 14 },
   name:      { fontSize: 13.5, fontWeight: '700' },
   dept:      { fontSize: 11, marginTop: 1 },

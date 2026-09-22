@@ -2,72 +2,71 @@ import { createContext, useContext, useState, useEffect, useMemo } from 'react'
 import { useColorScheme } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
 
-/* ── HR Dock "Command Center" brand system ──
-   Deep-space navy base with an electric violet / cyan / amber / magenta
-   accent system — glowing gradients over near-black, sharp and premium
-   rather than soft/pastel. Each brand color ships as a gradient pair
-   [start, end] plus a flat "solid" for text/icons/borders. Same keys as
-   before (coral/mint/sunshine/lavender/navy) so every screen that already
-   references GRADIENTS.<key> re-themes automatically. */
+/* ── HR Dock brand system — matched to the real web app (app.hr-dock.com) ──
+   Crisp white / light-slate surfaces, bold near-black headlines, and the
+   web app's signature indigo → blue → cyan gradient reserved for primary
+   actions only (the Sign In button, active tab, key highlights) — never
+   smeared across the whole screen. Same keys as before
+   (coral/mint/sunshine/lavender/navy) so every screen that already
+   references GRADIENTS.<key> or BRAND.<key> re-themes automatically. */
 export const GRADIENTS = {
-  coral:    ['#8B7CFF', '#5B3DF5'],   // electric indigo-violet — primary
-  mint:     ['#33E9D6', '#06B6D4'],   // neon cyan — positive / data
-  sunshine: ['#FFD166', '#FF9F1C'],   // neon amber — pending / attention
-  lavender: ['#FF7FE0', '#C026D3'],   // neon magenta — tertiary / social
-  navy:     ['#1C2237', '#05060B'],   // deep space — hero card backdrops
+  coral:    ['#4F46E5', '#3B82F6', '#06B6D4'],  // indigo → blue → cyan — PRIMARY (exact web app CTA gradient)
+  mint:     ['#34D399', '#059669'],             // emerald — positive / success
+  sunshine: ['#FBBF24', '#D97706'],             // amber — attention / streaks
+  lavender: ['#818CF8', '#6366F1'],             // lighter indigo tint — tertiary
+  navy:     ['#1E293B', '#0F172A'],             // slate — hero card backdrops
 }
 
 export const BRAND = {
-  coral:    '#7C6CFF',
-  mint:     '#22D3D8',
-  sunshine: '#FFB020',
-  lavender: '#E248E8',
+  coral:    '#4F46E5',   // indigo-600 — matches the web app's accent-pill text color exactly
+  mint:     '#059669',
+  sunshine: '#D97706',
+  lavender: '#6366F1',
 }
 
-// Signature glow colors — used for shadowColor / border accents that need
-// to "emit light" against the dark backdrop rather than sit flat.
+// Kept for compatibility with anything that still imports it.
 export const GLOW = {
-  violet: '#7C6CFF',
-  cyan:   '#22D3EE',
-  amber:  '#FFB020',
-  magenta:'#E248E8',
+  violet:  '#4F46E5',
+  cyan:    '#06B6D4',
+  amber:   '#D97706',
+  magenta: '#6366F1',
 }
 
 export const RADIUS = { sm: 12, md: 16, lg: 22, xl: 28, pill: 999 }
 
 export const LIGHT = {
-  bg:       '#F5F6FB',
-  card:     '#ffffff',
-  cardAlt:  '#EFF0F9',
-  text:     '#12141F',
-  text2:    '#242739',
-  sub:      '#6B7086',
-  muted:    '#A6AABD',
-  border:   '#EAEBF4',
-  border2:  '#DEE0EE',
-  input:    '#F1F2FA',
-  tabBar:   '#ffffff',
-  glass:       'rgba(255,255,255,0.78)',
-  glassBorder: 'rgba(18,20,31,0.07)',
+  bg:       '#F5F7FB',
+  card:     '#FFFFFF',
+  cardAlt:  '#EEF0F7',
+  text:     '#0F1829',
+  text2:    '#1E293B',
+  sub:      '#64748B',
+  muted:    '#94A3B8',
+  border:   '#E2E8F0',
+  border2:  '#DBE3EF',
+  input:    '#FFFFFF',
+  tabBar:   '#FFFFFF',
+  glass:       'rgba(255,255,255,0.85)',
+  glassBorder: 'rgba(15,24,41,0.08)',
   glassTint:   'light',
   ...BRAND,
   isDark:   false,
 }
 
 export const DARK = {
-  bg:       '#090A11',
-  card:     '#12141F',
-  cardAlt:  '#0D0F17',
-  text:     '#F5F6FC',
-  text2:    '#E7E8F5',
-  sub:      '#9195B5',
-  muted:    '#5B5F7D',
-  border:   '#1D2033',
-  border2:  '#262A42',
-  input:    '#151827',
-  tabBar:   '#0C0E17',
-  glass:       'rgba(18,20,31,0.78)',
-  glassBorder: 'rgba(140,124,255,0.14)',
+  bg:       '#0B1120',
+  card:     '#0F172A',
+  cardAlt:  '#1E293B',
+  text:     '#F1F5F9',
+  text2:    '#E2E8F0',
+  sub:      '#94A3B8',
+  muted:    '#64748B',
+  border:   '#1E293B',
+  border2:  '#334155',
+  input:    '#111827',
+  tabBar:   '#0F172A',
+  glass:       'rgba(15,23,42,0.85)',
+  glassBorder: 'rgba(99,102,241,0.16)',
   glassTint:   'dark',
   ...BRAND,
   isDark:   true,
@@ -85,10 +84,10 @@ export function ThemeProvider({ children }) {
     })
   }, [])
 
-  // "Command Center" dark is the flagship look — default to it regardless
-  // of the phone's system theme (a user can still flip to light and it's
-  // remembered), rather than only showing it to system-dark users.
-  const isDark = override ? override === 'dark' : true
+  // Both themes are built to the same standard, so we simply follow the
+  // phone's system setting unless the user has manually overridden it
+  // (remembered in SecureStore).
+  const isDark = override ? override === 'dark' : systemScheme === 'dark'
   const colors = isDark ? DARK : LIGHT
 
   const toggleTheme = async () => {

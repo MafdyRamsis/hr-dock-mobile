@@ -17,7 +17,7 @@ export default function InsightCard({ icon, text, style }) {
 }
 
 const ic = StyleSheet.create({
-  card: { flexDirection: 'row', alignItems: 'center', borderRadius: 18, borderWidth: 1, padding: 13, marginBottom: 9, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 2, overflow: 'hidden' },
+  card: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, borderWidth: 1, padding: 13, marginBottom: 9, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 1, overflow: 'hidden' },
   dot:  { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3 },
   icon: { fontSize: 17, marginRight: 10 },
   text: { flex: 1, fontSize: 13, fontWeight: '600', lineHeight: 18 },

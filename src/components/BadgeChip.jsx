@@ -11,9 +11,9 @@ export default function BadgeChip({ emoji, label, description, unlocked, style }
         b.card,
         {
           backgroundColor: unlocked ? colors.card : colors.cardAlt,
-          borderColor: unlocked ? `${colors.coral}55` : colors.glassBorder,
+          borderColor: unlocked ? `${colors.coral}40` : colors.glassBorder,
           shadowColor: unlocked ? colors.coral : 'transparent',
-          shadowOpacity: unlocked ? (isDark ? 0.35 : 0.2) : 0,
+          shadowOpacity: unlocked ? 0.1 : 0,
           opacity: unlocked ? 1 : 0.55,
         },
         style,
@@ -27,7 +27,7 @@ export default function BadgeChip({ emoji, label, description, unlocked, style }
 }
 
 const b = StyleSheet.create({
-  card:  { width: 108, borderRadius: 18, borderWidth: 1, padding: 12, alignItems: 'center', shadowOffset: { width: 0, height: 6 }, shadowRadius: 14, elevation: 2 },
+  card:  { width: 108, borderRadius: 14, borderWidth: 1, padding: 12, alignItems: 'center', shadowOffset: { width: 0, height: 4 }, shadowRadius: 10, elevation: 1 },
   emoji: { fontSize: 26, marginBottom: 6 },
   label: { fontSize: 12, fontWeight: '800', textAlign: 'center', marginBottom: 3 },
   desc:  { fontSize: 9.5, textAlign: 'center', lineHeight: 12.5 },

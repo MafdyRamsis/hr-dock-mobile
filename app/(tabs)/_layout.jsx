@@ -12,7 +12,7 @@ const Icon = ({ emoji, focused, gradient }) => {
         colors={GRADIENTS[gradient]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={{ width: 38, height: 38, borderRadius: 13, alignItems: 'center', justifyContent: 'center', shadowColor: GRADIENTS[gradient][1], shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.55, shadowRadius: 8, elevation: 4 }}
+        style={{ width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center', shadowColor: GRADIENTS[gradient][1], shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 6, elevation: 2 }}
       >
         <Text style={{ fontSize: 16 }}>{emoji}</Text>
       </LinearGradient>
