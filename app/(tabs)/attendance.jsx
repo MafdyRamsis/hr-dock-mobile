@@ -111,20 +111,22 @@ export default function AttendanceScreen() {
 
   const load = useCallback(async () => {
     try {
-      const [logsRes, empRes] = await Promise.allSettled([
-        api.get('/attendance/logs?limit=60'),
-        api.get('/employees'),
+      // Always the signed-in person's OWN records (?mine=1), for every role.
+      // This screen used to take the first row of GET /employees — for an
+      // admin/HR login that is the whole company, so it showed and punched
+      // someone else. The server now also forces mobile punches to "me".
+      const [logsRes] = await Promise.allSettled([
+        api.get('/attendance/logs?mine=1&limit=60'),
       ])
       let empId = null
-      if (empRes.status === 'fulfilled') {
-        const emps = empRes.value.data.data || []
-        empId = emps[0]?.id || null
-      }
       if (logsRes.status === 'fulfilled') {
         const raw  = logsRes.value.data.data
         const rows = Array.isArray(raw) ? raw : (raw?.rows || [])
-        if (!empId && rows[0]?.employee_id) empId = rows[0].employee_id
-        const todayStr = new Date().toISOString().split('T')[0]
+        if (rows[0]?.employee_id) empId = rows[0].employee_id
+        // Local (phone) calendar day — not the UTC day, which is "yesterday"
+        // for the first 2–3 hours after midnight in Egypt.
+        const d0 = new Date()
+        const todayStr = `${d0.getFullYear()}-${String(d0.getMonth() + 1).padStart(2, '0')}-${String(d0.getDate()).padStart(2, '0')}`
         const todayRec = rows.find(l => (l.date || l.created_at || '').startsWith(todayStr))
         setToday(todayRec || null)
         setLogs(rows)
@@ -166,7 +168,7 @@ export default function AttendanceScreen() {
     setActioning(true)
     try {
       const loc = await getLocation()
-      await api.post('/attendance/check-in', { source: 'mobile', ...(employeeId ? { employee_id: employeeId } : {}), ...loc })
+      await api.post('/attendance/check-in', { source: 'mobile', ...loc })
       await load()
     } catch (err) {
       Alert.alert('Check-in failed', err.response?.data?.message || 'Please try again.')
@@ -177,7 +179,7 @@ export default function AttendanceScreen() {
     setActioning(true)
     try {
       const loc = await getLocation()
-      await api.post('/attendance/check-out', { source: 'mobile', ...(employeeId ? { employee_id: employeeId } : {}), ...loc })
+      await api.post('/attendance/check-out', { source: 'mobile', ...loc })
       await load()
     } catch (err) {
       Alert.alert('Check-out failed', err.response?.data?.message || 'Please try again.')
