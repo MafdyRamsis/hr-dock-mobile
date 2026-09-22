@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { Animated, View } from 'react-native'
+import { useTheme } from '../context/ThemeContext'
 
 export default function Skeleton({ width = '100%', height = 16, borderRadius = 8, style }) {
+  const { colors } = useTheme()
   const opacity = useRef(new Animated.Value(0.3)).current
 
   useEffect(() => {
@@ -21,7 +23,7 @@ export default function Skeleton({ width = '100%', height = 16, borderRadius = 8
         width,
         height,
         borderRadius,
-        backgroundColor: '#e2e8f0',
+        backgroundColor: colors.cardAlt,
         opacity,
       }, style]}
     />
@@ -30,13 +32,16 @@ export default function Skeleton({ width = '100%', height = 16, borderRadius = 8
 
 // Pre-built skeleton layouts for common patterns
 export function SkeletonCard({ rows = 2, style }) {
+  const { colors, isDark } = useTheme()
   return (
     <View style={[{
-      backgroundColor: 'white',
+      backgroundColor: colors.card,
       borderRadius: 16,
       padding: 16,
       marginBottom: 12,
-      shadowColor: '#000',
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+      shadowColor: isDark ? '#000' : '#8890B5',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.06,
       shadowRadius: 8,

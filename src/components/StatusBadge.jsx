@@ -1,25 +1,28 @@
 import { View, Text } from 'react-native'
 
+/* Electric semantic colors — rendered as a translucent tint of the solid
+   color so the same values read correctly on both a white (light) and
+   near-black (dark) card without needing separate light/dark maps. */
 const MAP = {
-  active:    { bg: '#E3FBF3', text: '#0E9F6E' },
-  approved:  { bg: '#E3FBF3', text: '#0E9F6E' },
-  pending:   { bg: '#FFF6DD', text: '#B77A00' },
-  rejected:  { bg: '#FFE9E6', text: '#E14F4A' },
-  cancelled: { bg: '#F1F1F8', text: '#6B6E85' },
-  present:   { bg: '#E3FBF3', text: '#0E9F6E' },
-  absent:    { bg: '#FFE9E6', text: '#E14F4A' },
-  late:      { bg: '#FFF6DD', text: '#B77A00' },
-  open:      { bg: '#F1E9FC', text: '#8854D0' },
-  closed:    { bg: '#F1F1F8', text: '#6B6E85' },
-  'in-progress': { bg: '#F1E9FC', text: '#8854D0' },
+  active:    '#22D3D8',
+  approved:  '#22D3D8',
+  pending:   '#FFB020',
+  rejected:  '#FF4D8D',
+  cancelled: '#8B90AC',
+  present:   '#22D3D8',
+  absent:    '#FF4D8D',
+  late:      '#FFB020',
+  open:      '#B26CFF',
+  closed:    '#8B90AC',
+  'in-progress': '#B26CFF',
 }
 
 export default function StatusBadge({ status }) {
   const s = status?.toLowerCase().replace(/ /g, '-') || ''
-  const c = MAP[s] || { bg: '#F1F1F8', text: '#6B6E85' }
+  const c = MAP[s] || '#8B90AC'
   return (
-    <View style={{ backgroundColor: c.bg, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 4, alignSelf: 'flex-start' }}>
-      <Text style={{ fontSize: 11, fontWeight: '700', color: c.text, textTransform: 'capitalize' }}>
+    <View style={{ backgroundColor: `${c}26`, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 4, alignSelf: 'flex-start' }}>
+      <Text style={{ fontSize: 11, fontWeight: '700', color: c, textTransform: 'capitalize' }}>
         {status}
       </Text>
     </View>

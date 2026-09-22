@@ -15,6 +15,9 @@ import PillTag from '../../src/components/PillTag'
 import StatWidget from '../../src/components/StatWidget'
 import FeedItem from '../../src/components/FeedItem'
 import Skeleton, { SkeletonCard, SkeletonRow } from '../../src/components/Skeleton'
+import StreakFlame from '../../src/components/StreakFlame'
+import BadgeChip from '../../src/components/BadgeChip'
+import InsightCard from '../../src/components/InsightCard'
 
 const fmt      = d => d ? d.split('T')[0].split('-').reverse().join('/') : '—'
 const fmtNum   = n => n != null ? Number(n).toLocaleString() : '—'
@@ -329,12 +332,38 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
 
+        {/* Streak + badges */}
+        {ctx && (
+          <TouchableOpacity onPress={() => router.push('/(tabs)/pulse')} activeOpacity={0.85} style={s.progressRow}>
+            <StreakFlame days={ctx.streak?.days || 0} size="sm" />
+            {(ctx.badges || []).filter(b => b.unlocked).slice(0, 3).map(b => (
+              <View key={b.id} style={[s.miniBadge, { backgroundColor: colors.cardAlt, borderColor: colors.glassBorder }]}>
+                <Text style={{ fontSize: 13 }}>{b.emoji}</Text>
+              </View>
+            ))}
+            <Text style={[s.progressLink, { color: colors.sub }]}>Pulse →</Text>
+          </TouchableOpacity>
+        )}
+
         {/* Quick Stats */}
         <View style={s.statsRow}>
           <StatWidget icon="🏖️" value={`${totalLeft}d`} label="Leave left" gradient="sunshine" onPress={() => router.push('/leave-balance')} />
           <StatWidget icon="📋" value={pending.length} label="Pending" gradient="lavender" onPress={() => router.push('/(tabs)/leave')} />
           <StatWidget icon="📣" value={announcements.length} label="News" gradient="mint" onPress={() => router.push('/announcements')} />
         </View>
+
+        {/* Insights */}
+        {ctx?.insights?.length > 0 && (
+          <>
+            <View style={s.sectionRow}>
+              <Text style={[s.sectionTitle, { color: colors.sub }]}>Insights for you</Text>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/pulse')}>
+                <Text style={s.seeAll}>Ask Dock AI →</Text>
+              </TouchableOpacity>
+            </View>
+            {ctx.insights.slice(0, 3).map((i, idx) => <InsightCard key={idx} icon={i.icon} text={i.text} />)}
+          </>
+        )}
 
         {/* Today's Flow */}
         <View style={s.sectionRow}>
@@ -408,7 +437,7 @@ export default function HomeScreen() {
             icon="💰"
             gradient="mint"
             title="Last Payslip"
-            subtitle={`${fmt(payslip.period_start)} – ${fmt(payslip.period_end)}`}
+            subtitle={payslip.month ? new Date(payslip.year, payslip.month - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) : '—'}
             onPress={() => router.push('/(tabs)/payslips')}
             right={<PillTag label={`EGP ${fmtNum(payslip.net_salary)}`} color="#0E9F6E" size="sm" />}
           />
@@ -493,6 +522,10 @@ const s = StyleSheet.create({
   badgeText:     { color: 'white', fontSize: 9, fontWeight: '800' },
   avatar:        { width: 44, height: 44, borderRadius: 16, alignItems: 'center', justifyContent: 'center', shadowColor: '#FF6B6B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 3 },
   avatarText:    { color: 'white', fontWeight: '800', fontSize: 14 },
+
+  progressRow:   { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
+  miniBadge:     { width: 30, height: 30, borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  progressLink:  { marginLeft: 'auto', fontSize: 12, fontWeight: '700' },
 
   statsRow:      { flexDirection: 'row', gap: 10, marginBottom: 18 },
 

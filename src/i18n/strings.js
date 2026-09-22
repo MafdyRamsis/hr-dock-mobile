@@ -41,6 +41,8 @@ export const EN = {
   tab_home:           'Home',
   tab_attendance:     'Attendance',
   tab_leave:          'Leave',
+  tab_pulse:          'Pulse',
+  tab_team:           'Team',
   tab_requests:       'Requests',
   tab_payslips:       'Payslips',
   // Profile / language
@@ -93,6 +95,8 @@ export const AR = {
   tab_home:           'الرئيسية',
   tab_attendance:     'الحضور',
   tab_leave:          'الإجازات',
+  tab_pulse:          'نبض',
+  tab_team:           'الفريق',
   tab_requests:       'الطلبات',
   tab_payslips:       'كشوف الرواتب',
   // Profile / language

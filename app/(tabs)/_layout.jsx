@@ -12,15 +12,15 @@ const Icon = ({ emoji, focused, gradient }) => {
         colors={GRADIENTS[gradient]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={{ width: 42, height: 42, borderRadius: 15, alignItems: 'center', justifyContent: 'center' }}
+        style={{ width: 38, height: 38, borderRadius: 13, alignItems: 'center', justifyContent: 'center', shadowColor: GRADIENTS[gradient][1], shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.55, shadowRadius: 8, elevation: 4 }}
       >
-        <Text style={{ fontSize: 18 }}>{emoji}</Text>
+        <Text style={{ fontSize: 16 }}>{emoji}</Text>
       </LinearGradient>
     )
   }
   return (
-    <View style={{ width: 42, height: 42, alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ fontSize: 18, opacity: 0.35 }}>{emoji}</Text>
+    <View style={{ width: 38, height: 38, alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ fontSize: 16, opacity: 0.38 }}>{emoji}</Text>
     </View>
   )
 }
@@ -35,10 +35,10 @@ export default function TabLayout() {
       tabBarShowLabel: false,
       tabBarStyle: {
         position: 'absolute',
-        left: 18,
-        right: 18,
+        left: 10,
+        right: 10,
         bottom: 22,
-        height: 66,
+        height: 64,
         borderRadius: 28,
         borderTopWidth: 0,
         backgroundColor: 'transparent',
@@ -67,6 +67,8 @@ export default function TabLayout() {
       <Tabs.Screen name="index"      options={{ title: t('tab_home'),       tabBarIcon: ({ focused }) => <Icon emoji="🏠" focused={focused} gradient="coral" /> }} />
       <Tabs.Screen name="attendance" options={{ title: t('tab_attendance'), tabBarIcon: ({ focused }) => <Icon emoji="🕐" focused={focused} gradient="mint" /> }} />
       <Tabs.Screen name="leave"      options={{ title: t('tab_leave'),      tabBarIcon: ({ focused }) => <Icon emoji="🏖" focused={focused} gradient="sunshine" /> }} />
+      <Tabs.Screen name="pulse"      options={{ title: t('tab_pulse'),      tabBarIcon: ({ focused }) => <Icon emoji="✨" focused={focused} gradient="coral" /> }} />
+      <Tabs.Screen name="team"       options={{ title: t('tab_team'),       tabBarIcon: ({ focused }) => <Icon emoji="🤝" focused={focused} gradient="lavender" /> }} />
       <Tabs.Screen name="requests"   options={{ title: t('tab_requests'),   tabBarIcon: ({ focused }) => <Icon emoji="📋" focused={focused} gradient="lavender" /> }} />
       <Tabs.Screen name="payslips"   options={{ title: t('tab_payslips'),   tabBarIcon: ({ focused }) => <Icon emoji="💰" focused={focused} gradient="mint" /> }} />
       <Tabs.Screen name="more"       options={{ href: null }} />
