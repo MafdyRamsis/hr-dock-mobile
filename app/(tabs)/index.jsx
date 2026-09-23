@@ -14,6 +14,7 @@ import StatusBadge from '../../src/components/StatusBadge'
 import PillTag from '../../src/components/PillTag'
 import StatWidget from '../../src/components/StatWidget'
 import FeedItem from '../../src/components/FeedItem'
+import Avatar from '../../src/components/Avatar'
 import Skeleton, { SkeletonCard, SkeletonRow } from '../../src/components/Skeleton'
 import StreakFlame from '../../src/components/StreakFlame'
 import BadgeChip from '../../src/components/BadgeChip'
@@ -134,6 +135,7 @@ export default function HomeScreen() {
   const [ctx,            setCtx]            = useState(null)
   const [todayLog,       setTodayLog]       = useState(null)
   const [employeeId,     setEmployeeId]     = useState(user?.employee_id || null)
+  const [photoUrl,       setPhotoUrl]       = useState(null)
   const [announcements,  setAnnouncements]  = useState([])
   const [notifBadge,     setNotifBadge]     = useState(0)
   const [loading,        setLoading]        = useState(true)
@@ -168,6 +170,7 @@ export default function HomeScreen() {
         const emps = empRes.value.data.data || []
         const me   = emps.find(e => e.email === user?.email) || emps[0]
         if (me?.id) empId = me.id
+        if (me?.photo_url) setPhotoUrl(me.photo_url)
       }
 
       if (logsRes.status === 'fulfilled') {
@@ -292,9 +295,16 @@ export default function HomeScreen() {
         {/* Header — avatar + greeting left, actions right */}
         <View style={s.header}>
           <TouchableOpacity style={s.headerLeft} onPress={() => router.push('/profile')} activeOpacity={0.85}>
-            <LinearGradient colors={GRADIENTS.coral} style={s.avatar} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-              <Text style={s.avatarText}>{user?.first_name?.[0]}{user?.last_name?.[0]}</Text>
-            </LinearGradient>
+            <Avatar
+              uri={photoUrl || user?.photo_url}
+              firstName={user?.first_name}
+              lastName={user?.last_name}
+              size={44}
+              borderRadius={16}
+              gradient={GRADIENTS.coral}
+              style={s.avatar}
+              textStyle={s.avatarText}
+            />
             <View>
               <Text style={[s.greeting, { color: colors.sub }]}>{greeting()} 👋</Text>
               <Text style={[s.name, { color: colors.text }]}>{user?.first_name} {user?.last_name}</Text>

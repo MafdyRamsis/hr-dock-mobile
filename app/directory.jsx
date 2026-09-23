@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useTheme } from '../src/context/ThemeContext'
+import Avatar from '../src/components/Avatar'
 import api from '../src/services/api'
 
 export default function DirectoryScreen() {
@@ -41,9 +42,6 @@ export default function DirectoryScreen() {
 
   const call  = phone => phone && Linking.openURL(`tel:${phone}`)
   const email = addr  => addr  && Linking.openURL(`mailto:${addr}`)
-
-  const initials = e =>
-    `${e.first_name?.[0] || ''}${e.last_name?.[0] || ''}`.toUpperCase()
 
   const AVATAR_COLORS = ['#1e3a8a','#0f766e','#7e22ce','#be185d','#b45309','#065f46','#1d4ed8','#9d174d']
   const avatarColor = e => AVATAR_COLORS[(e.first_name?.charCodeAt(0) || 0) % AVATAR_COLORS.length]
@@ -94,9 +92,15 @@ export default function DirectoryScreen() {
         ) : filtered.map(e => (
           <View key={e.id} style={[s.card, { backgroundColor: colors.card }]}>
             <View style={s.cardTop}>
-              <View style={[s.avatar, { backgroundColor: avatarColor(e) }]}>
-                <Text style={s.avatarText}>{initials(e)}</Text>
-              </View>
+              <Avatar
+                uri={e.photo_url}
+                firstName={e.first_name}
+                lastName={e.last_name}
+                size={44}
+                backgroundColor={avatarColor(e)}
+                style={s.avatar}
+                textStyle={s.avatarText}
+              />
               <View style={{ flex: 1 }}>
                 <Text style={[s.name, { color: colors.text }]}>{e.first_name} {e.last_name}</Text>
                 <Text style={[s.role, { color: colors.sub }]} numberOfLines={1}>

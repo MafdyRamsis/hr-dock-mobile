@@ -11,6 +11,7 @@ import { useAuth } from '../src/context/AuthContext'
 import { useLang } from '../src/context/LanguageContext'
 import { useTheme } from '../src/context/ThemeContext'
 import Skeleton from '../src/components/Skeleton'
+import Avatar from '../src/components/Avatar'
 import api from '../src/services/api'
 
 const fmtDate = d => {
@@ -155,9 +156,14 @@ export default function ProfileScreen() {
       <ScrollView contentContainerStyle={s.scroll}>
         {/* Avatar */}
         <View style={s.avatarBox}>
-          <View style={s.avatar}>
-            <Text style={s.avatarText}>{user?.first_name?.[0]}{user?.last_name?.[0]}</Text>
-          </View>
+          <Avatar
+            uri={emp?.photo_url || user?.photo_url}
+            firstName={user?.first_name}
+            lastName={user?.last_name}
+            size={80}
+            backgroundColor="#E8583C"
+            style={s.avatar}
+          />
           <Text style={[s.name, { color: colors.text }]}>{user?.first_name} {user?.last_name}</Text>
           <Text style={[s.email, { color: colors.sub }]}>{user?.email}</Text>
           <View style={s.roleBadge}>

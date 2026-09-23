@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router'
 import { useAuth } from '../../src/context/AuthContext'
 import api from '../../src/services/api'
 import Card from '../../src/components/Card'
+import Avatar from '../../src/components/Avatar'
 import StatusBadge from '../../src/components/StatusBadge'
 
 const fmt = d => d ? d.split('T')[0].split('-').reverse().join('/') : '—'
@@ -90,9 +91,14 @@ export default function MoreScreen() {
       >
         {/* Profile card */}
         <Card style={s.profileCard}>
-          <View style={s.avatar}>
-            <Text style={s.avatarText}>{user?.first_name?.[0]}{user?.last_name?.[0]}</Text>
-          </View>
+          <Avatar
+            uri={user?.photo_url}
+            firstName={user?.first_name}
+            lastName={user?.last_name}
+            size={72}
+            backgroundColor="#E8583C"
+            style={s.avatar}
+          />
           <Text style={s.profileName}>{user?.first_name} {user?.last_name}</Text>
           <Text style={s.profileEmail}>{user?.email}</Text>
           <View style={s.roleBadge}>
