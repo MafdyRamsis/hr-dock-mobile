@@ -152,7 +152,7 @@ export default function HomeScreen() {
       const [ctxRes, annRes, logsRes, empRes, tickRes] = await Promise.allSettled([
         api.get('/ai/context'),
         api.get('/announcements'),
-        api.get('/attendance/logs?limit=30'),
+        api.get('/attendance/logs?limit=30&mine=1'),
         api.get('/employees'),
         api.get('/helpdesk?limit=10'),
       ])
@@ -205,7 +205,7 @@ export default function HomeScreen() {
     setActioning(true)
     try {
       const loc = await getLocation()
-      await api.post('/attendance/check-in', { ...(employeeId ? { employee_id: employeeId } : {}), ...loc })
+      await api.post('/attendance/check-in', { source: 'mobile', ...(employeeId ? { employee_id: employeeId } : {}), ...loc })
       await load()
     } catch (e) { Alert.alert('Check-in failed', e.response?.data?.message || 'Please try again.') }
     finally { setActioning(false) }
@@ -215,7 +215,7 @@ export default function HomeScreen() {
     setActioning(true)
     try {
       const loc = await getLocation()
-      await api.post('/attendance/check-out', { ...(employeeId ? { employee_id: employeeId } : {}), ...loc })
+      await api.post('/attendance/check-out', { source: 'mobile', ...(employeeId ? { employee_id: employeeId } : {}), ...loc })
       await load()
     } catch (e) { Alert.alert('Check-out failed', e.response?.data?.message || 'Please try again.') }
     finally { setActioning(false) }
