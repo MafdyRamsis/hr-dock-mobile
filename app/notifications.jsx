@@ -5,6 +5,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
+import { useAuth } from '../src/context/AuthContext'
 import { useTheme } from '../src/context/ThemeContext'
 import api from '../src/services/api'
 
@@ -41,6 +42,7 @@ const TYPE_LABELS = {
 
 export default function NotificationsScreen() {
   const router = useRouter()
+  const { user } = useAuth()
   const { colors } = useTheme()
   const [items,      setItems]      = useState([])
   const [loading,    setLoading]    = useState(true)
@@ -48,12 +50,17 @@ export default function NotificationsScreen() {
 
   const load = useCallback(async () => {
     try {
+      // Self-scope every source: without this, an admin/hr_manager/manager
+      // account saw every helpdesk ticket, WFH/overtime request and payroll
+      // run in the whole company here, mislabeled as "your notifications"
+      // (confirmed live against production).
+      const empQS = user?.employee_id ? `&employee_id=${user.employee_id}` : ''
       const [tickRes, wfhRes, otRes, annRes, payRes] = await Promise.allSettled([
-        api.get('/helpdesk?limit=20'),
-        api.get('/wfh'),
-        api.get('/overtime'),
+        api.get('/helpdesk?limit=20&mine=1'),
+        api.get(`/wfh?limit=50${empQS}`),
+        api.get(`/overtime?limit=50${empQS}`),
         api.get('/announcements?limit=10'),
-        api.get('/payroll/runs?limit=5'),
+        api.get('/payroll/runs?limit=5&mine=1'),
       ])
 
       const notifications = []
@@ -147,7 +154,7 @@ export default function NotificationsScreen() {
       setItems(notifications.slice(0, 30))
     } catch {}
     finally { setLoading(false); setRefreshing(false) }
-  }, [])
+  }, [user])
 
   useEffect(() => { load() }, [])
 

@@ -28,6 +28,14 @@ const CYCLE_TYPES = {
 
 const STAR_COLOR = '#f59e0b'
 
+// A malformed `ratings` JSON string from the backend would otherwise throw
+// uncaught during render and crash this screen.
+const safeParseRatings = raw => {
+  if (!raw) return null
+  if (typeof raw !== 'string') return raw
+  try { return JSON.parse(raw) } catch { return null }
+}
+
 function Stars({ rating, max = 5 }) {
   if (!rating) return <Text style={{ color: '#94a3b8', fontSize: 12 }}>Not rated</Text>
   const r = Math.round(Number(rating))
@@ -122,7 +130,7 @@ export default function AppraisalsScreen() {
         ) : appraisals.map(ap => {
           const sm       = STATUS_META[ap.status] || STATUS_META.pending
           const isOpen   = expanded === ap.id
-          const ratings  = ap.ratings ? (typeof ap.ratings === 'string' ? JSON.parse(ap.ratings) : ap.ratings) : null
+          const ratings  = safeParseRatings(ap.ratings)
 
           return (
             <TouchableOpacity

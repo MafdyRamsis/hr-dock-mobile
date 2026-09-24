@@ -50,7 +50,10 @@ export default function LeaveBalanceScreen() {
       const empId = user?.employee_id || user?.id
       const [balRes, reqRes] = await Promise.allSettled([
         api.get(`/leave/balances/${empId}`),
-        api.get('/leave/requests?limit=50'),
+        // Explicit employee_id keeps this "your own leave" screen self-scoped
+        // even for admin/hr_manager/manager accounts — without it the backend
+        // defaults those roles to company-wide (or whole-team) results.
+        api.get(`/leave/requests?limit=50&employee_id=${empId}`),
       ])
       if (balRes.status === 'fulfilled') setBalances(balRes.value.data.data || [])
       if (reqRes.status === 'fulfilled') setRequests(reqRes.value.data.data || [])

@@ -52,8 +52,12 @@ export default function ExpensesScreen() {
   const load = useCallback(async () => {
     try {
       const empId = user?.employee_id
-      const url   = empId ? `/expenses?employee_id=${empId}&limit=50` : '/expenses?limit=50'
-      const r     = await api.get(url)
+      // Without a resolved employee_id, skip the call entirely rather than
+      // falling through to the unscoped /expenses (every claim in the
+      // company, including amounts and receipt numbers) on this personal
+      // screen.
+      if (!empId) { setExpenses([]); return }
+      const r = await api.get(`/expenses?employee_id=${empId}&limit=50`)
       setExpenses(r.data.data || [])
     } catch {}
     finally { setLoading(false); setRefreshing(false) }

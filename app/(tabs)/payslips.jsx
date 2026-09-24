@@ -7,6 +7,7 @@ import * as Sharing from 'expo-sharing'
 import api from '../../src/services/api'
 import Card from '../../src/components/Card'
 import Skeleton, { SkeletonCard } from '../../src/components/Skeleton'
+import { useAuth } from '../../src/context/AuthContext'
 import { useTheme, GRADIENTS } from '../../src/context/ThemeContext'
 
 const fmtNum     = n => n != null ? Number(n).toLocaleString('en-EG') : '—'
@@ -124,7 +125,8 @@ h3{font-size:11px;color:#8A8DA3;text-transform:uppercase;letter-spacing:0.06em;m
 }
 
 export default function PayslipsScreen() {
-  const { colors } = useTheme()
+  const { user }    = useAuth()
+  const { colors }  = useTheme()
   const [runs,       setRuns]       = useState([])
   const [loading,    setLoading]    = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -136,7 +138,10 @@ export default function PayslipsScreen() {
 
   const load = useCallback(async () => {
     try {
-      const r = await api.get('/payroll/runs?limit=48')
+      // ?mine=1 forces this "My Payslips" screen to only ever see runs that
+      // contain the caller's own payslip — without it, an admin/hr_manager/
+      // manager account saw every payroll run in the company here.
+      const r = await api.get('/payroll/runs?limit=48&mine=1')
       const raw = r.data.data
       const list = Array.isArray(raw) ? raw : (raw?.rows || raw?.data || [])
       setRuns(list)
@@ -149,9 +154,18 @@ export default function PayslipsScreen() {
   const openSlip = async (run) => {
     setSelected(run); setSlipLoad(true); setSlip(null)
     try {
-      const r = await api.get(`/payroll/runs/${run.id}`)
+      const r = await api.get(`/payroll/runs/${run.id}?mine=1`)
       const slips = r.data.data?.payslips || []
-      setSlip(slips[0] || null)
+      // Defense in depth: even with ?mine=1, never blindly trust slips[0] —
+      // this endpoint used to return every employee's payslip for the run
+      // and the app displayed whichever one came back first, leaking a
+      // different employee's confidential salary as "my payslip" (confirmed
+      // live against production for admin accounts). Explicitly match our
+      // own employee_id so a backend regression here can't resurface that.
+      const mySlip = user?.employee_id
+        ? (slips.find(p => p.employee_id === user.employee_id) || null)
+        : (slips[0] || null)
+      setSlip(mySlip)
     } catch {}
     finally { setSlipLoad(false) }
   }
@@ -238,7 +252,7 @@ export default function PayslipsScreen() {
                   </View>
                   <Text style={s.featMonth}>{runMonthLabel(latestRun)}</Text>
                   <Text style={s.featPeriod}>
-                    {MONTHS[latestRun.month - 1]} {latestRun.year} · {latestRun.employee_count || 1} employee{latestRun.employee_count !== 1 ? 's' : ''}
+                    {MONTHS[latestRun.month - 1]} {latestRun.year}
                   </Text>
                   <View style={s.featFooter}>
                     <Text style={s.featAction}>Tap to view →</Text>

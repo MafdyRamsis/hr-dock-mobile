@@ -30,7 +30,11 @@ export default function MoreScreen() {
 
   const load = useCallback(async () => {
     try {
-      const r = await api.get('/helpdesk?limit=20')
+      // ?mine=1 keeps "HR Requests" scoped to the caller's own tickets —
+      // without it, every role (including plain employees) saw every
+      // ticket in the whole company here (confirmed live against
+      // production).
+      const r = await api.get('/helpdesk?limit=20&mine=1')
       setTickets(r.data.data || [])
     } catch {}
     finally { setLoading(false); setRefreshing(false) }
@@ -59,7 +63,9 @@ export default function MoreScreen() {
     if (pwForm.next !== pwForm.confirm) { setPwErr('Passwords do not match.'); return }
     setPwErr(''); setPwSaving(true)
     try {
-      await api.put('/auth/change-password', { current_password: pwForm.current, new_password: pwForm.next })
+      // The backend only ever registered POST /auth/change-password — PUT
+      // always 404'd, so this modal could never actually change a password.
+      await api.post('/auth/change-password', { current_password: pwForm.current, new_password: pwForm.next })
       setShowPassword(false)
       setPwForm({ current: '', next: '', confirm: '' })
       Alert.alert('Password changed', 'Your password has been updated successfully.')

@@ -47,9 +47,15 @@ export default function BenefitsScreen() {
   const load = useCallback(async () => {
     const empId = user?.employee_id
     try {
+      // Without a resolved employee_id (e.g. an admin/hr_manager account not
+      // linked to an employee record), skip the enrollments call entirely
+      // rather than falling through to the backend's unscoped default,
+      // which would dump every enrollment in the company onto this
+      // "My Benefits" screen.
+      if (!empId) { setEnrollments([]); setComponents([]); return }
       const [enRes, compRes] = await Promise.allSettled([
-        api.get(`/benefits/enrollments${empId ? `?employee_id=${empId}` : ''}`),
-        empId ? api.get(`/payroll/components/${empId}`) : Promise.resolve({ data: { data: [] } }),
+        api.get(`/benefits/enrollments?employee_id=${empId}`),
+        api.get(`/payroll/components/${empId}`),
       ])
       if (enRes.status   === 'fulfilled') setEnrollments(enRes.value.data.data   || [])
       if (compRes.status === 'fulfilled') setComponents(compRes.value.data.data  || [])

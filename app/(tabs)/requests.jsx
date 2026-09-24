@@ -253,23 +253,32 @@ export default function RequestsScreen() {
 
   const [loadError, setLoadError] = useState(false)
 
+  // Kept in sync with the auth context directly (see load()'s comment) —
+  // no more resolving it from an unscoped /employees list fetch.
+  useEffect(() => { setEmployeeId(user?.employee_id || null) }, [user])
+
   const load = useCallback(async () => {
     setLoadError(false)
     try {
-      const [tickRes, wfhRes, otRes, empRes] = await Promise.allSettled([
-        api.get('/helpdesk?limit=50'),
-        api.get('/wfh'),
-        api.get('/overtime'),
-        api.get('/employees'),
+      // Self-scope every source: without this, an admin/hr_manager/manager
+      // account saw every helpdesk ticket and every WFH/overtime request in
+      // the whole company on this "My Requests" screen (confirmed live
+      // against production). The old "resolve my employee_id by matching
+      // /employees against my email, else emps[0]" logic is also gone —
+      // it silently fell back to a random, unrelated employee whenever the
+      // email match failed, which then got submitted as the employee_id on
+      // new WFH/overtime requests below. user.employee_id from the auth
+      // context is already the source of truth for this (used the same way
+      // elsewhere in the app, e.g. team.jsx).
+      const empQS = user?.employee_id ? `?employee_id=${user.employee_id}` : ''
+      const [tickRes, wfhRes, otRes] = await Promise.allSettled([
+        api.get('/helpdesk?limit=50&mine=1'),
+        api.get(`/wfh${empQS}`),
+        api.get(`/overtime${empQS}`),
       ])
       if (tickRes.status === 'fulfilled') setTickets(tickRes.value.data.data || [])
       if (wfhRes.status  === 'fulfilled') setWfhList(wfhRes.value.data.data  || [])
       if (otRes.status   === 'fulfilled') setOtList(otRes.value.data.data    || [])
-      if (empRes.status  === 'fulfilled') {
-        const emps = empRes.value.data.data || []
-        const me = emps.find(e => e.email === user?.email) || emps[0]
-        if (me?.id) setEmployeeId(me.id)
-      }
     } catch { setLoadError(true) }
     finally { setLoading(false); setRefreshing(false) }
   }, [user])

@@ -63,14 +63,17 @@ export default function ProfileScreen() {
     }
     const loadEmployee = async () => {
       try {
-        const r = await api.get('/employees')
-        const list = Array.isArray(r.data.data) ? r.data.data : (r.data.data?.rows || [])
-        const me = list.find(e => e.email === user?.email) || list[0]
-        if (!me) { setEmpLoading(false); return }
-        // Fetch full record (includes date_of_birth, position_title, etc.)
-        const detail = await api.get(`/employees/${me.id}`)
-        const full = detail.data.data || me
-        setEmp(full)
+        // Fetch our own employee record directly by id (from the auth
+        // context) instead of paging through the whole company's /employees
+        // list and matching by email. That old approach only ever fetched
+        // the first page (20 most-recently-hired employees) and silently
+        // fell back to list[0] — an arbitrary, unrelated employee — whenever
+        // the caller wasn't among them, showing a stranger's national ID,
+        // date of birth and phone number on this "My Profile" screen
+        // (confirmed live against production).
+        if (!user?.employee_id) { setEmpLoading(false); return }
+        const detail = await api.get(`/employees/${user.employee_id}`)
+        setEmp(detail.data.data || null)
       } catch (e) { console.log('EMP ERR:', e?.response?.data) }
       finally { setEmpLoading(false) }
     }

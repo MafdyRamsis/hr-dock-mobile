@@ -31,8 +31,11 @@ export default function LoansScreen() {
   const load = useCallback(async () => {
     try {
       const empId = user?.employee_id
-      const url   = empId ? `/loans?employee_id=${empId}` : '/loans'
-      const r     = await api.get(url)
+      // Without a resolved employee_id, skip the call entirely rather than
+      // falling through to the unscoped /loans (every loan in the company,
+      // including principal and repayment history) on this personal screen.
+      if (!empId) { setLoans([]); return }
+      const r = await api.get(`/loans?employee_id=${empId}`)
       setLoans(r.data.data || [])
     } catch {}
     finally { setLoading(false); setRefreshing(false) }

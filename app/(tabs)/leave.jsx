@@ -42,7 +42,10 @@ export default function LeaveScreen() {
       const empId = user?.employee_id || user?.id
       const [balRes, reqRes, typRes] = await Promise.allSettled([
         api.get(`/leave/balances/${empId}`),
-        api.get('/leave/requests?limit=20'),
+        // Explicit employee_id keeps "My Requests" self-scoped even for
+        // admin/hr_manager/manager accounts — without it the backend
+        // defaults those roles to company-wide (or whole-team) results.
+        api.get(`/leave/requests?limit=20&employee_id=${empId}`),
         api.get('/leave/types'),
       ])
       if (balRes.status === 'fulfilled') setBalances(balRes.value.data.data || [])
@@ -133,7 +136,7 @@ export default function LeaveScreen() {
                   </View>
                 </View>
                 <View style={[s.balBar, { backgroundColor: colors.cardAlt }]}>
-                  <LinearGradient colors={GRADIENTS.sunshine} style={[s.balFill, { width: `${Math.min(100, (b.used / b.allocated) * 100)}%` }]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
+                  <LinearGradient colors={GRADIENTS.sunshine} style={[s.balFill, { width: `${b.allocated ? Math.min(100, (b.used / b.allocated) * 100) : 0}%` }]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
                 </View>
                 <Text style={[s.balUsed, { color: colors.muted }]}>{b.used} used · {b.remaining} remaining</Text>
               </Card>
