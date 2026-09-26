@@ -1,17 +1,19 @@
 import { View, Text, StyleSheet } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { GRADIENTS, useTheme } from '../context/ThemeContext'
+import { useLang } from '../context/LanguageContext'
 
 /* Check-in streak badge — a glowing flame + day count. Used on Home and
    the Pulse tab. */
 export default function StreakFlame({ days = 0, size = 'md' }) {
   const { colors, isDark } = useTheme()
+  const { tr } = useLang()
   const sm = size === 'sm'
   if (!days) {
     return (
       <View style={[st.pill, { backgroundColor: colors.cardAlt, borderColor: colors.glassBorder }]}>
         <Text style={{ fontSize: sm ? 13 : 15 }}>💤</Text>
-        <Text style={[st.text, { color: colors.sub, fontSize: sm ? 11 : 12.5 }]}>No streak yet</Text>
+        <Text style={[st.text, { color: colors.sub, fontSize: sm ? 11 : 12.5 }]}>{tr('No streak yet', 'لا توجد سلسلة بعد', 'لسه مفيش سلسلة')}</Text>
       </View>
     )
   }
@@ -22,7 +24,7 @@ export default function StreakFlame({ days = 0, size = 'md' }) {
       style={[st.pill, st.lit, { shadowColor: GRADIENTS.sunshine[1], shadowOpacity: isDark ? 0.25 : 0.15 }]}
     >
       <Text style={{ fontSize: sm ? 13 : 15 }}>🔥</Text>
-      <Text style={[st.text, { color: '#2A1600', fontSize: sm ? 11 : 12.5 }]}>{days}-day streak</Text>
+      <Text style={[st.text, { color: '#2A1600', fontSize: sm ? 11 : 12.5 }]}>{tr(`${days}-day streak`, `سلسلة ${days} ${days > 2 && days < 11 ? 'أيام' : 'يوم'}`, `${days} ${days > 2 && days < 11 ? 'أيام' : 'يوم'} ورا بعض`)}</Text>
     </LinearGradient>
   )
 }

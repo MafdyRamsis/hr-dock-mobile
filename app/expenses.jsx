@@ -9,20 +9,30 @@ import { useRouter } from 'expo-router'
 import { useAuth } from '../src/context/AuthContext'
 import { useTheme } from '../src/context/ThemeContext'
 import api from '../src/services/api'
+import { useLang } from '../src/context/LanguageContext'
+import { ls, back } from '../src/utils/rtl'
 
-const fmt    = d => d ? d.split('T')[0].split('-').reverse().join('/') : '—'
 const toISO  = d => d.toISOString().split('T')[0]
-const fmtNum = n => n != null ? Number(n).toLocaleString('en-EG', { minimumFractionDigits: 2 }) : '—'
+const fmtNum = n => n != null ? Number(n).toLocaleString('en-US', { minimumFractionDigits: 2 }) : '—'
 
-const CATEGORIES = [
-  { key: 'travel',        label: 'Travel',        icon: '✈️' },
-  { key: 'accommodation', label: 'Hotel',          icon: '🏨' },
-  { key: 'meals',         label: 'Meals',          icon: '🍽️' },
-  { key: 'transport',     label: 'Transport',      icon: '🚗' },
-  { key: 'communication', label: 'Communication',  icon: '📞' },
-  { key: 'office',        label: 'Office',         icon: '🖊️' },
-  { key: 'other',         label: 'Other',          icon: '📋' },
+const getCategories = tr => [
+  { key: 'travel',        label: tr('Travel', 'سفر'),                 icon: '✈️' },
+  { key: 'accommodation', label: tr('Hotel', 'إقامة فندقية', 'فندق'),  icon: '🏨' },
+  { key: 'meals',         label: tr('Meals', 'وجبات', 'أكل'),          icon: '🍽️' },
+  { key: 'transport',     label: tr('Transport', 'مواصلات'),           icon: '🚗' },
+  { key: 'communication', label: tr('Communication', 'اتصالات'),       icon: '📞' },
+  { key: 'office',        label: tr('Office', 'مستلزمات مكتبية'),      icon: '🖊️' },
+  { key: 'other',         label: tr('Other', 'أخرى', 'حاجات تانية'),    icon: '📋' },
 ]
+
+const statusLabel = (st, tr) => ({
+  draft:            tr('Draft', 'مسودة'),
+  submitted:        tr('Submitted', 'مُقدَّمة', 'اتبعت'),
+  manager_approved: tr('Manager approved', 'اعتمدها المدير', 'المدير وافق'),
+  approved:         tr('Approved', 'معتمدة', 'اتوافق عليها'),
+  paid:             tr('Paid', 'تم الصرف', 'اتصرفت'),
+  rejected:         tr('Rejected', 'مرفوضة', 'اترفضت'),
+}[st] || st?.replace('_', ' '))
 
 const STATUS_STYLE = {
   draft:            { bg: '#f1f5f9', color: '#475569' },
@@ -37,6 +47,9 @@ export default function ExpensesScreen() {
   const { user }   = useAuth()
   const { colors } = useTheme()
   const router     = useRouter()
+  const { tr, date, cur } = useLang()
+  const CATEGORIES = getCategories(tr)
+  const fmt = d => d ? date(d) : '—'
 
   const [expenses,   setExpenses]   = useState([])
   const [loading,    setLoading]    = useState(true)
@@ -66,8 +79,8 @@ export default function ExpensesScreen() {
   useEffect(() => { load() }, [])
 
   const submit = async () => {
-    if (!form.amount || isNaN(Number(form.amount))) { setFormErr('Please enter a valid amount.'); return }
-    if (!form.description.trim())                   { setFormErr('Please add a description.'); return }
+    if (!form.amount || isNaN(Number(form.amount))) { setFormErr(tr('Please enter a valid amount.', 'يرجى إدخال مبلغ صحيح.', 'اكتب مبلغ صحيح.')); return }
+    if (!form.description.trim())                   { setFormErr(tr('Please add a description.', 'يرجى إضافة وصف.', 'اكتب وصف للمصروف.')); return }
     setFormErr(''); setSaving(true)
     try {
       await api.post('/expenses', {
@@ -81,9 +94,9 @@ export default function ExpensesScreen() {
       setShowForm(false)
       setForm({ expense_date: toISO(new Date()), category: 'other', amount: '', description: '', receipt_number: '' })
       await load()
-      Alert.alert('✅ Submitted', 'Your expense claim has been submitted.')
+      Alert.alert(tr('✅ Submitted', '✅ تم الإرسال', '✅ اتبعت'), tr('Your expense claim has been submitted.', 'تم تقديم مطالبة المصروفات بنجاح.', 'مطالبة المصروفات بتاعتك اتبعت.'))
     } catch (err) {
-      setFormErr(err.response?.data?.message || 'Failed to submit. Please try again.')
+      setFormErr(err.response?.data?.message || tr('Failed to submit. Please try again.', 'تعذّر الإرسال. يرجى المحاولة مرة أخرى.', 'معرفناش نبعت. يلا نجرّب تاني.'))
     } finally { setSaving(false) }
   }
 
@@ -109,11 +122,11 @@ export default function ExpensesScreen() {
       {/* Nav */}
       <View style={[s.nav, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={s.back}>
-          <Text style={[s.backText, { color: colors.text }]}>‹</Text>
+          <Text style={[s.backText, { color: colors.text }]}>{back}</Text>
         </TouchableOpacity>
-        <Text style={[s.navTitle, { color: colors.text }]}>Expenses</Text>
+        <Text style={[s.navTitle, { color: colors.text }]}>{tr('Expenses', 'المصروفات')}</Text>
         <TouchableOpacity style={s.addBtn} onPress={() => setShowForm(true)}>
-          <Text style={s.addBtnText}>+ New</Text>
+          <Text style={s.addBtnText}>{tr('+ New', '+ جديد')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -125,17 +138,17 @@ export default function ExpensesScreen() {
         {/* Summary */}
         {totalPending > 0 && (
           <View style={[s.summaryCard, { backgroundColor: colors.card }]}>
-            <Text style={[s.summaryLabel, { color: colors.sub }]}>Pending Reimbursement</Text>
-            <Text style={[s.summaryVal, { color: colors.text }]}>EGP {fmtNum(totalPending)}</Text>
+            <Text style={[s.summaryLabel, { color: colors.sub }]}>{tr('Pending Reimbursement', 'مبالغ قيد الاسترداد', 'فلوس مستنية تترد لك')}</Text>
+            <Text style={[s.summaryVal, { color: colors.text }]}>{cur} {fmtNum(totalPending)}</Text>
           </View>
         )}
 
         {expenses.length === 0 ? (
           <View style={s.empty}>
             <Text style={s.emptyIcon}>🧾</Text>
-            <Text style={[s.emptyText, { color: colors.sub }]}>No expense claims yet</Text>
+            <Text style={[s.emptyText, { color: colors.sub }]}>{tr('No expense claims yet', 'لا توجد مطالبات مصروفات بعد', 'لسه مفيش مطالبات مصروفات')}</Text>
             <TouchableOpacity style={s.emptyBtn} onPress={() => setShowForm(true)}>
-              <Text style={s.emptyBtnText}>Submit your first claim</Text>
+              <Text style={s.emptyBtnText}>{tr('Submit your first claim', 'قدّم أول مطالبة', 'ابعت أول مطالبة')}</Text>
             </TouchableOpacity>
           </View>
         ) : expenses.map(e => {
@@ -150,14 +163,14 @@ export default function ExpensesScreen() {
                   <Text style={[s.cardMeta, { color: colors.sub }]}>{cat?.label || e.category} · {fmt(e.expense_date)}</Text>
                 </View>
                 <View>
-                  <Text style={[s.cardAmt, { color: colors.text }]}>EGP {fmtNum(e.amount)}</Text>
+                  <Text style={[s.cardAmt, { color: colors.text }]}>{cur} {fmtNum(e.amount)}</Text>
                   <View style={[s.statusBadge, { backgroundColor: ss.bg }]}>
-                    <Text style={[s.statusText, { color: ss.color }]}>{e.status?.replace('_', ' ')}</Text>
+                    <Text style={[s.statusText, { color: ss.color }]}>{statusLabel(e.status, tr)}</Text>
                   </View>
                 </View>
               </View>
               {e.receipt_number ? (
-                <Text style={[s.receipt, { color: colors.sub }]}>Receipt: {e.receipt_number}</Text>
+                <Text style={[s.receipt, { color: colors.sub }]}>{tr('Receipt', 'الإيصال')}: {e.receipt_number}</Text>
               ) : null}
             </View>
           )
@@ -168,7 +181,7 @@ export default function ExpensesScreen() {
       <Modal visible={showForm} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowForm(false)}>
         <SafeAreaView style={s.modal}>
           <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>New Expense Claim</Text>
+            <Text style={s.modalTitle}>{tr('New Expense Claim', 'مطالبة مصروفات جديدة')}</Text>
             <TouchableOpacity onPress={() => setShowForm(false)}>
               <Text style={s.modalClose}>✕</Text>
             </TouchableOpacity>
@@ -176,7 +189,7 @@ export default function ExpensesScreen() {
           <ScrollView style={s.modalScroll} keyboardShouldPersistTaps="handled">
 
             {/* Date */}
-            <Text style={s.label}>Expense Date</Text>
+            <Text style={s.label}>{tr('Expense Date', 'تاريخ المصروف')}</Text>
             <TouchableOpacity style={s.dateBtn} onPress={() => { setPickerDate(new Date(form.expense_date)); setShowPicker(true) }}>
               <Text style={s.dateBtnText}>{fmt(form.expense_date)}</Text>
               <Text>📅</Text>
@@ -186,7 +199,7 @@ export default function ExpensesScreen() {
             )}
 
             {/* Category */}
-            <Text style={[s.label, { marginTop: 14 }]}>Category</Text>
+            <Text style={[s.label, { marginTop: 14 }]}>{tr('Category', 'الفئة', 'النوع')}</Text>
             <View style={s.catGrid}>
               {CATEGORIES.map(c => (
                 <TouchableOpacity
@@ -201,7 +214,7 @@ export default function ExpensesScreen() {
             </View>
 
             {/* Amount */}
-            <Text style={[s.label, { marginTop: 14 }]}>Amount (EGP)</Text>
+            <Text style={[s.label, { marginTop: 14 }]}>{tr('Amount', 'المبلغ')} ({cur})</Text>
             <TextInput
               style={s.input}
               placeholder="0.00"
@@ -212,10 +225,10 @@ export default function ExpensesScreen() {
             />
 
             {/* Description */}
-            <Text style={[s.label, { marginTop: 14 }]}>Description *</Text>
+            <Text style={[s.label, { marginTop: 14 }]}>{tr('Description', 'الوصف')} *</Text>
             <TextInput
               style={[s.input, s.textarea]}
-              placeholder="What was this expense for?"
+              placeholder={tr('What was this expense for?', 'ما الغرض من هذا المصروف؟', 'المصروف ده كان على إيه؟')}
               placeholderTextColor="#94a3b8"
               value={form.description}
               onChangeText={v => setForm(f => ({ ...f, description: v }))}
@@ -225,10 +238,10 @@ export default function ExpensesScreen() {
             />
 
             {/* Receipt */}
-            <Text style={[s.label, { marginTop: 14 }]}>Receipt Number (optional)</Text>
+            <Text style={[s.label, { marginTop: 14 }]}>{tr('Receipt Number (optional)', 'رقم الإيصال (اختياري)')}</Text>
             <TextInput
               style={s.input}
-              placeholder="e.g. INV-2024-001"
+              placeholder={tr('e.g. INV-2024-001', 'مثال: INV-2024-001')}
               placeholderTextColor="#94a3b8"
               value={form.receipt_number}
               onChangeText={v => setForm(f => ({ ...f, receipt_number: v }))}
@@ -241,7 +254,7 @@ export default function ExpensesScreen() {
             )}
 
             <TouchableOpacity style={[s.submitBtn, saving && { opacity: 0.6 }]} onPress={submit} disabled={saving}>
-              {saving ? <ActivityIndicator color="white" /> : <Text style={s.submitText}>Submit Claim</Text>}
+              {saving ? <ActivityIndicator color="white" /> : <Text style={s.submitText}>{tr('Submit Claim', 'تقديم المطالبة', 'ابعت المطالبة')}</Text>}
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
@@ -286,7 +299,7 @@ const s = StyleSheet.create({
   modalTitle:   { fontSize: 18, fontWeight: '800', color: '#0F1829' },
   modalClose:   { fontSize: 22, color: '#64748b' },
   modalScroll:  { padding: 20 },
-  label:        { fontSize: 12, fontWeight: '600', color: '#374151', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 },
+  label:        { fontSize: 12, fontWeight: '600', color: '#374151', textTransform: 'uppercase', letterSpacing: ls(0.4), marginBottom: 8 },
   dateBtn:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1.5, borderColor: '#e2e8f0', borderRadius: 12, padding: 13, marginBottom: 4 },
   dateBtnText:  { fontSize: 15, color: '#1e293b', fontWeight: '500' },
   catGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

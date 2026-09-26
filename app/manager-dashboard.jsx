@@ -7,12 +7,40 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useTheme } from '../src/context/ThemeContext'
 import api from '../src/services/api'
+import { useLang } from '../src/context/LanguageContext'
+import { fmtTime } from '../src/i18n/format'
+import { ls, fwd, back } from '../src/utils/rtl'
 
-const fmt = d => d ? d.split('T')[0].split('-').reverse().join('/') : '—'
-const fmtTime = iso => {
-  if (!iso) return '—'
-  const d = new Date(iso)
-  return isNaN(d) ? iso.slice(0, 5) : d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+const toDateStr = d => (d ? String(d).split('T')[0] : '')
+
+const statusLabel = (st, tr) => ({
+  present:  tr('Present', 'حاضر'),
+  late:     tr('Late', 'متأخر'),
+  absent:   tr('Absent', 'غائب', 'غياب'),
+  on_leave: tr('On Leave', 'في إجازة', 'إجازة'),
+  half_day: tr('Half Day', 'نصف يوم', 'نص يوم'),
+}[st] || String(st || '').replace('_', ' '))
+
+// Known leave types → Arabic; anything else shows as sent by the server
+const leaveTypeLabel = (t, tr) => {
+  const k = String(t || '').toLowerCase().replace(/\s*leave$/, '').trim()
+  return ({
+    annual: tr('Annual Leave', 'إجازة سنوية', 'إجازة اعتيادي'),
+    casual: tr('Casual Leave', 'إجازة عارضة'),
+    sick:   tr('Sick Leave', 'إجازة مرضية'),
+    unpaid: tr('Unpaid Leave', 'إجازة بدون أجر', 'إجازة من غير مرتب'),
+  }[k]) || t
+}
+
+const daysText = (n, tr) => {
+  if (!n) return '—'
+  const v = Number(n)
+  if (isNaN(v) || v % 1) return tr(`${n} day(s)`, `${n} يوم`)
+  return tr(
+    `${v} day${v === 1 ? '' : 's'}`,
+    v === 1 ? 'يوم واحد' : v === 2 ? 'يومان' : v <= 10 ? `${v} أيام` : `${v} يومًا`,
+    v === 1 ? 'يوم واحد' : v === 2 ? 'يومين' : v <= 10 ? `${v} أيام` : `${v} يوم`,
+  )
 }
 
 const STATUS_COLOR = {
@@ -25,6 +53,8 @@ const STATUS_COLOR = {
 
 export default function ManagerDashboard() {
   const { colors } = useTheme()
+  const { tr, date } = useLang()
+  const fmt = d => (d ? date(toDateStr(d)) : '—')
   const router = useRouter()
   const [loading,    setLoading]    = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -71,20 +101,20 @@ export default function ManagerDashboard() {
   )
 
   const KPI_ITEMS = [
-    { label: 'Present',  value: stats.present,  bg: '#dcfce7', color: '#166534' },
-    { label: 'Late',     value: stats.late,      bg: '#fef9c3', color: '#854d0e' },
-    { label: 'Absent',   value: stats.absent,    bg: '#fee2e2', color: '#991b1b' },
-    { label: 'On Leave', value: stats.on_leave,  bg: '#dbeafe', color: '#1e40af' },
+    { key: 'present',  label: tr('Present', 'حاضرون', 'حاضرين'),  value: stats.present,  bg: '#dcfce7', color: '#166534' },
+    { key: 'late',     label: tr('Late', 'متأخرون', 'متأخرين'),     value: stats.late,      bg: '#fef9c3', color: '#854d0e' },
+    { key: 'absent',   label: tr('Absent', 'غائبون', 'غياب'),   value: stats.absent,    bg: '#fee2e2', color: '#991b1b' },
+    { key: 'on_leave', label: tr('On Leave', 'في إجازة', 'إجازة'), value: stats.on_leave,  bg: '#dbeafe', color: '#1e40af' },
   ]
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       {/* Nav */}
       <View style={[s.nav, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={s.back}>
-          <Text style={[s.backText, { color: colors.text }]}>‹</Text>
+        <TouchableOpacity onPress={() => router.back()} style={s.back} accessibilityLabel={tr('Back', 'رجوع')}>
+          <Text style={[s.backText, { color: colors.text }]}>{back}</Text>
         </TouchableOpacity>
-        <Text style={[s.navTitle, { color: colors.text }]}>Manager Dashboard</Text>
+        <Text style={[s.navTitle, { color: colors.text }]}>{tr('Manager Dashboard', 'لوحة المدير', 'لوحة المدير')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -95,13 +125,13 @@ export default function ManagerDashboard() {
       >
         {/* Date */}
         <Text style={[s.dateLabel, { color: colors.sub }]}>
-          {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+          {date(new Date(), { weekday: 'long', month: 'long' })}
         </Text>
 
         {/* KPI grid */}
         <View style={s.kpiGrid}>
           {KPI_ITEMS.map(k => (
-            <View key={k.label} style={[s.kpiCard, { backgroundColor: k.bg }]}>
+            <View key={k.key} style={[s.kpiCard, { backgroundColor: k.bg }]}>
               <Text style={[s.kpiVal, { color: k.color }]}>{k.value}</Text>
               <Text style={[s.kpiLabel, { color: k.color }]}>{k.label}</Text>
             </View>
@@ -112,11 +142,11 @@ export default function ManagerDashboard() {
         <View style={s.section}>
           <View style={s.sectionRow}>
             <Text style={[s.sectionTitle, { color: colors.sub }]}>
-              Pending Leave ({pending.length})
+              {tr('Pending Leave', 'إجازات قيد المراجعة', 'إجازات مستنية رد')} ({pending.length})
             </Text>
             {pending.length > 0 && (
               <TouchableOpacity onPress={() => router.push('/leave-approvals')}>
-                <Text style={s.seeAll}>Review all →</Text>
+                <Text style={s.seeAll}>{tr('Review all', 'مراجعة الكل', 'راجع الكل')} {fwd}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -124,7 +154,7 @@ export default function ManagerDashboard() {
           {pending.length === 0 ? (
             <View style={[s.emptyCard, { backgroundColor: colors.card }]}>
               <Text style={s.emptyIcon}>✅</Text>
-              <Text style={[s.emptyText, { color: colors.sub }]}>No pending requests</Text>
+              <Text style={[s.emptyText, { color: colors.sub }]}>{tr('No pending requests', 'لا توجد طلبات قيد المراجعة', 'مفيش طلبات مستنياك')}</Text>
             </View>
           ) : pending.slice(0, 5).map(p => (
             <TouchableOpacity
@@ -144,15 +174,15 @@ export default function ManagerDashboard() {
                     {p.employee_name || `${p.first_name} ${p.last_name}`}
                   </Text>
                   <Text style={[s.leaveMeta, { color: colors.sub }]}>
-                    {p.leave_type_name || p.leave_type} · {p.days || '—'} day(s)
+                    {leaveTypeLabel(p.leave_type_name || p.leave_type, tr)} · {daysText(p.days, tr)}
                   </Text>
                 </View>
                 <View style={s.pendingBadge}>
-                  <Text style={s.pendingText}>Pending</Text>
+                  <Text style={s.pendingText}>{tr('Pending', 'قيد المراجعة', 'مستني رد')}</Text>
                 </View>
               </View>
               <Text style={[s.leaveDates, { color: colors.sub }]}>
-                {fmt(p.start_date)} → {fmt(p.end_date)}
+                {fmt(p.start_date)} {fwd} {fmt(p.end_date)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -161,13 +191,13 @@ export default function ManagerDashboard() {
         {/* Today's Attendance */}
         <View style={s.section}>
           <Text style={[s.sectionTitle, { color: colors.sub }]}>
-            Today's Attendance ({todayLogs.length})
+            {tr("Today's Attendance", 'حضور اليوم', 'حضور النهارده')} ({todayLogs.length})
           </Text>
 
           {todayLogs.length === 0 ? (
             <View style={[s.emptyCard, { backgroundColor: colors.card }]}>
               <Text style={s.emptyIcon}>📋</Text>
-              <Text style={[s.emptyText, { color: colors.sub }]}>No attendance records yet today</Text>
+              <Text style={[s.emptyText, { color: colors.sub }]}>{tr('No attendance records yet today', 'لا توجد سجلات حضور اليوم حتى الآن', 'لسه مفيش حد بصم النهارده')}</Text>
             </View>
           ) : todayLogs.map(l => {
             const sc = STATUS_COLOR[l.status] || { bg: '#f1f5f9', color: '#475569' }
@@ -182,12 +212,12 @@ export default function ManagerDashboard() {
                   <View style={{ flex: 1 }}>
                     <Text style={[s.attName, { color: colors.text }]} numberOfLines={1}>{l.employee_name}</Text>
                     <Text style={[s.attTimes, { color: colors.sub }]}>
-                      In: {fmtTime(l.check_in)} · Out: {fmtTime(l.check_out)}
+                      {tr('In', 'حضور', 'دخول')}: {fmtTime(l.check_in)} · {tr('Out', 'انصراف', 'خروج')}: {fmtTime(l.check_out)}
                     </Text>
                   </View>
                   <View style={[s.statusBadge, { backgroundColor: sc.bg }]}>
                     <Text style={[s.statusText, { color: sc.color }]}>
-                      {(l.status || 'present').replace('_', ' ')}
+                      {statusLabel(l.status || 'present', tr)}
                     </Text>
                   </View>
                 </View>
@@ -215,7 +245,7 @@ const s = StyleSheet.create({
   kpiLabel:     { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', marginTop: 2 },
   section:      { marginBottom: 24 },
   sectionRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  sectionTitle: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionTitle: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: ls(0.5) },
   seeAll:       { fontSize: 13, color: '#2563eb', fontWeight: '600' },
   emptyCard:    { borderRadius: 14, padding: 28, alignItems: 'center' },
   emptyIcon:    { fontSize: 32, marginBottom: 8 },

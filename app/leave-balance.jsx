@@ -5,6 +5,8 @@ import { useRouter } from 'expo-router'
 import { useAuth } from '../src/context/AuthContext'
 import { useTheme } from '../src/context/ThemeContext'
 import api from '../src/services/api'
+import { useLang } from '../src/context/LanguageContext'
+import { ls, fwd, back } from '../src/utils/rtl'
 
 const TYPE_ICONS = {
   annual:   '🏖️',
@@ -40,6 +42,7 @@ export default function LeaveBalanceScreen() {
   const router  = useRouter()
   const { user } = useAuth()
   const { colors } = useTheme()
+  const { tr, date } = useLang()
   const [balances,   setBalances]   = useState([])
   const [requests,   setRequests]   = useState([])
   const [loading,    setLoading]    = useState(true)
@@ -66,15 +69,24 @@ export default function LeaveBalanceScreen() {
   const totalRemaining = balances.reduce((sum, b) => sum + (Number(b.remaining) || 0), 0)
   const totalAllocated = balances.reduce((sum, b) => sum + (Number(b.allocated) || 0), 0)
 
+  const STATUS = {
+    approved:  tr('Approved', 'موافق عليه', 'اتوافق عليه'),
+    rejected:  tr('Rejected', 'مرفوض', 'اترفض'),
+    pending:   tr('Pending', 'قيد المراجعة', 'مستني رد'),
+    cancelled: tr('Cancelled', 'ملغي', 'اتلغى'),
+  }
+  const statusLabel = st => STATUS[st] || st
+  const dShort = v => (v ? date(String(v).split('T')[0]) : '')
+
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       {/* Nav */}
       <View style={[s.navBar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <Text style={[s.backArrow, { color: colors.text }]}>←</Text>
-          <Text style={[s.backText, { color: colors.text }]}>Back</Text>
+          <Text style={[s.backArrow, { color: colors.text }]}>{back}</Text>
+          <Text style={[s.backText, { color: colors.text }]}>{tr('Back', 'رجوع')}</Text>
         </TouchableOpacity>
-        <Text style={[s.navTitle, { color: colors.text }]}>Leave Balance</Text>
+        <Text style={[s.navTitle, { color: colors.text }]}>{tr('Leave Balance', 'رصيد الإجازات', 'رصيد إجازاتك')}</Text>
         <View style={{ width: 64 }} />
       </View>
 
@@ -87,29 +99,29 @@ export default function LeaveBalanceScreen() {
         >
           {/* Summary hero */}
           <View style={s.hero}>
-            <Text style={s.heroLabel}>Total Days Remaining</Text>
+            <Text style={s.heroLabel}>{tr('Total Days Remaining', 'إجمالي الأيام المتبقية', 'إجمالي الأيام اللي فاضلة')}</Text>
             <Text style={s.heroNum}>{totalRemaining}</Text>
-            <Text style={s.heroSub}>out of {totalAllocated} allocated days</Text>
+            <Text style={s.heroSub}>{tr(`out of ${totalAllocated} allocated days`, `من أصل ${totalAllocated} يوم مخصص`, `من ${totalAllocated} يوم ليك`)}</Text>
             <View style={s.heroBar}>
               <View style={[s.heroFill, { width: `${totalAllocated ? Math.min(100, ((totalAllocated - totalRemaining) / totalAllocated) * 100) : 0}%` }]} />
             </View>
             <View style={s.heroLegend}>
               <View style={s.heroLegendItem}>
                 <View style={[s.heroLegendDot, { backgroundColor: '#2BC4BE' }]} />
-                <Text style={s.heroLegendText}>Used</Text>
+                <Text style={s.heroLegendText}>{tr('Used', 'المستخدم', 'اتاخد')}</Text>
               </View>
               <View style={s.heroLegendItem}>
                 <View style={[s.heroLegendDot, { backgroundColor: 'rgba(255,255,255,0.3)' }]} />
-                <Text style={s.heroLegendText}>Remaining</Text>
+                <Text style={s.heroLegendText}>{tr('Remaining', 'المتبقي', 'فاضل')}</Text>
               </View>
             </View>
           </View>
 
           {/* Per-type cards */}
-          <Text style={[s.sectionTitle, { color: colors.sub }]}>By Leave Type</Text>
+          <Text style={[s.sectionTitle, { color: colors.sub }]}>{tr('By Leave Type', 'حسب نوع الإجازة')}</Text>
           {balances.length === 0 ? (
             <View style={s.emptyBox}>
-              <Text style={s.emptyText}>No leave balances found.</Text>
+              <Text style={s.emptyText}>{tr('No leave balances found.', 'لا توجد أرصدة إجازات.', 'لسه مفيش رصيد إجازات.')}</Text>
             </View>
           ) : balances.map((b, i) => {
             const color = getColor(b.name)
@@ -124,7 +136,7 @@ export default function LeaveBalanceScreen() {
                   </View>
                   <View style={s.typeRight}>
                     <Text style={[s.typeRemain, { color: color.primary }]}>{b.remaining}</Text>
-                    <Text style={s.typeRemainLabel}>days left</Text>
+                    <Text style={s.typeRemainLabel}>{tr('days left', 'يوم متبقٍ', 'يوم فاضل')}</Text>
                   </View>
                 </View>
 
@@ -135,17 +147,17 @@ export default function LeaveBalanceScreen() {
                 <View style={s.typeStats}>
                   <View style={s.typeStat}>
                     <Text style={[s.typeStatNum, { color: colors.text }]}>{b.allocated}</Text>
-                    <Text style={s.typeStatLabel}>Allocated</Text>
+                    <Text style={s.typeStatLabel}>{tr('Allocated', 'المخصص', 'ليك')}</Text>
                   </View>
                   <View style={s.typeStatDivider} />
                   <View style={s.typeStat}>
                     <Text style={[s.typeStatNum, { color: color.primary }]}>{b.used}</Text>
-                    <Text style={s.typeStatLabel}>Used</Text>
+                    <Text style={s.typeStatLabel}>{tr('Used', 'المستخدم', 'اتاخد')}</Text>
                   </View>
                   <View style={s.typeStatDivider} />
                   <View style={s.typeStat}>
                     <Text style={[s.typeStatNum, { color: color.primary, fontWeight: '900' }]}>{b.remaining}</Text>
-                    <Text style={s.typeStatLabel}>Remaining</Text>
+                    <Text style={s.typeStatLabel}>{tr('Remaining', 'المتبقي', 'فاضل')}</Text>
                   </View>
                 </View>
               </View>
@@ -155,7 +167,7 @@ export default function LeaveBalanceScreen() {
           {/* Recent requests for context */}
           {requests.length > 0 && (
             <>
-              <Text style={[s.sectionTitle, { marginTop: 8, color: colors.sub }]}>Recent Requests</Text>
+              <Text style={[s.sectionTitle, { marginTop: 8, color: colors.sub }]}>{tr('Recent Requests', 'أحدث الطلبات', 'آخر طلباتك')}</Text>
               {requests.slice(0, 5).map((r, i) => {
                 const color = getColor(r.leave_type_name || r.leave_type || '')
                 return (
@@ -164,7 +176,7 @@ export default function LeaveBalanceScreen() {
                     <View style={{ flex: 1 }}>
                       <Text style={[s.reqType, { color: colors.text2 }]}>{r.leave_type_name || r.leave_type}</Text>
                       <Text style={s.reqDates}>
-                        {r.start_date?.split('T')[0].split('-').reverse().join('/')} → {r.end_date?.split('T')[0].split('-').reverse().join('/')} · {r.days_requested}d
+                        {dShort(r.start_date)} {fwd} {dShort(r.end_date)} · {r.days_requested} {tr('d', 'يوم')}
                       </Text>
                     </View>
                     <View style={[s.reqStatus, {
@@ -172,7 +184,7 @@ export default function LeaveBalanceScreen() {
                     }]}>
                       <Text style={[s.reqStatusText, {
                         color: r.status === 'approved' ? '#16a34a' : r.status === 'rejected' ? '#dc2626' : '#92400e'
-                      }]}>{r.status}</Text>
+                      }]}>{statusLabel(r.status)}</Text>
                     </View>
                   </View>
                 )
@@ -181,7 +193,7 @@ export default function LeaveBalanceScreen() {
           )}
 
           <TouchableOpacity style={s.newBtn} onPress={() => router.push('/(tabs)/leave')}>
-            <Text style={s.newBtnText}>+ New Leave Request</Text>
+            <Text style={s.newBtnText}>{tr('+ New Leave Request', '+ طلب إجازة جديد', '+ اطلب إجازة')}</Text>
           </TouchableOpacity>
         </ScrollView>
       )}
@@ -208,7 +220,7 @@ const s = StyleSheet.create({
   heroLegendItem:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
   heroLegendDot:   { width: 8, height: 8, borderRadius: 4 },
   heroLegendText:  { color: 'rgba(255,255,255,0.55)', fontSize: 12 },
-  sectionTitle:    { fontSize: 12, fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
+  sectionTitle:    { fontSize: 12, fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: ls(0.5), marginBottom: 12 },
   emptyBox:        { alignItems: 'center', paddingVertical: 32 },
   emptyText:       { color: '#94a3b8', fontSize: 14 },
   typeCard:        { borderRadius: 16, padding: 18, marginBottom: 12 },
@@ -225,7 +237,7 @@ const s = StyleSheet.create({
   typeStat:        { flex: 1, alignItems: 'center' },
   typeStatDivider: { width: 1, height: 28, backgroundColor: '#e2e8f0' },
   typeStatNum:     { fontSize: 18, fontWeight: '800', color: '#0F1829', marginBottom: 2 },
-  typeStatLabel:   { fontSize: 11, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.3 },
+  typeStatLabel:   { fontSize: 11, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: ls(0.3) },
   reqRow:          { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: 'white', borderRadius: 12, padding: 14, marginBottom: 8 },
   reqDot:          { width: 10, height: 10, borderRadius: 5 },
   reqType:         { fontSize: 13, fontWeight: '600', color: '#1e293b', marginBottom: 2 },

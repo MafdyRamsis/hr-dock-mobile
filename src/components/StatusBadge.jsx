@@ -1,4 +1,5 @@
 import { View, Text } from 'react-native'
+import { useLang } from '../context/LanguageContext'
 
 /* Semantic colors matched to the web app's Tailwind-based palette —
    rendered as a translucent tint of the solid color so the same values
@@ -18,13 +19,28 @@ const MAP = {
   'in-progress': '#6366F1',
 }
 
+const statusLabel = (tr) => ({
+  active:        tr('Active', 'نشط', 'شغّال'),
+  approved:      tr('Approved', 'تمت الموافقة', 'اتوافق عليه'),
+  pending:       tr('Pending', 'قيد الانتظار', 'مستني رد'),
+  rejected:      tr('Rejected', 'مرفوض', 'اترفض'),
+  cancelled:     tr('Cancelled', 'ملغي', 'اتلغى'),
+  present:       tr('Present', 'حاضر', 'حاضر'),
+  absent:        tr('Absent', 'غائب', 'غايب'),
+  late:          tr('Late', 'متأخر', 'متأخر'),
+  open:          tr('Open', 'مفتوح', 'مفتوح'),
+  closed:        tr('Closed', 'مغلق', 'اتقفل'),
+  'in-progress': tr('In Progress', 'قيد التنفيذ', 'شغالين عليه'),
+})
+
 export default function StatusBadge({ status }) {
+  const { ar, tr } = useLang()
   const s = status?.toLowerCase().replace(/ /g, '-') || ''
   const c = MAP[s] || '#64748B'
   return (
     <View style={{ backgroundColor: `${c}26`, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 4, alignSelf: 'flex-start' }}>
       <Text style={{ fontSize: 11, fontWeight: '700', color: c, textTransform: 'capitalize' }}>
-        {status}
+        {(ar && statusLabel(tr)[s]) || status}
       </Text>
     </View>
   )

@@ -1,4 +1,6 @@
 // UI strings. Add new keys to BOTH objects; missing Arabic keys fall back to English.
+// AR_FRIENDLY holds the Egyptian wording used when the company's Arabic tone is "friendly"
+// (the default); keys missing there fall back to AR.
 export const EN = {
   // Sign in
   tagline:            'Employee Self-Service',
@@ -54,6 +56,21 @@ export const EN = {
   cancel:             'Cancel',
   english:            'English',
   arabic:             'العربية',
+  // Shared account / password strings
+  back:               'Back',
+  change_password:    'Change Password',
+  current_password:   'Current Password',
+  new_password:       'New Password',
+  confirm_new_password: 'Confirm New Password',
+  pw_min_ph:          'At least 8 characters',
+  update_password:    'Update Password',
+  pw_changed_title:   'Password changed',
+  pw_changed_msg:     'Your password has been updated successfully.',
+  sign_out_title:     'Sign Out',
+  sign_out_confirm:   'Are you sure you want to sign out?',
+  announcements:      'Announcements',
+  version_line:       'HR Dock v1.0 · Employee Self-Service',
+  error_generic:      'Something went wrong. Please try again.',
 }
 
 export const AR = {
@@ -104,11 +121,72 @@ export const AR = {
   tab_pulse:          'نبض',
   tab_team:           'الفريق',
   tab_requests:       'الطلبات',
-  tab_payslips:       'كشوف الرواتب',
+  tab_payslips:       'الرواتب',
   // Profile / language
   language:           'اللغة',
   language_prompt:    'اختر لغتك المفضلة',
   cancel:             'إلغاء',
   english:            'English',
   arabic:             'العربية',
+  // Shared account / password strings
+  back:               'رجوع',
+  change_password:    'تغيير كلمة المرور',
+  current_password:   'كلمة المرور الحالية',
+  new_password:       'كلمة المرور الجديدة',
+  confirm_new_password: 'تأكيد كلمة المرور الجديدة',
+  pw_min_ph:          '8 أحرف على الأقل',
+  update_password:    'تحديث كلمة المرور',
+  pw_changed_title:   'تم تغيير كلمة المرور',
+  pw_changed_msg:     'تم تحديث كلمة المرور بنجاح.',
+  sign_out_title:     'تسجيل الخروج',
+  sign_out_confirm:   'هل تريد تسجيل الخروج بالفعل؟',
+  announcements:      'الإعلانات',
+  version_line:       'HR Dock v1.0 · الخدمة الذاتية للموظفين',
+  error_generic:      'حدث خطأ ما. يرجى المحاولة مرة أخرى.',
+}
+
+export const AR_FRIENDLY = {
+  // Sign in
+  welcome_back:       'أهلًا وسهلًا تاني',
+  sign_in_sub:        'ادخل على حسابك',
+  sign_in:            'ادخل',
+  bio_face:           'ادخل بـ Face ID',
+  bio_finger:         'ادخل بالبصمة',
+  footer:             'HR Dock · معاك في كل خطوة',
+  fill_all:           'كمّل كل الخانات الأول.',
+  login_failed:       'معرفناش ندخّلك. اتأكد من بياناتك وجرّب تاني.',
+  bio_failed:         'البصمة مانفعتش. جرّب تاني.',
+  // Two-step verification
+  twofa_sub:          'اكتب الكود اللي فيه 6 أرقام من تطبيق المصادقة.',
+  twofa_label:        'كود التحقق',
+  twofa_verify:       'تأكيد',
+  twofa_short:        'اكتب الكود اللي فيه 6 أرقام من تطبيق المصادقة.',
+  twofa_invalid:      'الكود مش صح. جرّب تاني.',
+  back_to_sign_in:    'ارجع لصفحة الدخول',
+  // Forced password change
+  setpw_title:        'اختار كلمة سر جديدة',
+  setpw_sub:          'علشان أمانك، اختار كلمة سر جديدة قبل ما نكمّل.',
+  setpw_current:      'كلمة السر الحالية (المؤقتة)',
+  setpw_new:          'كلمة السر الجديدة (8 حروف على الأقل)',
+  setpw_confirm:      'اكتب كلمة السر الجديدة تاني',
+  show_passwords:     'اظهر كلمات السر',
+  save_continue:      'احفظ وكمّل',
+  pw_mismatch:        'كلمتين السر مش زي بعض.',
+  pw_min:             'كلمة السر الجديدة لازم تكون 8 حروف على الأقل.',
+  pw_failed:          'معرفناش نغيّر كلمة السر. يلا نجرّب تاني.',
+  // Tabs
+  tab_payslips:       'المرتب',
+  // Profile / language
+  language_prompt:    'اختار اللغة اللي تريحك',
+  // Shared account / password strings
+  change_password:    'غيّر كلمة السر',
+  current_password:   'كلمة السر الحالية',
+  new_password:       'كلمة السر الجديدة',
+  confirm_new_password: 'اكتب كلمة السر الجديدة تاني',
+  pw_min_ph:          '8 حروف على الأقل',
+  update_password:    'غيّر كلمة السر',
+  pw_changed_title:   'كلمة السر اتغيرت',
+  pw_changed_msg:     'كلمة السر اتحدّثت خلاص.',
+  sign_out_confirm:   'نسجّل خروجك دلوقتي؟',
+  error_generic:      'معرفناش نكمّل. يلا نجرّب تاني.',
 }

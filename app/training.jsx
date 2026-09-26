@@ -8,8 +8,8 @@ import { useRouter } from 'expo-router'
 import { useAuth } from '../src/context/AuthContext'
 import { useTheme } from '../src/context/ThemeContext'
 import api from '../src/services/api'
-
-const fmt = d => d ? d.split('T')[0].split('-').reverse().join('/') : '—'
+import { useLang } from '../src/context/LanguageContext'
+import { back } from '../src/utils/rtl'
 
 const STATUS_STYLE = {
   planned:    { bg: '#f1f5f9', color: '#475569', icon: '📅' },
@@ -27,10 +27,27 @@ const TYPE_ICONS = {
   other:    '📚',
 }
 
+const statusLabel = (st, tr) => ({
+  all:         tr('All', 'الكل'),
+  planned:     tr('Planned', 'مخطط لها', 'متخططة'),
+  in_progress: tr('In Progress', 'قيد التنفيذ', 'شغالين فيها'),
+  completed:   tr('Completed', 'مكتملة', 'خلصت'),
+  cancelled:   tr('Cancelled', 'ملغاة', 'اتلغت'),
+  expired:     tr('Expired', 'منتهية', 'خلصت صلاحيتها'),
+}[st] || st?.replace('_', ' '))
+
+const emptyLabel = (f, tr) => ({
+  planned:     tr('No planned courses', 'لا توجد دورات مخطط لها', 'مفيش دورات متخططة'),
+  in_progress: tr('No in progress courses', 'لا توجد دورات قيد التنفيذ', 'مفيش دورات شغالين فيها'),
+  completed:   tr('No completed courses', 'لا توجد دورات مكتملة', 'لسه مفيش دورات خلصت'),
+}[f] || tr('No training records yet', 'لا توجد سجلات تدريب بعد', 'لسه مفيش تدريبات'))
+
 export default function TrainingScreen() {
   const { user }   = useAuth()
   const { colors } = useTheme()
   const router     = useRouter()
+  const { tr, date } = useLang()
+  const fmt = d => d ? date(d) : '—'
 
   const [records,    setRecords]    = useState([])
   const [loading,    setLoading]    = useState(true)
@@ -67,9 +84,9 @@ export default function TrainingScreen() {
       {/* Nav */}
       <View style={[s.nav, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={s.back}>
-          <Text style={[s.backText, { color: colors.text }]}>‹</Text>
+          <Text style={[s.backText, { color: colors.text }]}>{back}</Text>
         </TouchableOpacity>
-        <Text style={[s.navTitle, { color: colors.text }]}>Training</Text>
+        <Text style={[s.navTitle, { color: colors.text }]}>{tr('Training', 'التدريب')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -83,15 +100,15 @@ export default function TrainingScreen() {
           <View style={s.statsRow}>
             <View style={[s.statCard, { backgroundColor: colors.card }]}>
               <Text style={[s.statVal, { color: colors.text }]}>{completedCount}</Text>
-              <Text style={[s.statLabel, { color: colors.sub }]}>Completed</Text>
+              <Text style={[s.statLabel, { color: colors.sub }]}>{tr('Completed', 'مكتملة', 'خلصت')}</Text>
             </View>
             <View style={[s.statCard, { backgroundColor: colors.card }]}>
               <Text style={[s.statVal, { color: colors.text }]}>{upcomingCount}</Text>
-              <Text style={[s.statLabel, { color: colors.sub }]}>Upcoming</Text>
+              <Text style={[s.statLabel, { color: colors.sub }]}>{tr('Upcoming', 'القادمة', 'الجاية')}</Text>
             </View>
             <View style={[s.statCard, { backgroundColor: colors.card }]}>
               <Text style={[s.statVal, { color: colors.text }]}>{records.length}</Text>
-              <Text style={[s.statLabel, { color: colors.sub }]}>Total</Text>
+              <Text style={[s.statLabel, { color: colors.sub }]}>{tr('Total', 'الإجمالي')}</Text>
             </View>
           </View>
         )}
@@ -105,7 +122,7 @@ export default function TrainingScreen() {
               onPress={() => setFilter(f)}
             >
               <Text style={[s.chipText, filter === f && s.chipTextActive]}>
-                {f === 'all' ? 'All' : f.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                {statusLabel(f, tr)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -115,7 +132,7 @@ export default function TrainingScreen() {
           <View style={s.empty}>
             <Text style={s.emptyIcon}>🎓</Text>
             <Text style={[s.emptyText, { color: colors.sub }]}>
-              {filter === 'all' ? 'No training records yet' : `No ${filter.replace('_',' ')} courses`}
+              {emptyLabel(filter, tr)}
             </Text>
           </View>
         ) : filtered.map(rec => {
@@ -131,20 +148,20 @@ export default function TrainingScreen() {
                   ) : null}
                 </View>
                 <View style={[s.statusBadge, { backgroundColor: ss.bg }]}>
-                  <Text style={[s.statusText, { color: ss.color }]}>{ss.icon} {rec.status?.replace('_',' ')}</Text>
+                  <Text style={[s.statusText, { color: ss.color }]}>{ss.icon} {statusLabel(rec.status, tr)}</Text>
                 </View>
               </View>
 
               <View style={[s.datesRow, { borderTopColor: colors.border }]}>
                 {rec.completion_date ? (
                   <View style={s.dateItem}>
-                    <Text style={[s.dateLabel, { color: colors.sub }]}>Completed</Text>
+                    <Text style={[s.dateLabel, { color: colors.sub }]}>{tr('Completed', 'مكتملة', 'خلصت')}</Text>
                     <Text style={[s.dateVal, { color: colors.text }]}>{fmt(rec.completion_date)}</Text>
                   </View>
                 ) : null}
                 {rec.expiry_date ? (
                   <View style={s.dateItem}>
-                    <Text style={[s.dateLabel, { color: colors.sub }]}>Expires</Text>
+                    <Text style={[s.dateLabel, { color: colors.sub }]}>{tr('Expires', 'تنتهي في', 'بتخلص')}</Text>
                     <Text style={[s.dateVal, { color: new Date(rec.expiry_date) < new Date() ? '#dc2626' : colors.text }]}>
                       {fmt(rec.expiry_date)}
                     </Text>
@@ -152,7 +169,7 @@ export default function TrainingScreen() {
                 ) : null}
                 {rec.certificate_number ? (
                   <View style={s.dateItem}>
-                    <Text style={[s.dateLabel, { color: colors.sub }]}>Certificate</Text>
+                    <Text style={[s.dateLabel, { color: colors.sub }]}>{tr('Certificate', 'الشهادة')}</Text>
                     <Text style={[s.dateVal, { color: colors.text }]}>{rec.certificate_number}</Text>
                   </View>
                 ) : null}

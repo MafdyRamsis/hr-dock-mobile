@@ -10,6 +10,7 @@ import * as LocalAuthentication from 'expo-local-authentication'
 import { useAuth } from '../../src/context/AuthContext'
 import { useLang } from '../../src/context/LanguageContext'
 import { GRADIENTS, useTheme } from '../../src/context/ThemeContext'
+import { ls, fwd } from '../../src/utils/rtl'
 
 export default function LoginScreen() {
   const { login, loginWithBiometric, pending2fa, verify2fa, cancel2fa } = useAuth()
@@ -176,7 +177,10 @@ export default function LoginScreen() {
                 <LinearGradient colors={GRADIENTS.coral} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[s.btn, loading && s.btnDisabled]}>
                   {loading
                     ? <ActivityIndicator color="white" />
-                    : <Text style={s.btnText}>{t('sign_in')}  →</Text>
+                    : <View style={s.btnRow}>
+                        <Text style={s.btnText}>{t('sign_in')}</Text>
+                        <Text style={s.btnText}>{fwd}</Text>
+                      </View>
                   }
                 </LinearGradient>
               </TouchableOpacity>
@@ -241,16 +245,16 @@ export default function LoginScreen() {
 const s = StyleSheet.create({
   safe:        { flex: 1 },
   scroll:      { flexGrow: 1, justifyContent: 'center', padding: 24, paddingTop: 56 },
-  headline:    { fontSize: 34, fontWeight: '800', letterSpacing: -0.8, marginBottom: 12 },
+  headline:    { fontSize: 34, fontWeight: '800', letterSpacing: ls(-0.8), marginBottom: 12 },
   badge:       { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 7, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 16 },
   badgeDot:    { width: 5, height: 5, borderRadius: 3 },
-  badgeText:   { fontSize: 10.5, fontWeight: '800', letterSpacing: 0.6 },
+  badgeText:   { fontSize: 10.5, fontWeight: '800', letterSpacing: ls(0.6) },
   subtitle:    { fontSize: 14.5 },
   subtitleSpaced: { marginBottom: 28 },
   card:        { borderRadius: 20, padding: 24, borderWidth: 1 },
   title:       { fontSize: 22, fontWeight: '800', marginBottom: 4 },
   field:       { marginBottom: 16 },
-  label:       { fontSize: 11.5, fontWeight: '700', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  label:       { fontSize: 11.5, fontWeight: '700', marginBottom: 8, textTransform: 'uppercase', letterSpacing: ls(0.5) },
   input:       { borderWidth: 1.5, borderRadius: 12, padding: 14, fontSize: 15 },
   errorBox:    { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', borderRadius: 12, padding: 12, marginBottom: 16 },
   errorText:   { color: '#DC2626', fontSize: 13, fontWeight: '600' },
@@ -258,6 +262,7 @@ const s = StyleSheet.create({
   btn:         { borderRadius: 14, padding: 16, alignItems: 'center' },
   btnDisabled: { opacity: 0.65 },
   btnText:     { color: 'white', fontSize: 16, fontWeight: '800' },
+  btnRow:      { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dividerRow:  { flexDirection: 'row', alignItems: 'center', marginVertical: 18, gap: 10 },
   dividerLine: { flex: 1, height: 1 },
   dividerText: { fontSize: 12, fontWeight: '700' },

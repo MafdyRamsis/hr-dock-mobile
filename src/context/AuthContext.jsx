@@ -33,7 +33,19 @@ export function AuthProvider({ children }) {
           const usable = bioOn
             && (await LocalAuthentication.hasHardwareAsync())
             && (await LocalAuthentication.isEnrolledAsync())
-          if (!usable) { setToken(t); setUser(JSON.parse(u)) }
+          if (!usable) {
+            const saved = JSON.parse(u)
+            setToken(t); setUser(saved)
+            // Sessions saved before sign-in returned employee_id: fill it in once,
+            // otherwise every "my own record" screen finds nobody.
+            if (!('employee_id' in saved)) {
+              api.get('/auth/me').then(async r => {
+                const next = { ...saved, employee_id: r.data?.data?.employee_id ?? null }
+                setUser(next)
+                await SecureStore.setItemAsync('user', JSON.stringify(next))
+              }).catch(() => {})
+            }
+          }
         }
       } catch {}
       finally { setLoading(false) }

@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import api from '../src/services/api'
 import { useAuth } from '../src/context/AuthContext'
 import { useLang } from '../src/context/LanguageContext'
+import { ls } from '../src/utils/rtl'
 
 // Shown when the account was created by an administrator (temporary password)
 // or the company's password-expiry policy requires a new one.
@@ -95,7 +96,7 @@ const s = StyleSheet.create({
   title:       { fontSize: 22, fontWeight: '800', color: '#0F1829', marginBottom: 4 },
   subtitle:    { fontSize: 14, color: '#64748b', marginBottom: 24 },
   field:       { marginBottom: 16 },
-  label:       { fontSize: 12, fontWeight: '600', color: '#374151', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.4 },
+  label:       { fontSize: 12, fontWeight: '600', color: '#374151', marginBottom: 6, textTransform: 'uppercase', letterSpacing: ls(0.4) },
   input:       { borderWidth: 1.5, borderColor: '#e2e8f0', borderRadius: 12, padding: 14, fontSize: 15, color: '#1e293b', backgroundColor: '#fafafa' },
   showRow:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   showText:    { fontSize: 13, color: '#64748b' },

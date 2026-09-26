@@ -12,32 +12,35 @@ import LeaderboardRow from '../../src/components/LeaderboardRow'
 import KudosCard from '../../src/components/KudosCard'
 import MoodSlider from '../../src/components/MoodSlider'
 import { SkeletonCard } from '../../src/components/Skeleton'
+import { ls, fwd } from '../../src/utils/rtl'
+import { useLang } from '../../src/context/LanguageContext'
 
-const CATEGORIES = [
-  { v: 'teamwork',     emoji: '🤝', label: 'Teamwork' },
-  { v: 'excellence',   emoji: '⭐', label: 'Excellence' },
-  { v: 'helping_hand', emoji: '🙌', label: 'Helping Hand' },
-  { v: 'innovation',   emoji: '💡', label: 'Innovation' },
-  { v: 'leadership',   emoji: '🧭', label: 'Leadership' },
-  { v: 'positivity',   emoji: '☀️', label: 'Positivity' },
+const categories = (tr) => [
+  { v: 'teamwork',     emoji: '🤝', label: tr('Teamwork', 'روح الفريق') },
+  { v: 'excellence',   emoji: '⭐', label: tr('Excellence', 'التميّز', 'تميّز') },
+  { v: 'helping_hand', emoji: '🙌', label: tr('Helping Hand', 'يد العون', 'إيد المساعدة') },
+  { v: 'innovation',   emoji: '💡', label: tr('Innovation', 'الابتكار', 'ابتكار') },
+  { v: 'leadership',   emoji: '🧭', label: tr('Leadership', 'القيادة', 'قيادة') },
+  { v: 'positivity',   emoji: '☀️', label: tr('Positivity', 'الإيجابية', 'طاقة إيجابية') },
 ]
-const TABS = [
-  { key: 'feed', label: 'Recognition' },
-  { key: 'leaderboard', label: 'Leaderboard' },
-  { key: 'directory', label: 'Team' },
+const tabs = (tr) => [
+  { key: 'feed', label: tr('Recognition', 'التقدير', 'الشكر') },
+  { key: 'leaderboard', label: tr('Leaderboard', 'لوحة المتصدرين', 'الترتيب') },
+  { key: 'directory', label: tr('Team', 'الفريق') },
 ]
-const timeAgo = iso => {
+const timeAgo = (iso, tr) => {
   if (!iso) return ''
   const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
-  if (mins < 1440) return `${Math.floor(mins / 60)}h ago`
-  return `${Math.floor(mins / 1440)}d ago`
+  if (mins < 1) return tr('just now', 'منذ لحظات', 'دلوقتي')
+  if (mins < 60) return tr(`${mins}m ago`, `منذ ${mins} د`, `من ${mins} د`)
+  if (mins < 1440) return tr(`${Math.floor(mins / 60)}h ago`, `منذ ${Math.floor(mins / 60)} س`, `من ${Math.floor(mins / 60)} س`)
+  return tr(`${Math.floor(mins / 1440)}d ago`, `منذ ${Math.floor(mins / 1440)} يوم`, `من ${Math.floor(mins / 1440)} يوم`)
 }
 
 export default function TeamScreen() {
   const { user } = useAuth()
   const { colors, isDark } = useTheme()
+  const { tr, t } = useLang()
   const isLead = ['admin', 'hr_manager', 'manager'].includes(user?.role)
 
   const [tab, setTab] = useState('feed')
@@ -89,22 +92,22 @@ export default function TeamScreen() {
     try {
       const r = await api.post('/pulse/checkin', { mood })
       setTodayMood(r.data.data)
-    } catch { Alert.alert('Error', 'Could not save your check-in. Please try again.') }
+    } catch { Alert.alert(tr('Error', 'خطأ', 'حصلت مشكلة'), tr('Could not save your check-in. Please try again.', 'تعذّر حفظ إجابتك. حاول مرة أخرى.', 'معرفناش نحفظ إجابتك. يلا نجرّب تاني.')) }
     finally { setMoodSaving(false) }
   }
 
   const openGive = (emp) => { setPickTo(emp || null); setCategory('teamwork'); setMessage(''); setSearch(''); setShowGive(true) }
 
   const submitKudos = async () => {
-    if (!pickTo) { Alert.alert('Pick a colleague', 'Choose who you want to recognize first.'); return }
+    if (!pickTo) { Alert.alert(tr('Pick a colleague', 'اختر زميلًا', 'اختار زميل'), tr('Choose who you want to recognize first.', 'اختر أولًا الزميل الذي تريد تقديره.', 'اختار الأول الزميل اللي هنشكره.')); return }
     setSending(true)
     try {
       await api.post('/kudos', { to_employee_id: pickTo.id, category, message: message.trim() })
       setShowGive(false)
       await load()
-      Alert.alert('🎉 Sent!', `Your kudos to ${pickTo.first_name} ${pickTo.last_name} is on its way.`)
+      Alert.alert(tr('🎉 Sent!', '🎉 تم الإرسال!', '🎉 اتبعت!'), tr(`Your kudos to ${pickTo.first_name} ${pickTo.last_name} is on its way.`, `تم إرسال تقديرك إلى ${pickTo.first_name} ${pickTo.last_name}.`, `الشكر اتبعت لـ ${pickTo.first_name} ${pickTo.last_name}.`))
     } catch (err) {
-      Alert.alert('Error', err.response?.data?.message || 'Failed to send kudos.')
+      Alert.alert(tr('Error', 'خطأ', 'حصلت مشكلة'), err.response?.data?.message || tr('Failed to send kudos.', 'تعذّر إرسال التقدير.', 'معرفناش نبعت الشكر. يلا نجرّب تاني.'))
     } finally { setSending(false) }
   }
 
@@ -132,10 +135,10 @@ export default function TeamScreen() {
       >
         {/* Header */}
         <View style={s.header}>
-          <Text style={[s.title, { color: colors.text }]}>Team</Text>
+          <Text style={[s.title, { color: colors.text }]}>{t('tab_team')}</Text>
           <TouchableOpacity onPress={() => openGive()} activeOpacity={0.85}>
             <LinearGradient colors={GRADIENTS.lavender} style={s.giveBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-              <Text style={s.giveBtnText}>+ Give Kudos</Text>
+              <Text style={s.giveBtnText}>+ {tr('Give Kudos', 'أرسل تقديرًا', 'اشكر زميل')}</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -145,7 +148,7 @@ export default function TeamScreen() {
           <View style={[s.celebrateCard, { backgroundColor: colors.card, borderColor: colors.glassBorder }]}>
             {events.map((e, i) => (
               <Text key={i} style={[s.celebrateText, { color: colors.text2 }]}>
-                {e.type === 'birthday' ? '🎂' : '🎉'} {e.name} — {e.type === 'birthday' ? 'Happy Birthday!' : 'Work Anniversary!'}
+                {e.type === 'birthday' ? '🎂' : '🎉'} {e.name} — {e.type === 'birthday' ? tr('Happy Birthday!', 'عيد ميلاد سعيد!') : tr('Work Anniversary!', 'ذكرى سنوية للعمل معنا!', 'سنة جديدة معانا!')}
               </Text>
             ))}
           </View>
@@ -153,9 +156,9 @@ export default function TeamScreen() {
 
         {/* Mood check-in */}
         <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.glassBorder, shadowColor: isDark ? '#000' : '#8890B5' }]}>
-          <Text style={[s.cardTitle, { color: colors.text }]}>How's your day going?</Text>
+          <Text style={[s.cardTitle, { color: colors.text }]}>{tr("How's your day going?", 'كيف يسير يومك؟', 'يومك ماشي إزاي؟')}</Text>
           <Text style={[s.cardSub, { color: colors.sub }]}>
-            {todayMood ? 'Thanks for checking in today!' : 'Only the team average is ever shared — your answer stays private.'}
+            {todayMood ? tr('Thanks for checking in today!', 'شكرًا لمشاركتك اليوم!', 'شكرًا إنك شاركتنا النهارده!') : tr('Only the team average is ever shared — your answer stays private.', 'لا يُعرض إلا متوسط الفريق، وتبقى إجابتك سرية.', 'بنعرض متوسط الفريق بس — إجابتك بتفضل سرية.')}
           </Text>
           <MoodSlider value={todayMood?.mood} onChange={submitMood} disabled={moodSaving} />
         </View>
@@ -163,19 +166,19 @@ export default function TeamScreen() {
         {/* Manager/HR aggregate */}
         {isLead && teamPulse && (
           <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.glassBorder, shadowColor: isDark ? '#000' : '#8890B5' }]}>
-            <Text style={[s.cardTitle, { color: colors.text }]}>Team pulse today</Text>
+            <Text style={[s.cardTitle, { color: colors.text }]}>{tr('Team pulse today', 'نبض الفريق اليوم', 'نبض الفريق النهارده')}</Text>
             <Text style={[s.pulseBig, { color: colors.coral }]}>
               {teamPulse.today.avg_mood ? `${teamPulse.today.avg_mood} / 5` : '—'}
             </Text>
             <Text style={[s.cardSub, { color: colors.sub }]}>
-              {teamPulse.today.responses} of {teamPulse.headcount} checked in today
+              {tr(`${teamPulse.today.responses} of ${teamPulse.headcount} checked in today`, `شارك ${teamPulse.today.responses} من ${teamPulse.headcount} اليوم`, `${teamPulse.today.responses} من ${teamPulse.headcount} شاركوا النهارده`)}
             </Text>
           </View>
         )}
 
         {/* Tabs */}
         <View style={s.tabRow}>
-          {TABS.map(tb => (
+          {tabs(tr).map(tb => (
             <TouchableOpacity key={tb.key} onPress={() => setTab(tb.key)} activeOpacity={0.8}
               style={[s.tabBtn, tab === tb.key && { backgroundColor: colors.coral }]}>
               <Text style={[s.tabText, { color: tab === tb.key ? 'white' : colors.sub }]}>{tb.label}</Text>
@@ -185,16 +188,16 @@ export default function TeamScreen() {
 
         {tab === 'feed' && (
           feed.length === 0
-            ? <Text style={{ color: colors.sub, textAlign: 'center', marginTop: 20 }}>No kudos yet — be the first to recognize a teammate!</Text>
+            ? <Text style={{ color: colors.sub, textAlign: 'center', marginTop: 20 }}>{tr('No kudos yet — be the first to recognize a teammate!', 'لا توجد تقديرات بعد — كن أول من يقدّر زميلًا!', 'لسه مفيش شكر — يلا نبدأ ونشكر زميل!')}</Text>
             : feed.map(k => (
               <KudosCard key={k.id} emoji={k.emoji} fromName={k.from_name} toName={k.to_name}
-                category={k.category} message={k.message} points={k.points} when={timeAgo(k.created_at)} />
+                category={k.category} message={k.message} points={k.points} when={timeAgo(k.created_at, tr)} />
             ))
         )}
 
         {tab === 'leaderboard' && (
           leaderboard.length === 0
-            ? <Text style={{ color: colors.sub, textAlign: 'center', marginTop: 20 }}>No kudos given this month yet.</Text>
+            ? <Text style={{ color: colors.sub, textAlign: 'center', marginTop: 20 }}>{tr('No kudos given this month yet.', 'لم تُمنح تقديرات هذا الشهر بعد.', 'لسه مفيش شكر الشهر ده.')}</Text>
             : leaderboard.map((r, i) => (
               <LeaderboardRow key={r.employee_id} rank={i + 1} name={r.name} department={r.department}
                 points={r.points} kudosCount={r.kudos_count} isMe={r.employee_id === user?.employee_id} />
@@ -203,7 +206,7 @@ export default function TeamScreen() {
 
         {tab === 'directory' && (
           employees.length === 0
-            ? <Text style={{ color: colors.sub, textAlign: 'center', marginTop: 20 }}>No colleagues found.</Text>
+            ? <Text style={{ color: colors.sub, textAlign: 'center', marginTop: 20 }}>{tr('No colleagues found.', 'لم يتم العثور على زملاء.', 'مش لاقيين زملاء.')}</Text>
             : employees.map(e => (
               <TouchableOpacity key={e.id} onPress={() => openGive(e)} activeOpacity={0.8}
                 style={[s.dirRow, { backgroundColor: colors.card, borderColor: colors.glassBorder }]}>
@@ -214,7 +217,7 @@ export default function TeamScreen() {
                   <Text style={[s.dirName, { color: colors.text }]}>{e.first_name} {e.last_name}</Text>
                   <Text style={[s.dirRole, { color: colors.sub }]} numberOfLines={1}>{[e.position_title, e.department_name].filter(Boolean).join(' · ') || '—'}</Text>
                 </View>
-                <Text style={{ color: colors.lavender, fontSize: 12, fontWeight: '700' }}>Kudos →</Text>
+                <Text style={{ color: colors.lavender, fontSize: 12, fontWeight: '700' }}>{tr('Kudos', 'تقدير', 'اشكر')} {fwd}</Text>
               </TouchableOpacity>
             ))
         )}
@@ -224,23 +227,23 @@ export default function TeamScreen() {
       <Modal visible={showGive} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowGive(false)}>
         <SafeAreaView style={[s.modalSafe, { backgroundColor: colors.bg }]}>
           <View style={[s.modalHeader, { borderBottomColor: colors.border }]}>
-            <Text style={[s.modalTitle, { color: colors.text }]}>Give Kudos</Text>
+            <Text style={[s.modalTitle, { color: colors.text }]}>{tr('Give Kudos', 'أرسل تقديرًا', 'اشكر زميل')}</Text>
             <TouchableOpacity onPress={() => setShowGive(false)}>
               <Text style={{ fontSize: 22, color: colors.sub }}>✕</Text>
             </TouchableOpacity>
           </View>
           <ScrollView style={{ padding: 20 }} keyboardShouldPersistTaps="handled">
-            <Text style={[s.formLabel, { color: colors.sub }]}>To</Text>
+            <Text style={[s.formLabel, { color: colors.sub }]}>{tr('To', 'إلى', 'لمين')}</Text>
             {pickTo ? (
               <TouchableOpacity onPress={() => setPickTo(null)} style={[s.pickedRow, { backgroundColor: colors.cardAlt }]}>
                 <Text style={{ color: colors.text, fontWeight: '700' }}>{pickTo.first_name} {pickTo.last_name}</Text>
-                <Text style={{ color: colors.sub, fontSize: 12 }}>Change</Text>
+                <Text style={{ color: colors.sub, fontSize: 12 }}>{tr('Change', 'تغيير', 'غيّر')}</Text>
               </TouchableOpacity>
             ) : (
               <>
                 <TextInput
                   style={[s.input, { borderColor: colors.border2, backgroundColor: colors.input, color: colors.text }]}
-                  placeholder="Search colleague…" placeholderTextColor={colors.muted}
+                  placeholder={tr('Search colleague…', 'ابحث عن زميل…', 'دوّر على زميل…')} placeholderTextColor={colors.muted}
                   value={search} onChangeText={setSearch}
                 />
                 <ScrollView style={{ maxHeight: 160, marginTop: 8 }} nestedScrollEnabled>
@@ -253,9 +256,9 @@ export default function TeamScreen() {
               </>
             )}
 
-            <Text style={[s.formLabel, { color: colors.sub, marginTop: 18 }]}>Category</Text>
+            <Text style={[s.formLabel, { color: colors.sub, marginTop: 18 }]}>{tr('Category', 'الفئة', 'النوع')}</Text>
             <View style={s.catGrid}>
-              {CATEGORIES.map(c => (
+              {categories(tr).map(c => (
                 <TouchableOpacity key={c.v} onPress={() => setCategory(c.v)} activeOpacity={0.8}
                   style={[s.catChip, { borderColor: category === c.v ? colors.lavender : colors.border2, backgroundColor: category === c.v ? `${colors.lavender}22` : colors.cardAlt }]}>
                   <Text>{c.emoji}</Text>
@@ -264,16 +267,16 @@ export default function TeamScreen() {
               ))}
             </View>
 
-            <Text style={[s.formLabel, { color: colors.sub, marginTop: 18 }]}>Message (optional)</Text>
+            <Text style={[s.formLabel, { color: colors.sub, marginTop: 18 }]}>{tr('Message (optional)', 'رسالة (اختياري)', 'رسالة (مش إجباري)')}</Text>
             <TextInput
               style={[s.input, s.textarea, { borderColor: colors.border2, backgroundColor: colors.input, color: colors.text }]}
-              placeholder="What did they do?" placeholderTextColor={colors.muted}
+              placeholder={tr('What did they do?', 'ما الذي قام به؟', 'عمل إيه حلو؟')} placeholderTextColor={colors.muted}
               value={message} onChangeText={setMessage} multiline numberOfLines={4} textAlignVertical="top"
             />
 
             <TouchableOpacity onPress={submitKudos} disabled={sending} activeOpacity={0.85} style={{ marginTop: 22, marginBottom: 40 }}>
               <LinearGradient colors={GRADIENTS.lavender} style={[s.submitBtn, sending && { opacity: 0.6 }]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-                {sending ? <ActivityIndicator color="white" /> : <Text style={s.submitText}>Send Kudos</Text>}
+                {sending ? <ActivityIndicator color="white" /> : <Text style={s.submitText}>{tr('Send Kudos', 'إرسال التقدير', 'ابعت الشكر')}</Text>}
               </LinearGradient>
             </TouchableOpacity>
           </ScrollView>
@@ -306,7 +309,7 @@ const s = StyleSheet.create({
   modalSafe: { flex: 1 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1 },
   modalTitle: { fontSize: 17, fontWeight: '800' },
-  formLabel: { fontSize: 11.5, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 },
+  formLabel: { fontSize: 11.5, fontWeight: '700', textTransform: 'uppercase', letterSpacing: ls(0.4), marginBottom: 8 },
   input: { borderWidth: 1.5, borderRadius: 14, padding: 13, fontSize: 14 },
   textarea: { minHeight: 100 },
   pickedRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderRadius: 14, padding: 13 },

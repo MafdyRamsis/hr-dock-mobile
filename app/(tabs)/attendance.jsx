@@ -8,16 +8,24 @@ import Card from '../../src/components/Card'
 import FeedItem from '../../src/components/FeedItem'
 import Skeleton, { SkeletonCard, SkeletonRow } from '../../src/components/Skeleton'
 import { useTheme, GRADIENTS } from '../../src/context/ThemeContext'
+import { useLang } from '../../src/context/LanguageContext'
+import { fmtTime } from '../../src/i18n/format'
+import { ls, fwd, chevron, IS_RTL } from '../../src/utils/rtl'
 
-const fmt     = d => d ? d.split('T')[0].split('-').reverse().join('/') : '—'
-const fmtTime = iso => {
-  if (!iso) return '—'
-  const d = new Date(iso)
-  return isNaN(d) ? iso.slice(0, 5) : d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-}
+// Month navigation: "previous" points against reading order
+const prevChevron = IS_RTL ? '›' : '‹'
+
 const toDateStr = d => d ? d.split('T')[0] : ''
 
-const DAYS = ['S','M','T','W','T','F','S']
+// Calendar header: short day names; Arabic names drop the leading "ال" to fit the narrow cell
+const dayHeader = (day, ar, i) => { const d = day(i, true); return ar ? d.replace(/^ال/, '') : d }
+
+const statusLabel = (st, tr) => ({
+  present: tr('Present', 'حاضر'),
+  late:    tr('Late', 'متأخر'),
+  absent:  tr('Absent', 'غائب', 'غياب'),
+  leave:   tr('Leave', 'إجازة'),
+}[String(st || '').toLowerCase()] || st)
 
 const STATUS_COLOR = {
   present: '#2ED573',
@@ -28,6 +36,7 @@ const STATUS_COLOR = {
 const STATUS_ICON = { present: '✅', late: '⏱️', absent: '❌', leave: '🏖️' }
 
 function MonthCalendar({ logs, month, year, colors }) {
+  const { tr, ar, day: dayName } = useLang()
   const logMap = useMemo(() => {
     const m = {}
     logs.forEach(l => {
@@ -48,7 +57,10 @@ function MonthCalendar({ logs, month, year, colors }) {
   return (
     <View style={cal.wrap}>
       <View style={cal.dayHeaders}>
-        {DAYS.map((d, i) => <Text key={i} style={[cal.dayLabel, { color: colors.muted }]}>{d}</Text>)}
+        {[0, 1, 2, 3, 4, 5, 6].map(i => (
+          <Text key={i} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
+            style={[cal.dayLabel, ar && cal.dayLabelAr, { color: colors.muted }]}>{dayHeader(dayName, ar, i)}</Text>
+        ))}
       </View>
       <View style={cal.grid}>
         {cells.map((day, i) => {
@@ -88,7 +100,7 @@ function MonthCalendar({ logs, month, year, colors }) {
         {Object.entries(STATUS_COLOR).map(([st, c]) => (
           <View key={st} style={cal.legendItem}>
             <View style={[cal.legendDot, { backgroundColor: c }]} />
-            <Text style={[cal.legendText, { color: colors.sub }]}>{st}</Text>
+            <Text style={[cal.legendText, { color: colors.sub }]}>{statusLabel(st, tr)}</Text>
           </View>
         ))}
       </View>
@@ -98,6 +110,7 @@ function MonthCalendar({ logs, month, year, colors }) {
 
 export default function AttendanceScreen() {
   const { colors } = useTheme()
+  const { tr, date, monthYear } = useLang()
   const [today,      setToday]      = useState(null)
   const [employeeId, setEmployeeId] = useState(null)
   const [logs,       setLogs]       = useState([])
@@ -149,7 +162,7 @@ export default function AttendanceScreen() {
     else setViewMonth(m => m + 1)
   }
 
-  const monthName = new Date(viewYear, viewMonth).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+  const monthName = monthYear(viewMonth, viewYear)
 
   const getLocation = async () => {
     try {
@@ -171,7 +184,11 @@ export default function AttendanceScreen() {
       await api.post('/attendance/check-in', { source: 'mobile', ...loc })
       await load()
     } catch (err) {
-      Alert.alert('Check-in failed', err.response?.data?.message || 'Please try again.')
+      Alert.alert(
+        tr('Check-in failed', 'تعذّر تسجيل الحضور', 'بصمة الدخول متسجلتش'),
+        err.response?.data?.message || tr('Please try again.', 'يرجى المحاولة مرة أخرى.', 'معرفناش نكمّل. يلا نجرّب تاني.'),
+        [{ text: tr('OK', 'حسنًا', 'تمام') }],
+      )
     } finally { setActioning(false) }
   }
 
@@ -182,7 +199,11 @@ export default function AttendanceScreen() {
       await api.post('/attendance/check-out', { source: 'mobile', ...loc })
       await load()
     } catch (err) {
-      Alert.alert('Check-out failed', err.response?.data?.message || 'Please try again.')
+      Alert.alert(
+        tr('Check-out failed', 'تعذّر تسجيل الانصراف', 'بصمة الخروج متسجلتش'),
+        err.response?.data?.message || tr('Please try again.', 'يرجى المحاولة مرة أخرى.', 'معرفناش نكمّل. يلا نجرّب تاني.'),
+        [{ text: tr('OK', 'حسنًا', 'تمام') }],
+      )
     } finally { setActioning(false) }
   }
 
@@ -216,21 +237,21 @@ export default function AttendanceScreen() {
         contentContainerStyle={s.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor="#2ED573" />}
       >
-        <Text style={[s.pageTitle, { color: colors.text }]}>Attendance</Text>
+        <Text style={[s.pageTitle, { color: colors.text }]}>{tr('Attendance', 'الحضور')}</Text>
 
         {/* Today card */}
         <View style={s.todayCard}>
           <LinearGradient colors={GRADIENTS.navy} style={StyleSheet.absoluteFill} borderRadius={26} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} />
-          <Text style={s.todayDate}>{now.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</Text>
+          <Text style={s.todayDate}>{date(now, { weekday: 'long', month: 'long' })}</Text>
 
           <View style={s.timesRow}>
             <View style={s.timeBox}>
-              <Text style={s.timeLabel}>Check In</Text>
+              <Text style={s.timeLabel}>{tr('Check In', 'الحضور', 'الدخول')}</Text>
               <Text style={[s.timeVal, !today?.check_in && s.timeEmpty]}>{fmtTime(today?.check_in)}</Text>
             </View>
             <View style={s.timeSep}/>
             <View style={s.timeBox}>
-              <Text style={s.timeLabel}>Check Out</Text>
+              <Text style={s.timeLabel}>{tr('Check Out', 'الانصراف', 'الخروج')}</Text>
               <Text style={[s.timeVal, !today?.check_out && s.timeEmpty]}>{fmtTime(today?.check_out)}</Text>
             </View>
           </View>
@@ -240,8 +261,8 @@ export default function AttendanceScreen() {
               <LinearGradient colors={GRADIENTS.mint} style={s.actionBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
                 {actioning ? <ActivityIndicator color="white" /> : <>
                   <Text style={s.actionIcon}>✅</Text>
-                  <Text style={s.actionText}>Check In</Text>
-                  <Text style={s.actionTime}>{now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</Text>
+                  <Text style={s.actionText}>{tr('Check In', 'تسجيل الحضور', 'بصمة دخول')}</Text>
+                  <Text style={s.actionTime}>{fmtTime(now)}</Text>
                 </>}
               </LinearGradient>
             </TouchableOpacity>
@@ -252,8 +273,8 @@ export default function AttendanceScreen() {
               <LinearGradient colors={GRADIENTS.coral} style={s.actionBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
                 {actioning ? <ActivityIndicator color="white" /> : <>
                   <Text style={s.actionIcon}>🏁</Text>
-                  <Text style={s.actionText}>Check Out</Text>
-                  <Text style={s.actionTime}>{now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</Text>
+                  <Text style={s.actionText}>{tr('Check Out', 'تسجيل الانصراف', 'بصمة خروج')}</Text>
+                  <Text style={s.actionTime}>{fmtTime(now)}</Text>
                 </>}
               </LinearGradient>
             </TouchableOpacity>
@@ -261,7 +282,7 @@ export default function AttendanceScreen() {
 
           {today?.check_in && today?.check_out && (
             <View style={s.doneBox}>
-              <Text style={s.doneText}>✓ Completed for today</Text>
+              <Text style={s.doneText}>✓ {tr('Completed for today', 'اكتمل تسجيل اليوم', 'خلّصنا بصمة النهارده')}</Text>
             </View>
           )}
         </View>
@@ -269,12 +290,12 @@ export default function AttendanceScreen() {
         {/* Monthly Calendar */}
         <Card style={s.calCard}>
           <View style={s.calNav}>
-            <TouchableOpacity onPress={prevMonth} style={s.navBtn}>
-              <Text style={[s.navArrow, { color: colors.sub }]}>‹</Text>
+            <TouchableOpacity onPress={prevMonth} style={s.navBtn} accessibilityLabel={tr('Previous month', 'الشهر السابق', 'الشهر اللي فات')}>
+              <Text style={[s.navArrow, { color: colors.sub }]}>{prevChevron}</Text>
             </TouchableOpacity>
             <Text style={[s.calTitle, { color: colors.text }]}>{monthName}</Text>
-            <TouchableOpacity onPress={nextMonth} style={s.navBtn}>
-              <Text style={[s.navArrow, { color: colors.sub }]}>›</Text>
+            <TouchableOpacity onPress={nextMonth} style={s.navBtn} accessibilityLabel={tr('Next month', 'الشهر التالي', 'الشهر اللي جاي')}>
+              <Text style={[s.navArrow, { color: colors.sub }]}>{chevron}</Text>
             </TouchableOpacity>
           </View>
           <MonthCalendar logs={logs} month={viewMonth} year={viewYear} colors={colors} />
@@ -283,7 +304,7 @@ export default function AttendanceScreen() {
         {/* Recent list */}
         {recentLogs.length > 0 && (
           <View>
-            <Text style={[s.sectionTitle, { color: colors.sub }]}>Recent History</Text>
+            <Text style={[s.sectionTitle, { color: colors.sub }]}>{tr('Recent History', 'السجل الأخير', 'آخر الأيام')}</Text>
             {recentLogs.map((log, i) => {
               const st = (log.status || 'present').toLowerCase()
               const gradient = st === 'present' ? 'mint' : st === 'late' ? 'sunshine' : st === 'leave' ? 'lavender' : 'coral'
@@ -292,11 +313,11 @@ export default function AttendanceScreen() {
                   key={i}
                   icon={STATUS_ICON[st] || '📅'}
                   gradient={gradient}
-                  title={fmt(log.date || log.created_at)}
-                  subtitle={`${fmtTime(log.check_in)} → ${fmtTime(log.check_out)}`}
+                  title={date(toDateStr(log.date || log.created_at), { weekday: 'short' }) || '—'}
+                  subtitle={`${fmtTime(log.check_in)} ${fwd} ${fmtTime(log.check_out)}`}
                   right={
                     <View style={[s.statusPill, { backgroundColor: `${STATUS_COLOR[st] || '#8A8DA3'}1A` }]}>
-                      <Text style={[s.statusPillText, { color: STATUS_COLOR[st] || '#8A8DA3' }]}>{log.status || 'present'}</Text>
+                      <Text style={[s.statusPillText, { color: STATUS_COLOR[st] || '#8A8DA3' }]}>{statusLabel(log.status || 'present', tr)}</Text>
                     </View>
                   }
                 />
@@ -313,6 +334,7 @@ const cal = StyleSheet.create({
   wrap:        { paddingTop: 8 },
   dayHeaders:  { flexDirection: 'row', marginBottom: 6 },
   dayLabel:    { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '700' },
+  dayLabelAr:  { fontSize: 9, fontWeight: '600' },
   grid:        { flexDirection: 'row', flexWrap: 'wrap' },
   cell:        { width: '14.28%', alignItems: 'center', marginBottom: 6 },
   dayCircle:   { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
@@ -351,7 +373,7 @@ const s = StyleSheet.create({
   calTitle:    { fontSize: 15, fontWeight: '800' },
   navBtn:      { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   navArrow:    { fontSize: 24, fontWeight: '300' },
-  sectionTitle:{ fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
+  sectionTitle:{ fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: ls(0.5), marginBottom: 10 },
   statusPill:  { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   statusPillText: { fontSize: 11, fontWeight: '700', textTransform: 'capitalize' },
 })

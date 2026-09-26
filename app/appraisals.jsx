@@ -8,23 +8,40 @@ import { useRouter } from 'expo-router'
 import { useAuth } from '../src/context/AuthContext'
 import { useTheme } from '../src/context/ThemeContext'
 import api from '../src/services/api'
+import { useLang } from '../src/context/LanguageContext'
+import { ls, back } from '../src/utils/rtl'
 
-const fmt = d => d ? d.split('T')[0].split('-').reverse().join('/') : '—'
+const getStatusMeta = tr => ({
+  pending:     { bg: '#fef9c3', color: '#854d0e', label: tr('Pending', 'قيد الانتظار', 'مستني') },
+  in_progress: { bg: '#dbeafe', color: '#1e40af', label: tr('In Progress', 'قيد التنفيذ', 'شغالين عليه') },
+  completed:   { bg: '#dcfce7', color: '#166534', label: tr('Completed', 'مكتمل', 'خلص') },
+  cancelled:   { bg: '#fee2e2', color: '#991b1b', label: tr('Cancelled', 'ملغي', 'اتلغى') },
+})
 
-const STATUS_META = {
-  pending:     { bg: '#fef9c3', color: '#854d0e', label: 'Pending' },
-  in_progress: { bg: '#dbeafe', color: '#1e40af', label: 'In Progress' },
-  completed:   { bg: '#dcfce7', color: '#166534', label: 'Completed' },
-  cancelled:   { bg: '#fee2e2', color: '#991b1b', label: 'Cancelled' },
-}
+const getCycleTypes = tr => ({
+  annual:      '📅 ' + tr('Annual', 'سنوي'),
+  mid_year:    '🗓️ ' + tr('Mid-Year', 'نصف سنوي', 'نص السنة'),
+  probation:   '🔍 ' + tr('Probation', 'فترة الاختبار'),
+  quarterly:   '📊 ' + tr('Quarterly', 'ربع سنوي'),
+  project:     '🚀 ' + tr('Project', 'مشروع'),
+})
 
-const CYCLE_TYPES = {
-  annual:      '📅 Annual',
-  mid_year:    '🗓️ Mid-Year',
-  probation:   '🔍 Probation',
-  quarterly:   '📊 Quarterly',
-  project:     '🚀 Project',
-}
+const humanize = v => String(v).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+
+const recommendationLabel = (v, tr) => ({
+  promote:            tr('Promote', 'ترقية'),
+  promotion:          tr('Promotion', 'ترقية'),
+  retain:             tr('Retain', 'الاستمرار'),
+  confirm:            tr('Confirm', 'التثبيت'),
+  confirm_employment: tr('Confirm Employment', 'تثبيت التعيين'),
+  extend_probation:   tr('Extend Probation', 'مد فترة الاختبار'),
+  salary_increase:    tr('Salary Increase', 'زيادة الراتب', 'زيادة المرتب'),
+  training:           tr('Training', 'تدريب'),
+  pip:                tr('Performance Improvement Plan', 'خطة تحسين الأداء'),
+  improvement_plan:   tr('Improvement Plan', 'خطة تحسين الأداء'),
+  terminate:          tr('Terminate', 'إنهاء الخدمة'),
+  no_change:          tr('No Change', 'بدون تغيير'),
+}[v] || humanize(v))
 
 const STAR_COLOR = '#f59e0b'
 
@@ -37,10 +54,11 @@ const safeParseRatings = raw => {
 }
 
 function Stars({ rating, max = 5 }) {
-  if (!rating) return <Text style={{ color: '#94a3b8', fontSize: 12 }}>Not rated</Text>
+  const { tr } = useLang()
+  if (!rating) return <Text style={{ color: '#94a3b8', fontSize: 12 }}>{tr('Not rated', 'لم يُقيَّم بعد', 'لسه متقيّمش')}</Text>
   const r = Math.round(Number(rating))
   return (
-    <Text style={{ fontSize: 15, letterSpacing: 1 }}>
+    <Text style={{ fontSize: 15, letterSpacing: ls(1) }}>
       {'★'.repeat(r)}{'☆'.repeat(Math.max(0, max - r))}
     </Text>
   )
@@ -50,6 +68,9 @@ export default function AppraisalsScreen() {
   const { user }   = useAuth()
   const { colors } = useTheme()
   const router     = useRouter()
+  const { tr }     = useLang()
+  const STATUS_META = getStatusMeta(tr)
+  const CYCLE_TYPES = getCycleTypes(tr)
 
   const [appraisals, setAppraisals] = useState([])
   const [loading,    setLoading]    = useState(true)
@@ -84,9 +105,9 @@ export default function AppraisalsScreen() {
       {/* Nav */}
       <View style={[s.nav, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={s.back}>
-          <Text style={[s.backText, { color: colors.text }]}>‹</Text>
+          <Text style={[s.backText, { color: colors.text }]}>{back}</Text>
         </TouchableOpacity>
-        <Text style={[s.navTitle, { color: colors.text }]}>Appraisals</Text>
+        <Text style={[s.navTitle, { color: colors.text }]}>{tr('Appraisals', 'تقييمات الأداء')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -100,22 +121,22 @@ export default function AppraisalsScreen() {
           <View style={s.statsRow}>
             <View style={[s.statCard, { backgroundColor: colors.card }]}>
               <Text style={[s.statVal, { color: colors.text }]}>{appraisals.length}</Text>
-              <Text style={[s.statLabel, { color: colors.sub }]}>Total</Text>
+              <Text style={[s.statLabel, { color: colors.sub }]}>{tr('Total', 'الإجمالي')}</Text>
             </View>
             <View style={[s.statCard, { backgroundColor: colors.card }]}>
               <Text style={[s.statVal, { color: '#166534' }]}>{completed.length}</Text>
-              <Text style={[s.statLabel, { color: colors.sub }]}>Completed</Text>
+              <Text style={[s.statLabel, { color: colors.sub }]}>{tr('Completed', 'مكتملة', 'خلصت')}</Text>
             </View>
             <View style={[s.statCard, { backgroundColor: colors.card }]}>
               {avgRating ? (
                 <>
                   <Text style={[s.statVal, { color: STAR_COLOR }]}>{avgRating.toFixed(1)}</Text>
-                  <Text style={[s.statLabel, { color: colors.sub }]}>Avg Rating</Text>
+                  <Text style={[s.statLabel, { color: colors.sub }]}>{tr('Avg Rating', 'متوسط التقييم')}</Text>
                 </>
               ) : (
                 <>
                   <Text style={[s.statVal, { color: colors.sub }]}>—</Text>
-                  <Text style={[s.statLabel, { color: colors.sub }]}>Avg Rating</Text>
+                  <Text style={[s.statLabel, { color: colors.sub }]}>{tr('Avg Rating', 'متوسط التقييم')}</Text>
                 </>
               )}
             </View>
@@ -125,7 +146,7 @@ export default function AppraisalsScreen() {
         {appraisals.length === 0 ? (
           <View style={s.empty}>
             <Text style={s.emptyIcon}>📋</Text>
-            <Text style={[s.emptyText, { color: colors.sub }]}>No appraisals yet</Text>
+            <Text style={[s.emptyText, { color: colors.sub }]}>{tr('No appraisals yet', 'لا توجد تقييمات أداء بعد', 'لسه مفيش تقييمات')}</Text>
           </View>
         ) : appraisals.map(ap => {
           const sm       = STATUS_META[ap.status] || STATUS_META.pending
@@ -157,7 +178,7 @@ export default function AppraisalsScreen() {
               {/* Rating row */}
               <View style={s.ratingRow}>
                 <View>
-                  <Text style={[s.ratingLabel, { color: colors.sub }]}>Overall Rating</Text>
+                  <Text style={[s.ratingLabel, { color: colors.sub }]}>{tr('Overall Rating', 'التقييم العام')}</Text>
                   <View style={s.starsRow}>
                     <Stars rating={ap.overall_rating} />
                     {ap.overall_rating ? (
@@ -177,11 +198,11 @@ export default function AppraisalsScreen() {
                   {/* Competency ratings */}
                   {ratings && Object.keys(ratings).length > 0 && (
                     <View style={s.detailBlock}>
-                      <Text style={[s.detailTitle, { color: colors.text }]}>Competency Ratings</Text>
+                      <Text style={[s.detailTitle, { color: colors.text }]}>{tr('Competency Ratings', 'تقييم الكفاءات')}</Text>
                       {Object.entries(ratings).map(([key, val]) => (
                         <View key={key} style={s.competencyRow}>
                           <Text style={[s.competencyName, { color: colors.text }]}>
-                            {key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                            {humanize(key)}
                           </Text>
                           <View style={s.barWrap}>
                             <View style={[s.barFill, { width: `${(Number(val) / 5) * 100}%`, backgroundColor: STAR_COLOR }]} />
@@ -195,7 +216,7 @@ export default function AppraisalsScreen() {
                   {/* Self assessment */}
                   {ap.self_assessment ? (
                     <View style={s.detailBlock}>
-                      <Text style={[s.detailTitle, { color: colors.text }]}>Self Assessment</Text>
+                      <Text style={[s.detailTitle, { color: colors.text }]}>{tr('Self Assessment', 'التقييم الذاتي')}</Text>
                       <Text style={[s.detailBody, { color: colors.sub }]}>{ap.self_assessment}</Text>
                     </View>
                   ) : null}
@@ -203,7 +224,7 @@ export default function AppraisalsScreen() {
                   {/* Manager comments */}
                   {ap.manager_comments ? (
                     <View style={s.detailBlock}>
-                      <Text style={[s.detailTitle, { color: colors.text }]}>Manager Comments</Text>
+                      <Text style={[s.detailTitle, { color: colors.text }]}>{tr('Manager Comments', 'ملاحظات المدير')}</Text>
                       <Text style={[s.detailBody, { color: colors.sub }]}>{ap.manager_comments}</Text>
                     </View>
                   ) : null}
@@ -211,16 +232,16 @@ export default function AppraisalsScreen() {
                   {/* Recommendation */}
                   {ap.recommendation ? (
                     <View style={[s.recommendBadge, { backgroundColor: colors.bg }]}>
-                      <Text style={[s.recommendLabel, { color: colors.sub }]}>Recommendation</Text>
+                      <Text style={[s.recommendLabel, { color: colors.sub }]}>{tr('Recommendation', 'التوصية')}</Text>
                       <Text style={[s.recommendVal, { color: colors.text }]}>
-                        {ap.recommendation.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                        {recommendationLabel(ap.recommendation, tr)}
                       </Text>
                     </View>
                   ) : null}
 
                   {ap.status === 'pending' && !ap.self_assessment && (
                     <Text style={[s.pendingNote, { color: colors.sub }]}>
-                      Your appraisal is being prepared by HR. You'll be notified when it's ready for review.
+                      {tr("Your appraisal is being prepared by HR. You'll be notified when it's ready for review.", 'تقوم إدارة الموارد البشرية بإعداد تقييمك، وسيصلك إشعار عندما يصبح جاهزاً للمراجعة.', 'الـ HR بيجهّزوا تقييمك، وهيوصلك إشعار أول ما يبقى جاهز للمراجعة.')}
                     </Text>
                   )}
                 </View>
@@ -261,7 +282,7 @@ const s = StyleSheet.create({
   chevron:        { fontSize: 12 },
   details:        { marginTop: 14, paddingTop: 14, borderTopWidth: 1, gap: 14 },
   detailBlock:    { gap: 6 },
-  detailTitle:    { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 },
+  detailTitle:    { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: ls(0.4) },
   detailBody:     { fontSize: 13, lineHeight: 20 },
   competencyRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   competencyName: { flex: 1, fontSize: 12 },

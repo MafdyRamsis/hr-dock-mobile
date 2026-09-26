@@ -7,19 +7,22 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useAuth } from '../src/context/AuthContext'
 import { useTheme } from '../src/context/ThemeContext'
+import { useLang } from '../src/context/LanguageContext'
 import api from '../src/services/api'
+import { ls, back } from '../src/utils/rtl'
 
-const timeAgo = iso => {
+// "5m ago" — tr and date come from useLang() in the calling component
+const timeAgo = (iso, tr, date) => {
   if (!iso) return ''
   const diff = Date.now() - new Date(iso).getTime()
   const m = Math.floor(diff / 60000)
-  if (m < 1)  return 'Just now'
-  if (m < 60) return `${m}m ago`
+  if (m < 1)  return tr('Just now', 'منذ لحظات', 'دلوقتي')
+  if (m < 60) return tr(`${m}m ago`, `منذ ${m} د`, `من ${m} د`)
   const h = Math.floor(m / 60)
-  if (h < 24) return `${h}h ago`
+  if (h < 24) return tr(`${h}h ago`, `منذ ${h} س`, `من ${h} س`)
   const d = Math.floor(h / 24)
-  if (d < 7)  return `${d}d ago`
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  if (d < 7)  return tr(`${d}d ago`, `منذ ${d} يوم`, `من ${d} يوم`)
+  return date(iso, { month: 'short', year: false })
 }
 
 const STATUS_META = {
@@ -33,17 +36,50 @@ const STATUS_META = {
 
 const CAT_COLORS = { event: '#1d4ed8', policy: '#92400e', hr: '#166534', general: '#475569' }
 
-const TYPE_LABELS = {
-  request:      'HR Request',
-  permission:   'Permission',
-  announcement: 'Announcement',
-  payroll:      'Payroll',
+const typeLabel = (type, tr) => ({
+  request:      tr('HR Request', 'طلب موارد بشرية', 'طلب HR'),
+  permission:   tr('Permission', 'إذن'),
+  announcement: tr('Announcement', 'إعلان'),
+  payroll:      tr('Payroll', 'الرواتب', 'المرتبات'),
+}[type] || type)
+
+const statusLabel = (status, tr) => ({
+  approved:    tr('approved', 'تمت الموافقة', 'اتوافق عليه'),
+  rejected:    tr('rejected', 'مرفوض', 'اترفض'),
+  pending:     tr('pending', 'قيد الانتظار', 'مستني رد'),
+  in_progress: tr('in progress', 'قيد التنفيذ', 'شغالين عليه'),
+  resolved:    tr('resolved', 'تم الحل', 'اتحل'),
+  closed:      tr('closed', 'مغلق', 'اتقفل'),
+}[status] || (status || '').replace(/_/g, ' '))
+
+const categoryLabel = (cat, tr) => ({
+  event:   tr('Event', 'فعالية'),
+  policy:  tr('Policy', 'سياسة'),
+  hr:      tr('HR', 'الموارد البشرية', 'HR'),
+  general: tr('General', 'عام'),
+}[cat] || (cat ? cat.charAt(0).toUpperCase() + cat.slice(1) : tr('General', 'عام')))
+
+// Title / subtitle are built at render time so they follow the current language.
+const describe = (n, tr, date) => {
+  const st = tr(`Status: ${statusLabel(n.status, tr)}`, `الحالة: ${statusLabel(n.status, tr)}`)
+  switch (n.kind) {
+    case 'ticket': return { title: n.subject, subtitle: st }
+    case 'wfh':    return { title: tr(`Work From Home – ${date(n.day)}`, `العمل من المنزل – ${date(n.day)}`, `شغل من البيت – ${date(n.day)}`), subtitle: st }
+    case 'ot':     return { title: tr(`Overtime – ${date(n.day)}`, `العمل الإضافي – ${date(n.day)}`, `أوفر تايم – ${date(n.day)}`), subtitle: st }
+    case 'ann':    return { title: n.subject, subtitle: tr(`${categoryLabel(n.category, tr)} announcement`, `إعلان – ${categoryLabel(n.category, tr)}`) }
+    case 'pay':    return {
+      title: tr('Payslip Available', 'قسيمة الراتب متاحة', 'قسيمة المرتب نزلت'),
+      subtitle: `${date(n.from)} – ${date(n.to)}`,
+    }
+    default:       return { title: n.subject || '', subtitle: '' }
+  }
 }
 
 export default function NotificationsScreen() {
   const router = useRouter()
   const { user } = useAuth()
   const { colors } = useTheme()
+  const { tr } = useLang()
   const [items,      setItems]      = useState([])
   const [loading,    setLoading]    = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -74,8 +110,9 @@ export default function NotificationsScreen() {
             type:     'request',
             icon:     meta.icon  || '📋',
             color:    meta.color || '#64748b',
-            title:    t.subject,
-            subtitle: `Status: ${(t.status || '').replace('_', ' ')}`,
+            kind:     'ticket',
+            subject:  t.subject,
+            status:   t.status,
             time:     t.updated_at || t.created_at,
             isNew:    t.status !== 'pending',
           })
@@ -91,8 +128,9 @@ export default function NotificationsScreen() {
             type:     'permission',
             icon:     meta.icon  || '🏠',
             color:    meta.color || '#2BC4BE',
-            title:    `Work From Home – ${(w.date || '').split('T')[0]}`,
-            subtitle: `Status: ${(w.status || '').replace('_', ' ')}`,
+            kind:     'wfh',
+            day:      (w.date || '').split('T')[0],
+            status:   w.status,
             time:     w.updated_at || w.created_at,
             isNew:    w.status !== 'pending',
           })
@@ -108,8 +146,9 @@ export default function NotificationsScreen() {
             type:     'permission',
             icon:     meta.icon  || '⏱️',
             color:    meta.color || '#f59e0b',
-            title:    `Overtime – ${(o.date || '').split('T')[0]}`,
-            subtitle: `Status: ${(o.status || '').replace('_', ' ')}`,
+            kind:     'ot',
+            day:      (o.date || '').split('T')[0],
+            status:   o.status,
             time:     o.updated_at || o.created_at,
             isNew:    o.status !== 'pending',
           })
@@ -124,8 +163,9 @@ export default function NotificationsScreen() {
             type:     'announcement',
             icon:     a.pinned ? '📌' : '📢',
             color:    CAT_COLORS[a.category] || '#475569',
-            title:    a.title,
-            subtitle: `${a.category ? a.category.charAt(0).toUpperCase() + a.category.slice(1) : 'General'} announcement`,
+            kind:     'ann',
+            subject:  a.title,
+            category: a.category,
             time:     a.created_at,
             isNew:    true,
           })
@@ -141,8 +181,9 @@ export default function NotificationsScreen() {
               type:     'payroll',
               icon:     '💰',
               color:    '#16a34a',
-              title:    'Payslip Available',
-              subtitle: `${(p.period_start || '').split('T')[0]} – ${(p.period_end || '').split('T')[0]}`,
+              kind:     'pay',
+              from:     (p.period_start || '').split('T')[0],
+              to:       (p.period_end || '').split('T')[0],
               time:     p.updated_at || p.created_at,
               isNew:    true,
             })
@@ -173,10 +214,10 @@ export default function NotificationsScreen() {
     <SafeAreaView style={[s.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       <View style={[s.navBar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <Text style={[s.backArrow, { color: colors.text }]}>←</Text>
-          <Text style={[s.backText, { color: colors.text }]}>Back</Text>
+          <Text style={[s.backArrow, { color: colors.text }]}>{back}</Text>
+          <Text style={[s.backText, { color: colors.text }]}>{tr('Back', 'رجوع')}</Text>
         </TouchableOpacity>
-        <Text style={[s.navTitle, { color: colors.text }]}>Notifications</Text>
+        <Text style={[s.navTitle, { color: colors.text }]}>{tr('Notifications', 'الإشعارات')}</Text>
         <View style={{ width: 64 }} />
       </View>
 
@@ -191,20 +232,20 @@ export default function NotificationsScreen() {
           {items.length === 0 ? (
             <View style={s.emptyBox}>
               <Text style={s.emptyIcon}>🔔</Text>
-              <Text style={[s.emptyTitle, { color: colors.text }]}>All caught up!</Text>
-              <Text style={s.emptyText}>No notifications yet.</Text>
+              <Text style={[s.emptyTitle, { color: colors.text }]}>{tr('All caught up!', 'لا يوجد جديد!', 'كله تمام!')}</Text>
+              <Text style={s.emptyText}>{tr('No notifications yet.', 'لا توجد إشعارات بعد.', 'لسه مفيش إشعارات.')}</Text>
             </View>
           ) : (
             <>
               {todayItems.length > 0 && (
                 <>
-                  <Text style={[s.groupLabel, { color: colors.muted }]}>Today</Text>
+                  <Text style={[s.groupLabel, { color: colors.muted }]}>{tr('Today', 'اليوم', 'النهارده')}</Text>
                   {todayItems.map(item => <NotifCard key={item.id} item={item} onPress={() => handlePress(item)} colors={colors} />)}
                 </>
               )}
               {earlierItems.length > 0 && (
                 <>
-                  <Text style={[s.groupLabel, { color: colors.muted }]}>Earlier</Text>
+                  <Text style={[s.groupLabel, { color: colors.muted }]}>{tr('Earlier', 'سابقًا', 'قبل كده')}</Text>
                   {earlierItems.map(item => <NotifCard key={item.id} item={item} onPress={() => handlePress(item)} colors={colors} />)}
                 </>
               )}
@@ -217,6 +258,8 @@ export default function NotificationsScreen() {
 }
 
 function NotifCard({ item, onPress, colors }) {
+  const { tr, date } = useLang()
+  const { title, subtitle } = describe(item, tr, date)
   return (
     <TouchableOpacity style={[s.card, { backgroundColor: colors.card }]} onPress={onPress} activeOpacity={0.8}>
       <View style={[s.iconBox, { backgroundColor: `${item.color}18` }]}>
@@ -224,11 +267,11 @@ function NotifCard({ item, onPress, colors }) {
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <View style={s.cardTop}>
-          <Text style={s.typeTag}>{TYPE_LABELS[item.type] || item.type}</Text>
-          <Text style={s.time}>{timeAgo(item.time)}</Text>
+          <Text style={s.typeTag}>{typeLabel(item.type, tr)}</Text>
+          <Text style={s.time}>{timeAgo(item.time, tr, date)}</Text>
         </View>
-        <Text style={[s.title, { color: colors.text }]} numberOfLines={1}>{item.title}</Text>
-        <Text style={[s.sub, { color: colors.sub }]} numberOfLines={1}>{item.subtitle}</Text>
+        <Text style={[s.title, { color: colors.text }]} numberOfLines={1}>{title}</Text>
+        <Text style={[s.sub, { color: colors.sub }]} numberOfLines={1}>{subtitle}</Text>
       </View>
       {item.isNew && <View style={[s.dot, { backgroundColor: item.color }]} />}
     </TouchableOpacity>
@@ -244,12 +287,12 @@ const s = StyleSheet.create({
   navTitle:   { fontSize: 16, fontWeight: '800', color: '#0F1829' },
   center:     { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll:     { padding: 14, paddingBottom: 40 },
-  groupLabel: { fontSize: 11, fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 8, marginBottom: 8, marginLeft: 2 },
+  groupLabel: { fontSize: 11, fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: ls(0.5), marginTop: 8, marginBottom: 8, marginLeft: 2 },
   card:       { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: 'white', borderRadius: 14, padding: 14, marginBottom: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 1 },
   iconBox:    { width: 46, height: 46, borderRadius: 13, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   icon:       { fontSize: 22 },
   cardTop:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 },
-  typeTag:    { fontSize: 10, fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.4 },
+  typeTag:    { fontSize: 10, fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: ls(0.4) },
   time:       { fontSize: 10, color: '#cbd5e1' },
   title:      { fontSize: 13, fontWeight: '700', color: '#0F1829', marginBottom: 2 },
   sub:        { fontSize: 11, color: '#64748b', textTransform: 'capitalize' },

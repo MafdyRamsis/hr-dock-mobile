@@ -13,13 +13,21 @@ import { useTheme } from '../src/context/ThemeContext'
 import Skeleton from '../src/components/Skeleton'
 import Avatar from '../src/components/Avatar'
 import api from '../src/services/api'
+import { ls, back, chevron } from '../src/utils/rtl'
 
-const fmtDate = d => {
-  if (!d) return null
-  const parts = d.split('T')[0].split('-')
-  if (parts.length !== 3) return d
-  return `${parts[2]}/${parts[1]}/${parts[0]}`
-}
+const roleLabel = (role, tr) => ({
+  employee:     tr('Employee', 'موظف'),
+  manager:      tr('Manager', 'مدير'),
+  hr_manager:   tr('HR Manager', 'مدير الموارد البشرية', 'مدير HR'),
+  hr:           tr('HR', 'الموارد البشرية', 'HR'),
+  admin:        tr('Admin', 'مسؤول النظام', 'أدمن'),
+  super_admin:  tr('Super Admin', 'المسؤول الرئيسي', 'سوبر أدمن'),
+}[role] || (role || '').replace(/_/g, ' '))
+
+const genderLabel = (g, tr) => ({
+  male:   tr('Male', 'ذكر'),
+  female: tr('Female', 'أنثى'),
+}[(g || '').toLowerCase()] || g)
 
 function EmpRow({ icon, label, value, last, loading, colors }) {
   return (
@@ -49,7 +57,8 @@ export default function ProfileScreen() {
   const [bioAvailable,  setBioAvailable]  = useState(false)
   const [emp,           setEmp]           = useState(null)
   const [empLoading,    setEmpLoading]    = useState(true)
-  const { lang: language, setLanguage } = useLang()
+  const { lang: language, setLanguage, t, tr, date } = useLang()
+  const fmtDate = d => (d ? date(d.split('T')[0]) : null)
 
   useEffect(() => {
     const checkBio = async () => {
@@ -79,7 +88,7 @@ export default function ProfileScreen() {
     }
     checkBio()
     loadEmployee() // language is restored by LanguageProvider
-  }, [])
+  }, [user?.employee_id])
 
   const changeLanguage = () => {
     Alert.alert(
@@ -94,7 +103,7 @@ export default function ProfileScreen() {
           text: 'العربية',
           onPress: () => setLanguage('ar'), // reloads the app if the layout direction changes
         },
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Cancel / إلغاء', style: 'cancel' },
       ]
     )
   }
@@ -102,13 +111,13 @@ export default function ProfileScreen() {
   const toggleBiometric = async (value) => {
     if (value) {
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Verify to enable biometric login',
-        fallbackLabel: 'Cancel',
+        promptMessage: tr('Verify to enable biometric login', 'تحقّق لتفعيل الدخول بالبصمة', 'أكّد علشان نفعّل الدخول بالبصمة'),
+        fallbackLabel: t('cancel'),
       })
       if (!result.success) return
       await SecureStore.setItemAsync('biometric_enabled', 'true')
       setBioEnabled(true)
-      Alert.alert('Enabled', 'Biometric login is now active. You can use it on the next sign-in.')
+      Alert.alert(tr('Enabled', 'تم التفعيل', 'اتفعّل'), tr('Biometric login is now active. You can use it on the next sign-in.', 'تم تفعيل الدخول بالبصمة، وستتمكن من استخدامه في المرة القادمة.', 'الدخول بالبصمة شغال، وتقدر تستخدمه المرة الجاية.'))
     } else {
       await SecureStore.deleteItemAsync('biometric_enabled')
       setBioEnabled(false)
@@ -116,24 +125,24 @@ export default function ProfileScreen() {
   }
 
   const submitPassword = async () => {
-    if (!pwForm.current || !pwForm.next || !pwForm.confirm) { setPwErr('Please fill in all fields.'); return }
-    if (pwForm.next.length < 8) { setPwErr('New password must be at least 8 characters.'); return }
-    if (pwForm.next !== pwForm.confirm) { setPwErr('Passwords do not match.'); return }
+    if (!pwForm.current || !pwForm.next || !pwForm.confirm) { setPwErr(t('fill_all')); return }
+    if (pwForm.next.length < 8) { setPwErr(t('pw_min')); return }
+    if (pwForm.next !== pwForm.confirm) { setPwErr(t('pw_mismatch')); return }
     setPwErr(''); setPwSaving(true)
     try {
       await api.post('/auth/change-password', { current_password: pwForm.current, new_password: pwForm.next })
       setShowPassword(false)
       setPwForm({ current: '', next: '', confirm: '' })
-      Alert.alert('Password changed', 'Your password has been updated successfully.')
+      Alert.alert(t('pw_changed_title'), t('pw_changed_msg'))
     } catch (e) {
-      setPwErr(e.response?.data?.message || 'Failed to change password.')
+      setPwErr(e.response?.data?.message || t('pw_failed'))
     } finally { setPwSaving(false) }
   }
 
   const confirmLogout = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign Out', style: 'destructive', onPress: logout },
+    Alert.alert(t('sign_out_title'), t('sign_out_confirm'), [
+      { text: t('cancel'), style: 'cancel' },
+      { text: t('sign_out_title'), style: 'destructive', onPress: logout },
     ])
   }
 
@@ -141,7 +150,7 @@ export default function ProfileScreen() {
     <TouchableOpacity style={s.menuItem} onPress={onPress} activeOpacity={0.7}>
       <Text style={s.menuIcon}>{icon}</Text>
       <Text style={[s.menuLabel, { color: colors.text2 }, danger && s.menuDanger]}>{label}</Text>
-      <Text style={[s.menuArrow, { color: colors.muted }]}>›</Text>
+      <Text style={[s.menuArrow, { color: colors.muted }]}>{chevron}</Text>
     </TouchableOpacity>
   )
 
@@ -149,10 +158,10 @@ export default function ProfileScreen() {
     <SafeAreaView style={[s.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       <View style={[s.navBar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <Text style={[s.backArrow, { color: colors.text }]}>←</Text>
-          <Text style={[s.backText,  { color: colors.text }]}>Back</Text>
+          <Text style={[s.backArrow, { color: colors.text }]}>{back}</Text>
+          <Text style={[s.backText,  { color: colors.text }]}>{t('back')}</Text>
         </TouchableOpacity>
-        <Text style={[s.navTitle, { color: colors.text }]}>Profile</Text>
+        <Text style={[s.navTitle, { color: colors.text }]}>{tr('Profile', 'الملف الشخصي', 'بياناتي')}</Text>
         <View style={{ width: 64 }} />
       </View>
 
@@ -170,50 +179,50 @@ export default function ProfileScreen() {
           <Text style={[s.name, { color: colors.text }]}>{user?.first_name} {user?.last_name}</Text>
           <Text style={[s.email, { color: colors.sub }]}>{user?.email}</Text>
           <View style={s.roleBadge}>
-            <Text style={s.roleText}>{user?.role?.replace('_', ' ')}</Text>
+            <Text style={s.roleText}>{roleLabel(user?.role, tr)}</Text>
           </View>
           <Text style={s.company}>{user?.company_name}</Text>
         </View>
 
         {/* Employee Info */}
-        <Text style={[s.sectionTitle, { color: colors.sub }]}>Employee Information</Text>
+        <Text style={[s.sectionTitle, { color: colors.sub }]}>{tr('Employee Information', 'بيانات الموظف', 'بياناتك')}</Text>
         <View style={[s.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {empLoading ? (
             <>
-              <EmpRow icon="🪪" label="Employee Code" value={null} loading colors={colors} />
-              <EmpRow icon="🏢" label="Department"    value={null} loading colors={colors} />
-              <EmpRow icon="💼" label="Position"      value={null} loading colors={colors} />
+              <EmpRow icon="🪪" label={tr('Employee Code', 'الرقم الوظيفي', 'الكود الوظيفي')} value={null} loading colors={colors} />
+              <EmpRow icon="🏢" label={tr('Department', 'الإدارة')}    value={null} loading colors={colors} />
+              <EmpRow icon="💼" label={tr('Position', 'الوظيفة')}      value={null} loading colors={colors} />
             </>
           ) : (
             <>
-              <EmpRow icon="🪪" label="Employee Code" value={emp?.employee_number}            colors={colors} />
-              <EmpRow icon="🏢" label="Department"    value={emp?.department_name}           colors={colors} />
-              <EmpRow icon="💼" label="Position"      value={emp?.position_title}            colors={colors} />
-              <EmpRow icon="📱" label="Mobile"        value={emp?.phone}                     colors={colors} />
-              <EmpRow icon="🎂" label="Birth Date"    value={fmtDate(emp?.date_of_birth)}    colors={colors} />
-              <EmpRow icon="📅" label="Hire Date"     value={fmtDate(emp?.hire_date)}        colors={colors} />
-              <EmpRow icon="🪆" label="Gender"        value={emp?.gender}                    colors={colors} />
-              <EmpRow icon="🪙" label="National ID"   value={emp?.national_id}               colors={colors} last />
+              <EmpRow icon="🪪" label={tr('Employee Code', 'الرقم الوظيفي', 'الكود الوظيفي')} value={emp?.employee_number}            colors={colors} />
+              <EmpRow icon="🏢" label={tr('Department', 'الإدارة')}    value={emp?.department_name}           colors={colors} />
+              <EmpRow icon="💼" label={tr('Position', 'الوظيفة')}      value={emp?.position_title}            colors={colors} />
+              <EmpRow icon="📱" label={tr('Mobile', 'رقم الموبايل', 'الموبايل')} value={emp?.phone}                     colors={colors} />
+              <EmpRow icon="🎂" label={tr('Birth Date', 'تاريخ الميلاد')} value={fmtDate(emp?.date_of_birth)}    colors={colors} />
+              <EmpRow icon="📅" label={tr('Hire Date', 'تاريخ التعيين')} value={fmtDate(emp?.hire_date)}        colors={colors} />
+              <EmpRow icon="🪆" label={tr('Gender', 'النوع')} value={genderLabel(emp?.gender, tr)}                    colors={colors} />
+              <EmpRow icon="🪙" label={tr('National ID', 'الرقم القومي')} value={emp?.national_id}               colors={colors} last />
             </>
           )}
         </View>
 
         {/* Account Info */}
-        <Text style={[s.sectionTitle, { color: colors.sub }]}>Account</Text>
+        <Text style={[s.sectionTitle, { color: colors.sub }]}>{tr('Account', 'الحساب', 'حسابك')}</Text>
         <View style={[s.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <EmpRow icon="✉️" label="Email"   value={user?.email}                          colors={colors} />
-          <EmpRow icon="🏷️" label="Role"    value={user?.role?.replace(/_/g, ' ')}       colors={colors} />
-          <EmpRow icon="🏢" label="Company" value={user?.company_name}                   colors={colors} last />
+          <EmpRow icon="✉️" label={t('email')} value={user?.email}                          colors={colors} />
+          <EmpRow icon="🏷️" label={tr('Role', 'الدور', 'الصلاحية')} value={roleLabel(user?.role, tr)}       colors={colors} />
+          <EmpRow icon="🏢" label={tr('Company', 'الشركة')} value={user?.company_name}                   colors={colors} last />
         </View>
 
         {/* Settings */}
-        <Text style={[s.sectionTitle, { color: colors.sub }]}>Settings</Text>
+        <Text style={[s.sectionTitle, { color: colors.sub }]}>{tr('Settings', 'الإعدادات')}</Text>
         <View style={[s.menuCard, { backgroundColor: colors.card }]}>
-          <MenuItem icon="🔒" label="Change Password" onPress={() => setShowPassword(true)} />
+          <MenuItem icon="🔒" label={t('change_password')} onPress={() => setShowPassword(true)} />
           <View style={[s.divider, { backgroundColor: colors.border }]} />
           <View style={s.menuItem}>
             <Text style={s.menuIcon}>{isDark ? '🌙' : '☀️'}</Text>
-            <Text style={[s.menuLabel, { color: colors.text2 }]}>Dark Mode</Text>
+            <Text style={[s.menuLabel, { color: colors.text2 }]}>{tr('Dark Mode', 'الوضع الداكن')}</Text>
             <Switch
               value={isDark}
               onValueChange={toggleTheme}
@@ -227,7 +236,7 @@ export default function ProfileScreen() {
               <View style={s.menuItem}>
                 <Text style={s.menuIcon}>{bioAvailable ? '👆' : '🔐'}</Text>
                 <Text style={[s.menuLabel, { color: colors.text2 }]}>
-                  {Platform.OS === 'ios' ? 'Face ID Login' : 'Fingerprint Login'}
+                  {Platform.OS === 'ios' ? tr('Face ID Login', 'الدخول باستخدام Face ID', 'الدخول بـ Face ID') : tr('Fingerprint Login', 'الدخول ببصمة الإصبع', 'الدخول بالبصمة')}
                 </Text>
                 <Switch
                   value={bioEnabled}
@@ -242,34 +251,34 @@ export default function ProfileScreen() {
           <TouchableOpacity style={s.menuItem} onPress={changeLanguage} activeOpacity={0.7}>
             <Text style={s.menuIcon}>🌐</Text>
             <View style={{ flex: 1 }}>
-              <Text style={[s.menuLabel, { color: colors.text2 }]}>Language</Text>
+              <Text style={[s.menuLabel, { color: colors.text2 }]}>{t('language')}</Text>
               <Text style={[s.menuSub, { color: colors.muted }]}>{language === 'ar' ? 'العربية' : 'English'}</Text>
             </View>
-            <Text style={[s.menuArrow, { color: colors.muted }]}>›</Text>
+            <Text style={[s.menuArrow, { color: colors.muted }]}>{chevron}</Text>
           </TouchableOpacity>
           <View style={[s.divider, { backgroundColor: colors.border }]} />
-          <MenuItem icon="📢" label="Announcements" onPress={() => router.push('/announcements')} />
+          <MenuItem icon="📢" label={t('announcements')} onPress={() => router.push('/announcements')} />
           <View style={[s.divider, { backgroundColor: colors.border }]} />
-          <MenuItem icon="🚪" label="Sign Out" danger onPress={confirmLogout} />
+          <MenuItem icon="🚪" label={t('sign_out_title')} danger onPress={confirmLogout} />
         </View>
 
-        <Text style={s.version}>HR Dock v1.0 · Employee Self-Service</Text>
+        <Text style={s.version}>{t('version_line')}</Text>
       </ScrollView>
 
       {/* Change Password Modal */}
       <Modal visible={showPassword} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowPassword(false)}>
         <SafeAreaView style={pw.safe}>
           <View style={pw.header}>
-            <Text style={pw.title}>Change Password</Text>
+            <Text style={pw.title}>{t('change_password')}</Text>
             <TouchableOpacity onPress={() => { setShowPassword(false); setPwErr(''); setPwForm({ current: '', next: '', confirm: '' }) }}>
               <Text style={pw.close}>✕</Text>
             </TouchableOpacity>
           </View>
           <ScrollView style={pw.scroll} keyboardShouldPersistTaps="handled">
             {[
-              { label: 'Current Password',     key: 'current',  ph: '••••••••' },
-              { label: 'New Password',          key: 'next',     ph: 'At least 8 characters' },
-              { label: 'Confirm New Password',  key: 'confirm',  ph: '••••••••' },
+              { label: t('current_password'),     key: 'current',  ph: '••••••••' },
+              { label: t('new_password'),         key: 'next',     ph: t('pw_min_ph') },
+              { label: t('confirm_new_password'), key: 'confirm',  ph: '••••••••' },
             ].map(({ label, key, ph }) => (
               <View key={key} style={pw.field}>
                 <Text style={pw.label}>{label}</Text>
@@ -285,7 +294,7 @@ export default function ProfileScreen() {
             ))}
             {!!pwErr && <View style={pw.errBox}><Text style={pw.errText}>{pwErr}</Text></View>}
             <TouchableOpacity style={[pw.btn, pwSaving && pw.btnDis]} onPress={submitPassword} disabled={pwSaving}>
-              {pwSaving ? <ActivityIndicator color="white" /> : <Text style={pw.btnText}>Update Password</Text>}
+              {pwSaving ? <ActivityIndicator color="white" /> : <Text style={pw.btnText}>{t('update_password')}</Text>}
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
@@ -314,7 +323,7 @@ const s = StyleSheet.create({
   infoRow:     { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f8fafc' },
   infoLabel:   { fontSize: 13, color: '#64748b' },
   infoValue:   { fontSize: 13, fontWeight: '600', color: '#0F1829', textTransform: 'capitalize' },
-  sectionTitle:{ fontSize: 11, fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  sectionTitle:{ fontSize: 11, fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: ls(0.5), marginBottom: 8 },
   menuCard:    { backgroundColor: 'white', borderRadius: 14, overflow: 'hidden', marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
   menuItem:    { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14 },
   menuIcon:    { fontSize: 18, width: 26, textAlign: 'center' },
@@ -329,7 +338,7 @@ const s = StyleSheet.create({
 const er = StyleSheet.create({
   row:   { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
   icon:  { fontSize: 18, width: 28, textAlign: 'center' },
-  label: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 3 },
+  label: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: ls(0.4), marginBottom: 3 },
   value: { fontSize: 14, fontWeight: '600' },
 })
 
@@ -340,7 +349,7 @@ const pw = StyleSheet.create({
   close:   { fontSize: 22, color: '#64748b' },
   scroll:  { padding: 20 },
   field:   { marginBottom: 16 },
-  label:   { fontSize: 11, fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 },
+  label:   { fontSize: 11, fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: ls(0.4), marginBottom: 8 },
   input:   { borderWidth: 1.5, borderColor: '#e2e8f0', borderRadius: 12, padding: 14, fontSize: 15, color: '#1e293b', backgroundColor: '#fafafa' },
   errBox:  { backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fecaca', borderRadius: 10, padding: 12, marginBottom: 16 },
   errText: { color: '#dc2626', fontSize: 13 },

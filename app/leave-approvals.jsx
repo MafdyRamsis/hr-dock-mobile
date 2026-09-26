@@ -7,8 +7,43 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useTheme } from '../src/context/ThemeContext'
 import api from '../src/services/api'
+import { useLang } from '../src/context/LanguageContext'
+import { back } from '../src/utils/rtl'
 
-const fmt = d => d ? d.split('T')[0].split('-').reverse().join('/') : '—'
+const toDateStr = d => (d ? String(d).split('T')[0] : '')
+
+const statusLabel = (st, tr) => ({
+  pending:  tr('Pending', 'قيد المراجعة', 'مستني رد'),
+  approved: tr('Approved', 'تمت الموافقة', 'اتوافق عليه'),
+  rejected: tr('Rejected', 'مرفوض', 'اترفض'),
+}[st] || st)
+
+// Known leave types → Arabic; anything else shows as sent by the server
+const leaveTypeLabel = (t, tr) => {
+  const k = String(t || '').toLowerCase().replace(/\s*leave$/, '').trim()
+  return ({
+    annual:    tr('Annual Leave', 'إجازة سنوية', 'إجازة اعتيادي'),
+    casual:    tr('Casual Leave', 'إجازة عارضة', 'إجازة عارضة'),
+    sick:      tr('Sick Leave', 'إجازة مرضية'),
+    unpaid:    tr('Unpaid Leave', 'إجازة بدون أجر', 'إجازة من غير مرتب'),
+    maternity: tr('Maternity Leave', 'إجازة وضع'),
+    hajj:      tr('Hajj Leave', 'إجازة حج'),
+    wfh:       tr('Work from Home', 'العمل من المنزل', 'شغل من البيت'),
+    'work from home': tr('Work from Home', 'العمل من المنزل', 'شغل من البيت'),
+  }[k]) || t
+}
+
+// "3 days" in Arabic: 1 يوم / 2 يومان / 3–10 أيام / 11+ يوم
+const daysText = (n, tr) => {
+  if (!n) return '—'
+  const v = Number(n)
+  if (isNaN(v) || v % 1) return tr(`${n} day(s)`, `${n} يوم`)
+  return tr(
+    `${v} day${v === 1 ? '' : 's'}`,
+    v === 1 ? 'يوم واحد' : v === 2 ? 'يومان' : v <= 10 ? `${v} أيام` : `${v} يومًا`,
+    v === 1 ? 'يوم واحد' : v === 2 ? 'يومين' : v <= 10 ? `${v} أيام` : `${v} يوم`,
+  )
+}
 
 const STATUS_STYLE = {
   pending:  { bg: '#fef9c3', color: '#854d0e' },
@@ -18,6 +53,8 @@ const STATUS_STYLE = {
 
 export default function LeaveApprovalsScreen() {
   const { colors } = useTheme()
+  const { tr, date } = useLang()
+  const fmt        = d => (d ? date(toDateStr(d)) : '—')
   const router     = useRouter()
   const [requests,   setRequests]   = useState([])
   const [loading,    setLoading]    = useState(true)
@@ -44,17 +81,29 @@ export default function LeaveApprovalsScreen() {
     try {
       await api.patch(`/leave/requests/${id}/review`, { status, notes: notes || undefined })
       setRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r))
-      Alert.alert(status === 'approved' ? '✅ Approved' : '❌ Rejected', 'Leave request updated.')
+      Alert.alert(
+        status === 'approved' ? `✅ ${tr('Approved', 'تمت الموافقة', 'اتوافق عليه')}` : `❌ ${tr('Rejected', 'تم الرفض', 'اترفض')}`,
+        tr('Leave request updated.', 'تم تحديث طلب الإجازة.', 'طلب الإجازة اتحدّث.'),
+        [{ text: tr('OK', 'حسنًا', 'تمام') }],
+      )
     } catch (e) {
-      Alert.alert('Error', e.response?.data?.message || 'Failed. Please try again.')
+      Alert.alert(
+        tr('Error', 'خطأ', 'حصلت مشكلة'),
+        e.response?.data?.message || tr('Failed. Please try again.', 'تعذّر إتمام العملية. يرجى المحاولة مرة أخرى.', 'معرفناش نكمّل. يلا نجرّب تاني.'),
+        [{ text: tr('OK', 'حسنًا', 'تمام') }],
+      )
     } finally { setActing(null) }
   }
 
   const handleApprove = (id) => {
-    Alert.alert('Approve Leave', 'Are you sure you want to approve this request?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Approve', onPress: () => act(id, 'approved') },
-    ])
+    Alert.alert(
+      tr('Approve Leave', 'الموافقة على الإجازة', 'موافقة على الإجازة'),
+      tr('Are you sure you want to approve this request?', 'هل أنت متأكد من الموافقة على هذا الطلب؟', 'نوافق على الطلب ده؟'),
+      [
+        { text: tr('Cancel', 'إلغاء'), style: 'cancel' },
+        { text: tr('Approve', 'موافقة', 'وافق'), onPress: () => act(id, 'approved') },
+      ],
+    )
   }
 
   const handleReject = (id) => {
@@ -72,10 +121,10 @@ export default function LeaveApprovalsScreen() {
     <SafeAreaView style={[s.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       {/* Nav */}
       <View style={[s.nav, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={s.back}>
-          <Text style={[s.backText, { color: colors.text }]}>‹</Text>
+        <TouchableOpacity onPress={() => router.back()} style={s.back} accessibilityLabel={tr('Back', 'رجوع')}>
+          <Text style={[s.backText, { color: colors.text }]}>{back}</Text>
         </TouchableOpacity>
-        <Text style={[s.navTitle, { color: colors.text }]}>Leave Approvals</Text>
+        <Text style={[s.navTitle, { color: colors.text }]}>{tr('Leave Approvals', 'اعتماد الإجازات', 'موافقات الإجازات')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -85,7 +134,7 @@ export default function LeaveApprovalsScreen() {
           <TouchableOpacity key={f} onPress={() => setFilter(f)}
             style={[s.chip, filter === f && s.chipActive]}>
             <Text style={[s.chipText, filter === f && s.chipTextActive]}>
-              {f.charAt(0).toUpperCase() + f.slice(1)}
+              {statusLabel(f, tr)}
             </Text>
           </TouchableOpacity>
         ))}
@@ -102,7 +151,11 @@ export default function LeaveApprovalsScreen() {
           {requests.length === 0 && (
             <View style={s.empty}>
               <Text style={s.emptyIcon}>📋</Text>
-              <Text style={[s.emptyText, { color: colors.sub }]}>No {filter} requests</Text>
+              <Text style={[s.emptyText, { color: colors.sub }]}>{({
+                pending:  tr('No pending requests', 'لا توجد طلبات قيد المراجعة', 'مفيش طلبات مستنياك'),
+                approved: tr('No approved requests', 'لا توجد طلبات موافق عليها', 'لسه مفيش طلبات اتوافق عليها'),
+                rejected: tr('No rejected requests', 'لا توجد طلبات مرفوضة', 'مفيش طلبات اترفضت'),
+              })[filter]}</Text>
             </View>
           )}
           {requests.map(r => {
@@ -122,18 +175,18 @@ export default function LeaveApprovalsScreen() {
                     <Text style={[s.empSub, { color: colors.sub }]}>{r.department_name || r.department || ''}</Text>
                   </View>
                   <View style={[s.badge, { backgroundColor: ss.bg }]}>
-                    <Text style={[s.badgeText, { color: ss.color }]}>{r.status}</Text>
+                    <Text style={[s.badgeText, { color: ss.color }]}>{statusLabel(r.status, tr)}</Text>
                   </View>
                 </View>
 
                 {/* Details */}
                 <View style={[s.details, { borderTopColor: colors.border }]}>
-                  <Row label="Type"    value={r.leave_type_name || r.leave_type || '—'} colors={colors} />
-                  <Row label="From"    value={fmt(r.start_date)}  colors={colors} />
-                  <Row label="To"      value={fmt(r.end_date)}    colors={colors} />
-                  <Row label="Days"    value={`${r.days || '—'} day(s)`} colors={colors} />
-                  {r.reason ? <Row label="Reason" value={r.reason} colors={colors} /> : null}
-                  {r.notes  ? <Row label="Note"   value={r.notes}  colors={colors} /> : null}
+                  <Row label={tr('Type', 'النوع')}    value={leaveTypeLabel(r.leave_type_name || r.leave_type, tr) || '—'} colors={colors} />
+                  <Row label={tr('From', 'من')}      value={fmt(r.start_date)}  colors={colors} />
+                  <Row label={tr('To', 'إلى', 'لحد')} value={fmt(r.end_date)}    colors={colors} />
+                  <Row label={tr('Days', 'عدد الأيام', 'الأيام')} value={daysText(r.days, tr)} colors={colors} />
+                  {r.reason ? <Row label={tr('Reason', 'السبب')} value={r.reason} colors={colors} /> : null}
+                  {r.notes  ? <Row label={tr('Note', 'ملاحظة')}  value={r.notes}  colors={colors} /> : null}
                 </View>
 
                 {/* Actions — only for pending */}
@@ -142,10 +195,10 @@ export default function LeaveApprovalsScreen() {
                     {isActing ? <ActivityIndicator color="#2563eb" style={{ flex: 1 }} /> : (
                       <>
                         <TouchableOpacity style={s.btnReject} onPress={() => handleReject(r.id)}>
-                          <Text style={s.btnRejectText}>✕ Reject</Text>
+                          <Text style={s.btnRejectText}>✕ {tr('Reject', 'رفض', 'ارفض')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={s.btnApprove} onPress={() => handleApprove(r.id)}>
-                          <Text style={s.btnApproveText}>✓ Approve</Text>
+                          <Text style={s.btnApproveText}>✓ {tr('Approve', 'موافقة', 'وافق')}</Text>
                         </TouchableOpacity>
                       </>
                     )}
@@ -161,10 +214,10 @@ export default function LeaveApprovalsScreen() {
       <Modal visible={showReject} transparent animationType="slide">
         <View style={s.overlay}>
           <View style={[s.modal, { backgroundColor: colors.card }]}>
-            <Text style={[s.modalTitle, { color: colors.text }]}>Rejection Reason</Text>
+            <Text style={[s.modalTitle, { color: colors.text }]}>{tr('Rejection Reason', 'سبب الرفض')}</Text>
             <TextInput
               style={[s.textArea, { color: colors.text, borderColor: colors.border }]}
-              placeholder="Optional reason for rejection…"
+              placeholder={tr('Optional reason for rejection…', 'سبب الرفض (اختياري)…', 'سبب الرفض (لو فيه)…')}
               placeholderTextColor={colors.sub}
               multiline
               numberOfLines={4}
@@ -173,10 +226,10 @@ export default function LeaveApprovalsScreen() {
             />
             <View style={s.modalActions}>
               <TouchableOpacity style={s.modalCancel} onPress={() => setShowReject(false)}>
-                <Text style={{ color: colors.sub, fontWeight: '600' }}>Cancel</Text>
+                <Text style={{ color: colors.sub, fontWeight: '600' }}>{tr('Cancel', 'إلغاء')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={s.modalConfirm} onPress={confirmReject}>
-                <Text style={{ color: 'white', fontWeight: '600' }}>Reject</Text>
+                <Text style={{ color: 'white', fontWeight: '600' }}>{tr('Reject', 'رفض', 'ارفض')}</Text>
               </TouchableOpacity>
             </View>
           </View>

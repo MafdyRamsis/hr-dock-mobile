@@ -8,10 +8,13 @@ import { useRouter } from 'expo-router'
 import { useTheme } from '../src/context/ThemeContext'
 import Avatar from '../src/components/Avatar'
 import api from '../src/services/api'
+import { useLang } from '../src/context/LanguageContext'
+import { back } from '../src/utils/rtl'
 
 export default function DirectoryScreen() {
   const { colors } = useTheme()
   const router     = useRouter()
+  const { tr }     = useLang()
 
   const [employees,  setEmployees]  = useState([])
   const [loading,    setLoading]    = useState(true)
@@ -57,9 +60,9 @@ export default function DirectoryScreen() {
       {/* Nav */}
       <View style={[s.nav, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={s.back}>
-          <Text style={[s.backText, { color: colors.text }]}>‹</Text>
+          <Text style={[s.backText, { color: colors.text }]}>{back}</Text>
         </TouchableOpacity>
-        <Text style={[s.navTitle, { color: colors.text }]}>Directory</Text>
+        <Text style={[s.navTitle, { color: colors.text }]}>{tr('Directory', 'دليل الموظفين', 'دليل الزملاء')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -68,7 +71,7 @@ export default function DirectoryScreen() {
         <Text style={s.searchIcon}>🔍</Text>
         <TextInput
           style={[s.searchInput, { color: colors.text }]}
-          placeholder="Search name, department, role…"
+          placeholder={tr('Search name, department, role…', 'ابحث بالاسم أو الإدارة أو الوظيفة…', 'دوّر بالاسم أو الإدارة أو الوظيفة…')}
           placeholderTextColor={colors.sub}
           value={search}
           onChangeText={setSearch}
@@ -86,7 +89,7 @@ export default function DirectoryScreen() {
           <View style={s.empty}>
             <Text style={s.emptyIcon}>👥</Text>
             <Text style={[s.emptyText, { color: colors.sub }]}>
-              {search ? 'No employees match your search' : 'No employees found'}
+              {search ? tr('No employees match your search', 'لا يوجد موظفون مطابقون للبحث', 'مفيش حد مطابق للبحث') : tr('No employees found', 'لا يوجد موظفون', 'مفيش موظفين')}
             </Text>
           </View>
         ) : filtered.map(e => (
@@ -128,7 +131,7 @@ export default function DirectoryScreen() {
           </View>
         ))}
 
-        <Text style={[s.count, { color: colors.sub }]}>{filtered.length} employee{filtered.length !== 1 ? 's' : ''}</Text>
+        <Text style={[s.count, { color: colors.sub }]}>{filtered.length} {filtered.length !== 1 ? tr('employees', 'موظف') : tr('employee', 'موظف')}</Text>
       </ScrollView>
     </SafeAreaView>
   )

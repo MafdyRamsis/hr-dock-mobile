@@ -1,20 +1,22 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { useTheme } from '../context/ThemeContext'
+import { useLang } from '../context/LanguageContext'
 
-const MOODS = [
-  { v: 1, emoji: '😞', label: 'Rough' },
-  { v: 2, emoji: '😕', label: 'Meh' },
-  { v: 3, emoji: '🙂', label: 'Okay' },
-  { v: 4, emoji: '😄', label: 'Good' },
-  { v: 5, emoji: '🤩', label: 'Great' },
+const moods = (tr) => [
+  { v: 1, emoji: '😞', label: tr('Rough', 'صعب', 'مش أحسن حاجة') },
+  { v: 2, emoji: '😕', label: tr('Meh', 'عادي', 'نص نص') },
+  { v: 3, emoji: '🙂', label: tr('Okay', 'مقبول', 'تمام') },
+  { v: 4, emoji: '😄', label: tr('Good', 'جيد', 'كويس') },
+  { v: 5, emoji: '🤩', label: tr('Great', 'ممتاز', 'فُل') },
 ]
 
 /* One-tap daily mood check-in — five faces, pick one. */
 export default function MoodSlider({ value, onChange, disabled }) {
   const { colors } = useTheme()
+  const { tr } = useLang()
   return (
     <View style={m.row}>
-      {MOODS.map(mo => {
+      {moods(tr).map(mo => {
         const active = value === mo.v
         return (
           <TouchableOpacity

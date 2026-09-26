@@ -3,7 +3,7 @@ import { Stack, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { AuthProvider, useAuth } from '../src/context/AuthContext'
 import { ThemeProvider, useTheme } from '../src/context/ThemeContext'
-import { LanguageProvider } from '../src/context/LanguageContext'
+import { LanguageProvider, useLang } from '../src/context/LanguageContext'
 import { registerForPushNotifications } from '../src/utils/notifications'
 
 function Guard() {
@@ -21,8 +21,9 @@ function Guard() {
     else if (user && !mustChange && (inAuth || onChangePw)) router.replace('/(tabs)')
   }, [user, loading, user?.must_change_password])
 
+  const { refreshTone } = useLang()
   useEffect(() => {
-    if (user) registerForPushNotifications()
+    if (user) { registerForPushNotifications(); refreshTone() }
   }, [user])
 
   return null

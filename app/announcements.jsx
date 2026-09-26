@@ -4,8 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useTheme } from '../src/context/ThemeContext'
 import api from '../src/services/api'
+import { useLang } from '../src/context/LanguageContext'
+import { back } from '../src/utils/rtl'
 
-const fmt = d => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
 
 const CATEGORY_COLORS = {
   event:      { bg: '#eff6ff', text: '#1d4ed8' },
@@ -20,8 +21,17 @@ const PRIORITY_COLORS = {
   low:    '#94a3b8',
 }
 
+const categoryLabel = (c, tr) => ({
+  event:   tr('Event', 'فعالية', 'إيفنت'),
+  policy:  tr('Policy', 'سياسة'),
+  hr:      tr('HR', 'الموارد البشرية', 'HR'),
+  general: tr('General', 'عام'),
+}[c] || c)
+
 export default function AnnouncementsScreen() {
   const router = useRouter()
+  const { tr, date } = useLang()
+  const fmt = d => d ? date(d) : ''
   const { colors } = useTheme()
   const [items,     setItems]     = useState([])
   const [loading,   setLoading]   = useState(true)
@@ -41,10 +51,10 @@ export default function AnnouncementsScreen() {
     <SafeAreaView style={[s.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       <View style={[s.navBar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <Text style={[s.backArrow, { color: colors.text }]}>←</Text>
-          <Text style={[s.backText, { color: colors.text }]}>Back</Text>
+          <Text style={[s.backArrow, { color: colors.text }]}>{back}</Text>
+          <Text style={[s.backText, { color: colors.text }]}>{tr('Back', 'رجوع')}</Text>
         </TouchableOpacity>
-        <Text style={[s.navTitle, { color: colors.text }]}>Announcements</Text>
+        <Text style={[s.navTitle, { color: colors.text }]}>{tr('Announcements', 'الإعلانات')}</Text>
         <View style={{ width: 64 }} />
       </View>
 
@@ -58,7 +68,7 @@ export default function AnnouncementsScreen() {
           {items.length === 0 ? (
             <View style={s.emptyBox}>
               <Text style={s.emptyIcon}>📢</Text>
-              <Text style={s.emptyText}>No announcements yet.</Text>
+              <Text style={s.emptyText}>{tr('No announcements yet.', 'لا توجد إعلانات بعد.', 'لسه مفيش إعلانات.')}</Text>
             </View>
           ) : items.map((item) => {
             const cat   = CATEGORY_COLORS[item.category] || CATEGORY_COLORS.general
@@ -67,12 +77,12 @@ export default function AnnouncementsScreen() {
               <View key={item.id} style={[s.card, { backgroundColor: colors.card }]}>
                 {item.pinned && (
                   <View style={s.pinnedBadge}>
-                    <Text style={s.pinnedText}>📌 Pinned</Text>
+                    <Text style={s.pinnedText}>📌 {tr('Pinned', 'مثبّت', 'متثبّت')}</Text>
                   </View>
                 )}
                 <View style={s.cardTop}>
                   <View style={[s.catBadge, { backgroundColor: cat.bg }]}>
-                    <Text style={[s.catText, { color: cat.text }]}>{item.category}</Text>
+                    <Text style={[s.catText, { color: cat.text }]}>{categoryLabel(item.category, tr)}</Text>
                   </View>
                   <View style={[s.dot, { backgroundColor: pcolor }]} />
                 </View>

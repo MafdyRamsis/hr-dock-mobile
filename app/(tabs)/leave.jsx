@@ -14,14 +14,17 @@ import api from '../../src/services/api'
 import Card from '../../src/components/Card'
 import StatusBadge from '../../src/components/StatusBadge'
 import FeedItem from '../../src/components/FeedItem'
+import { useLang } from '../../src/context/LanguageContext'
+import { ls, fwd } from '../../src/utils/rtl'
 
 const toISO  = d => d.toISOString().split('T')[0]
-const fmt    = d => d ? d.split('T')[0].split('-').reverse().join('/') : '—'
 
 export default function LeaveScreen() {
   const { user } = useAuth()
   const { colors } = useTheme()
   const router = useRouter()
+  const { tr, date } = useLang()
+  const fmt = d => (d ? date(String(d).split('T')[0]) : '—')
   const [balances,   setBalances]   = useState([])
   const [requests,   setRequests]   = useState([])
   const [types,      setTypes]      = useState([])
@@ -78,17 +81,17 @@ export default function LeaveScreen() {
   }
 
   const submitRequest = async () => {
-    if (!form.start_date || !form.end_date) { setFormErr('Please select start and end dates.'); return }
-    if (form.start_date > form.end_date)    { setFormErr('End date must be after start date.'); return }
+    if (!form.start_date || !form.end_date) { setFormErr(tr('Please select start and end dates.', 'يرجى اختيار تاريخ البداية والنهاية.', 'اختار تاريخ البداية والنهاية.')); return }
+    if (form.start_date > form.end_date)    { setFormErr(tr('End date must be after start date.', 'يجب أن يكون تاريخ النهاية بعد تاريخ البداية.', 'تاريخ النهاية لازم يكون بعد تاريخ البداية.')); return }
     setFormErr(''); setSaving(true)
     try {
       await api.post('/leave/requests', { ...form })
       setShowForm(false)
       setForm({ leave_type_id: types[0]?.id || '', start_date: '', end_date: '', reason: '' })
       await load()
-      Alert.alert('Request submitted', 'Your leave request has been submitted successfully.')
+      Alert.alert(tr('Request submitted', 'تم إرسال الطلب', 'اتبعت'), tr('Your leave request has been submitted successfully.', 'تم إرسال طلب الإجازة بنجاح.', 'طلب الإجازة اتبعت، ومستني رد.'))
     } catch (err) {
-      setFormErr(err.response?.data?.message || 'Failed to submit request.')
+      setFormErr(err.response?.data?.message || tr('Failed to submit request.', 'تعذّر إرسال الطلب. حاول مرة أخرى.', 'معرفناش نبعت الطلب. يلا نجرّب تاني.'))
     } finally { setSaving(false) }
   }
 
@@ -105,19 +108,19 @@ export default function LeaveScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor="#FFA801" />}
       >
         <View style={s.header}>
-          <Text style={[s.pageTitle, { color: colors.text }]}>Leave</Text>
+          <Text style={[s.pageTitle, { color: colors.text }]}>{tr('Leave', 'الإجازات')}</Text>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             {['admin','hr_manager','manager'].includes(user?.role) && (
               <TouchableOpacity style={[s.calBtn, { backgroundColor: colors.card, borderColor: colors.glassBorder }]} onPress={() => router.push('/leave-approvals')} activeOpacity={0.85}>
-                <Text style={s.calBtnText}>✓ Approvals</Text>
+                <Text style={s.calBtnText}>✓ {tr('Approvals', 'الموافقات')}</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity style={[s.calBtn, { backgroundColor: colors.card, borderColor: colors.glassBorder }]} onPress={() => router.push('/holidays')} activeOpacity={0.85}>
-              <Text style={s.calBtnText}>🗓 Holidays</Text>
+              <Text style={s.calBtnText}>🗓 {tr('Holidays', 'الإجازات الرسمية')}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setShowForm(true)} activeOpacity={0.85}>
               <LinearGradient colors={GRADIENTS.sunshine} style={s.newBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-                <Text style={s.newBtnText}>+ New</Text>
+                <Text style={s.newBtnText}>+ {tr('New', 'جديد', 'اطلب')}</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -125,36 +128,36 @@ export default function LeaveScreen() {
 
         {balances.length > 0 && (
           <View style={s.section}>
-            <Text style={[s.sectionTitle, { color: colors.sub }]}>Your Balances</Text>
+            <Text style={[s.sectionTitle, { color: colors.sub }]}>{tr('Your Balances', 'أرصدتك', 'رصيدك')}</Text>
             {balances.map((b, i) => (
               <Card key={i} style={s.balCard}>
                 <View style={s.balRow}>
                   <Text style={[s.balName, { color: colors.text2 }]}>{b.name}</Text>
                   <View style={s.balNums}>
                     <Text style={[s.balRemain, { color: colors.text }]}>{b.remaining}</Text>
-                    <Text style={[s.balTotal, { color: colors.muted }]}> / {b.allocated} days</Text>
+                    <Text style={[s.balTotal, { color: colors.muted }]}> / {b.allocated} {tr('days', 'يوم')}</Text>
                   </View>
                 </View>
                 <View style={[s.balBar, { backgroundColor: colors.cardAlt }]}>
                   <LinearGradient colors={GRADIENTS.sunshine} style={[s.balFill, { width: `${b.allocated ? Math.min(100, (b.used / b.allocated) * 100) : 0}%` }]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
                 </View>
-                <Text style={[s.balUsed, { color: colors.muted }]}>{b.used} used · {b.remaining} remaining</Text>
+                <Text style={[s.balUsed, { color: colors.muted }]}>{tr(`${b.used} used · ${b.remaining} remaining`, `${b.used} مستخدم · ${b.remaining} متبقٍ`, `${b.used} اتاخد · ${b.remaining} فاضل`)}</Text>
               </Card>
             ))}
           </View>
         )}
 
         <View style={s.section}>
-          <Text style={[s.sectionTitle, { color: colors.sub }]}>My Requests</Text>
+          <Text style={[s.sectionTitle, { color: colors.sub }]}>{tr('My Requests', 'طلباتي', 'طلباتك')}</Text>
           {requests.length === 0 ? (
-            <Card><Text style={[s.empty, { color: colors.muted }]}>No leave requests yet.</Text></Card>
+            <Card><Text style={[s.empty, { color: colors.muted }]}>{tr('No leave requests yet.', 'لا توجد طلبات إجازة بعد.', 'لسه مفيش طلبات إجازة.')}</Text></Card>
           ) : requests.map((r, i) => (
             <FeedItem
               key={i}
               icon="🏖️"
               gradient="lavender"
               title={r.leave_type_name || r.leave_type}
-              subtitle={`${fmt(r.start_date)} → ${fmt(r.end_date)} · ${r.days_requested} day${r.days_requested !== 1 ? 's' : ''}`}
+              subtitle={`${fmt(r.start_date)} ${fwd} ${fmt(r.end_date)} · ${r.days_requested} ${tr(r.days_requested !== 1 ? 'days' : 'day', 'يوم')}`}
               right={<StatusBadge status={r.status} />}
             />
           ))}
@@ -165,7 +168,7 @@ export default function LeaveScreen() {
       <Modal visible={showForm} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowForm(false)}>
         <SafeAreaView style={s.modal}>
           <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>New Leave Request</Text>
+            <Text style={s.modalTitle}>{tr('New Leave Request', 'طلب إجازة جديد', 'اطلب إجازة')}</Text>
             <TouchableOpacity onPress={() => setShowForm(false)}>
               <Text style={s.modalClose}>✕</Text>
             </TouchableOpacity>
@@ -173,7 +176,7 @@ export default function LeaveScreen() {
 
           <ScrollView style={s.modalScroll} keyboardShouldPersistTaps="handled">
             <View style={s.formField}>
-              <Text style={s.formLabel}>Leave Type</Text>
+              <Text style={s.formLabel}>{tr('Leave Type', 'نوع الإجازة')}</Text>
               <View style={s.picker}>
                 {types.map(t => {
                   const active = form.leave_type_id === t.id
@@ -196,20 +199,20 @@ export default function LeaveScreen() {
 
             <View style={s.formRow}>
               <View style={[s.formField, { flex: 1 }]}>
-                <Text style={s.formLabel}>Start Date</Text>
+                <Text style={s.formLabel}>{tr('Start Date', 'تاريخ البداية')}</Text>
                 <TouchableOpacity style={s.dateBtn} onPress={() => openPicker('start')}>
                   <Text style={[s.dateBtnText, !form.start_date && s.datePlaceholder]}>
-                    {form.start_date ? fmt(form.start_date) : 'Select date'}
+                    {form.start_date ? fmt(form.start_date) : tr('Select date', 'اختر التاريخ', 'اختار التاريخ')}
                   </Text>
                   <Text style={s.dateIcon}>📅</Text>
                 </TouchableOpacity>
               </View>
               <View style={{ width: 12 }} />
               <View style={[s.formField, { flex: 1 }]}>
-                <Text style={s.formLabel}>End Date</Text>
+                <Text style={s.formLabel}>{tr('End Date', 'تاريخ النهاية')}</Text>
                 <TouchableOpacity style={s.dateBtn} onPress={() => openPicker('end')}>
                   <Text style={[s.dateBtnText, !form.end_date && s.datePlaceholder]}>
-                    {form.end_date ? fmt(form.end_date) : 'Select date'}
+                    {form.end_date ? fmt(form.end_date) : tr('Select date', 'اختر التاريخ', 'اختار التاريخ')}
                   </Text>
                   <Text style={s.dateIcon}>📅</Text>
                 </TouchableOpacity>
@@ -219,9 +222,9 @@ export default function LeaveScreen() {
             {showPicker && Platform.OS === 'ios' && (
               <View style={s.iosPickerWrap}>
                 <View style={s.iosPickerHeader}>
-                  <Text style={s.iosPickerLabel}>{pickerTarget === 'start' ? 'Start' : 'End'} Date</Text>
+                  <Text style={s.iosPickerLabel}>{pickerTarget === 'start' ? tr('Start Date', 'تاريخ البداية') : tr('End Date', 'تاريخ النهاية')}</Text>
                   <TouchableOpacity onPress={() => setShowPicker(false)}>
-                    <Text style={s.iosPickerDone}>Done</Text>
+                    <Text style={s.iosPickerDone}>{tr('Done', 'تم', 'تمام')}</Text>
                   </TouchableOpacity>
                 </View>
                 <DateTimePicker
@@ -237,10 +240,10 @@ export default function LeaveScreen() {
             )}
 
             <View style={s.formField}>
-              <Text style={s.formLabel}>Reason (optional)</Text>
+              <Text style={s.formLabel}>{tr('Reason (optional)', 'السبب (اختياري)')}</Text>
               <TextInput
                 style={s.formTextarea}
-                placeholder="Brief description…"
+                placeholder={tr('Brief description…', 'وصف مختصر…', 'اكتب السبب باختصار…')}
                 placeholderTextColor="#B0B3C6"
                 value={form.reason}
                 onChangeText={v => setForm(f => ({ ...f, reason: v }))}
@@ -258,7 +261,7 @@ export default function LeaveScreen() {
 
             <TouchableOpacity onPress={submitRequest} disabled={saving} activeOpacity={0.85}>
               <LinearGradient colors={GRADIENTS.sunshine} style={[s.submitBtn, saving && s.submitDisabled]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-                {saving ? <ActivityIndicator color="white" /> : <Text style={s.submitText}>Submit Request</Text>}
+                {saving ? <ActivityIndicator color="white" /> : <Text style={s.submitText}>{tr('Submit Request', 'إرسال الطلب', 'ابعت الطلب')}</Text>}
               </LinearGradient>
             </TouchableOpacity>
           </ScrollView>
@@ -289,7 +292,7 @@ const s = StyleSheet.create({
   calBtn:            { borderRadius: 14, paddingHorizontal: 12, paddingVertical: 9, borderWidth: 1, shadowColor: '#8890B5', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 1 },
   calBtnText:        { fontWeight: '700', fontSize: 12, color: '#FFA801' },
   section:           { marginBottom: 8 },
-  sectionTitle:      { fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
+  sectionTitle:      { fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: ls(0.5), marginBottom: 10 },
   balCard:           { marginBottom: 8 },
   balRow:            { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   balName:           { fontSize: 14, fontWeight: '700' },
@@ -309,7 +312,7 @@ const s = StyleSheet.create({
   modalScroll:       { padding: 20 },
   formField:         { marginBottom: 18 },
   formRow:           { flexDirection: 'row', marginBottom: 0 },
-  formLabel:         { fontSize: 12, fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 },
+  formLabel:         { fontSize: 12, fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: ls(0.4), marginBottom: 8 },
   dateBtn:           { borderWidth: 1.5, borderColor: '#E3E6F3', borderRadius: 16, padding: 14, backgroundColor: '#F5F6FC', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   dateBtnText:       { fontSize: 15, color: '#1A1B2E', fontWeight: '500' },
   datePlaceholder:   { color: '#B0B3C6', fontWeight: '400' },

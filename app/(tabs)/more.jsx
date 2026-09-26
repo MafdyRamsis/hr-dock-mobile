@@ -10,12 +10,28 @@ import api from '../../src/services/api'
 import Card from '../../src/components/Card'
 import Avatar from '../../src/components/Avatar'
 import StatusBadge from '../../src/components/StatusBadge'
+import { useLang } from '../../src/context/LanguageContext'
+import { ls, chevron } from '../../src/utils/rtl'
 
-const fmt = d => d ? d.split('T')[0].split('-').reverse().join('/') : '—'
+const roleLabel = (role, tr) => ({
+  employee:     tr('Employee', 'موظف'),
+  manager:      tr('Manager', 'مدير'),
+  hr_manager:   tr('HR Manager', 'مدير الموارد البشرية', 'مدير HR'),
+  hr:           tr('HR', 'الموارد البشرية', 'HR'),
+  admin:        tr('Admin', 'مسؤول النظام', 'أدمن'),
+  super_admin:  tr('Super Admin', 'المسؤول الرئيسي', 'سوبر أدمن'),
+}[role] || (role || '').replace(/_/g, ' '))
+
+const priorityLabel = (p, tr) => ({
+  low:    tr('Low', 'منخفضة', 'عادية'),
+  medium: tr('Medium', 'متوسطة'),
+  high:   tr('High', 'عالية', 'مستعجلة'),
+}[p] || p)
 
 export default function MoreScreen() {
   const { user, logout } = useAuth()
   const router = useRouter()
+  const { t, tr, lang, date, setLanguage } = useLang()
   const [tickets,   setTickets]   = useState([])
   const [loading,   setLoading]   = useState(true)
   const [refreshing,setRefreshing]= useState(false)
@@ -43,24 +59,24 @@ export default function MoreScreen() {
   useEffect(() => { load() }, [])
 
   const submitTicket = async () => {
-    if (!form.subject.trim())      { setFormErr('Please enter a subject.'); return }
-    if (!form.description.trim())  { setFormErr('Please describe your request.'); return }
+    if (!form.subject.trim())      { setFormErr(tr('Please enter a subject.', 'يرجى إدخال الموضوع.', 'اكتب الموضوع الأول.')); return }
+    if (!form.description.trim())  { setFormErr(tr('Please describe your request.', 'يرجى وصف طلبك.', 'اكتب تفاصيل طلبك.')); return }
     setFormErr(''); setSaving(true)
     try {
       await api.post('/helpdesk', form)
       setShowTicket(false)
       setForm({ subject: '', description: '', priority: 'medium' })
       await load()
-      Alert.alert('✅ Request submitted', 'Your request has been submitted to HR.')
+      Alert.alert(tr('✅ Request submitted', '✅ تم إرسال الطلب', '✅ اتبعت'), tr('Your request has been submitted to HR.', 'تم إرسال طلبك إلى الموارد البشرية.', 'طلبك وصل لـ HR.'))
     } catch (err) {
-      setFormErr(err.response?.data?.message || 'Failed to submit request.')
+      setFormErr(err.response?.data?.message || tr('Failed to submit request.', 'تعذّر إرسال الطلب.', 'معرفناش نبعت الطلب. يلا نجرّب تاني.'))
     } finally { setSaving(false) }
   }
 
   const submitPassword = async () => {
-    if (!pwForm.current || !pwForm.next || !pwForm.confirm) { setPwErr('Please fill in all fields.'); return }
-    if (pwForm.next.length < 8) { setPwErr('New password must be at least 8 characters.'); return }
-    if (pwForm.next !== pwForm.confirm) { setPwErr('Passwords do not match.'); return }
+    if (!pwForm.current || !pwForm.next || !pwForm.confirm) { setPwErr(t('fill_all')); return }
+    if (pwForm.next.length < 8) { setPwErr(t('pw_min')); return }
+    if (pwForm.next !== pwForm.confirm) { setPwErr(t('pw_mismatch')); return }
     setPwErr(''); setPwSaving(true)
     try {
       // The backend only ever registered POST /auth/change-password — PUT
@@ -68,24 +84,37 @@ export default function MoreScreen() {
       await api.post('/auth/change-password', { current_password: pwForm.current, new_password: pwForm.next })
       setShowPassword(false)
       setPwForm({ current: '', next: '', confirm: '' })
-      Alert.alert('Password changed', 'Your password has been updated successfully.')
+      Alert.alert(t('pw_changed_title'), t('pw_changed_msg'))
     } catch (err) {
-      setPwErr(err.response?.data?.message || 'Failed to change password.')
+      setPwErr(err.response?.data?.message || t('pw_failed'))
     } finally { setPwSaving(false) }
   }
 
   const confirmLogout = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign Out', style: 'destructive', onPress: logout },
+    Alert.alert(t('sign_out_title'), t('sign_out_confirm'), [
+      { text: t('cancel'), style: 'cancel' },
+      { text: t('sign_out_title'), style: 'destructive', onPress: logout },
     ])
+  }
+
+  // Bilingual on purpose, so it is readable whatever language is active.
+  const changeLanguage = () => {
+    Alert.alert(
+      'Language / اللغة',
+      'Choose your preferred language\nاختر لغتك المفضلة',
+      [
+        { text: 'English', onPress: () => setLanguage('en') }, // reloads the app if the layout direction changes
+        { text: 'العربية', onPress: () => setLanguage('ar') },
+        { text: 'Cancel / إلغاء', style: 'cancel' },
+      ]
+    )
   }
 
   const MenuItem = ({ icon, label, onPress, danger }) => (
     <TouchableOpacity style={s.menuItem} onPress={onPress} activeOpacity={0.7}>
       <Text style={s.menuIcon}>{icon}</Text>
       <Text style={[s.menuLabel, danger && s.menuDanger]}>{label}</Text>
-      <Text style={s.menuArrow}>›</Text>
+      <Text style={s.menuArrow}>{chevron}</Text>
     </TouchableOpacity>
   )
 
@@ -108,23 +137,35 @@ export default function MoreScreen() {
           <Text style={s.profileName}>{user?.first_name} {user?.last_name}</Text>
           <Text style={s.profileEmail}>{user?.email}</Text>
           <View style={s.roleBadge}>
-            <Text style={s.roleText}>{user?.role?.replace('_', ' ')}</Text>
+            <Text style={s.roleText}>{roleLabel(user?.role, tr)}</Text>
           </View>
+        </Card>
+
+        {/* Language — near the top so employees find it easily */}
+        <Card style={{ padding: 0, overflow: 'hidden', marginBottom: 20 }}>
+          <TouchableOpacity style={s.menuItem} onPress={changeLanguage} activeOpacity={0.7}>
+            <Text style={s.menuIcon}>🌐</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={s.menuLabel}>{lang === 'ar' ? 'اللغة · Language' : 'Language · اللغة'}</Text>
+              <Text style={s.menuSub}>{lang === 'ar' ? 'العربية' : 'English'}</Text>
+            </View>
+            <Text style={s.menuArrow}>{chevron}</Text>
+          </TouchableOpacity>
         </Card>
 
         {/* HR Requests */}
         <View style={s.section}>
           <View style={s.sectionHeader}>
-            <Text style={s.sectionTitle}>HR Requests</Text>
+            <Text style={s.sectionTitle}>{tr('HR Requests', 'طلبات الموارد البشرية', 'طلبات HR')}</Text>
             <TouchableOpacity style={s.newBtn} onPress={() => setShowTicket(true)}>
-              <Text style={s.newBtnText}>+ New</Text>
+              <Text style={s.newBtnText}>{tr('+ New', '+ جديد', '+ طلب جديد')}</Text>
             </TouchableOpacity>
           </View>
 
           {loading ? (
             <ActivityIndicator color="#2BC4BE" style={{ marginVertical: 20 }} />
           ) : tickets.length === 0 ? (
-            <Card><Text style={s.empty}>No requests yet.</Text></Card>
+            <Card><Text style={s.empty}>{tr('No requests yet.', 'لا توجد طلبات بعد.', 'لسه مفيش طلبات.')}</Text></Card>
           ) : tickets.map((t, i) => (
             <Card key={t.id || i} style={s.ticketCard}>
               <View style={s.ticketTop}>
@@ -132,9 +173,9 @@ export default function MoreScreen() {
                 <StatusBadge status={t.status} />
               </View>
               <View style={s.ticketBottom}>
-                <Text style={s.ticketDate}>{fmt(t.created_at)}</Text>
+                <Text style={s.ticketDate}>{t.created_at ? date(t.created_at) : '—'}</Text>
                 <View style={[s.priorityDot, { backgroundColor: t.priority === 'high' ? '#ef4444' : t.priority === 'medium' ? '#f59e0b' : '#22c55e' }]} />
-                <Text style={s.ticketPriority}>{t.priority}</Text>
+                <Text style={s.ticketPriority}>{priorityLabel(t.priority, tr)}</Text>
               </View>
             </Card>
           ))}
@@ -142,53 +183,53 @@ export default function MoreScreen() {
 
         {/* Quick access */}
         <View style={s.section}>
-          <Text style={s.sectionTitle}>Self-Service</Text>
+          <Text style={s.sectionTitle}>{tr('Self-Service', 'الخدمة الذاتية', 'خدماتك')}</Text>
           <Card style={{ padding: 0, overflow: 'hidden' }}>
-            <MenuItem icon="🧾" label="Expenses"           onPress={() => router.push('/expenses')} />
+            <MenuItem icon="🧾" label={tr('Expenses', 'مطالبات المصروفات', 'المصروفات')} onPress={() => router.push('/expenses')} />
             <View style={s.divider}/>
-            <MenuItem icon="💳" label="Loans"              onPress={() => router.push('/loans')} />
+            <MenuItem icon="💳" label={tr('Loans', 'السُلف', 'السلف')} onPress={() => router.push('/loans')} />
             <View style={s.divider}/>
-            <MenuItem icon="🎁" label="Benefits"           onPress={() => router.push('/benefits')} />
+            <MenuItem icon="🎁" label={tr('Benefits', 'المزايا')} onPress={() => router.push('/benefits')} />
             <View style={s.divider}/>
-            <MenuItem icon="🎓" label="Training"           onPress={() => router.push('/training')} />
+            <MenuItem icon="🎓" label={tr('Training', 'التدريب')} onPress={() => router.push('/training')} />
             <View style={s.divider}/>
-            <MenuItem icon="📋" label="Appraisals"         onPress={() => router.push('/appraisals')} />
+            <MenuItem icon="📋" label={tr('Appraisals', 'تقييم الأداء', 'تقييمات الأداء')} onPress={() => router.push('/appraisals')} />
             <View style={s.divider}/>
-            <MenuItem icon="📄" label="Documents"          onPress={() => router.push('/documents')} />
+            <MenuItem icon="📄" label={tr('Documents', 'المستندات', 'الورق والمستندات')} onPress={() => router.push('/documents')} />
             <View style={s.divider}/>
-            <MenuItem icon="👥" label="Employee Directory" onPress={() => router.push('/directory')} />
+            <MenuItem icon="👥" label={tr('Employee Directory', 'دليل الموظفين', 'دليل الزملاء')} onPress={() => router.push('/directory')} />
           </Card>
         </View>
 
         {/* Menu */}
         <View style={s.section}>
-          <Text style={s.sectionTitle}>Account</Text>
+          <Text style={s.sectionTitle}>{tr('Account', 'الحساب', 'حسابك')}</Text>
           <Card style={{ padding: 0, overflow: 'hidden' }}>
-            <MenuItem icon="🔔" label="Announcements"    onPress={() => router.push('/announcements')} />
+            <MenuItem icon="🔔" label={t('announcements')}    onPress={() => router.push('/announcements')} />
             <View style={s.divider}/>
-            <MenuItem icon="🔒" label="Change Password"  onPress={() => setShowPassword(true)} />
+            <MenuItem icon="🔒" label={t('change_password')}  onPress={() => setShowPassword(true)} />
             <View style={s.divider}/>
-            <MenuItem icon="🚪" label="Sign Out" danger  onPress={confirmLogout} />
+            <MenuItem icon="🚪" label={t('sign_out_title')} danger  onPress={confirmLogout} />
           </Card>
         </View>
 
-        <Text style={s.version}>HR Dock v1.0 · Employee Self-Service</Text>
+        <Text style={s.version}>{t('version_line')}</Text>
       </ScrollView>
 
       {/* Change Password Modal */}
       <Modal visible={showPassword} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowPassword(false)}>
         <SafeAreaView style={s.modal}>
           <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>Change Password</Text>
+            <Text style={s.modalTitle}>{t('change_password')}</Text>
             <TouchableOpacity onPress={() => { setShowPassword(false); setPwErr(''); setPwForm({ current: '', next: '', confirm: '' }) }}>
               <Text style={s.modalClose}>✕</Text>
             </TouchableOpacity>
           </View>
           <ScrollView style={s.modalScroll} keyboardShouldPersistTaps="handled">
             {[
-              { label: 'Current Password', key: 'current', placeholder: '••••••••' },
-              { label: 'New Password',     key: 'next',    placeholder: 'At least 8 characters' },
-              { label: 'Confirm New Password', key: 'confirm', placeholder: '••••••••' },
+              { label: t('current_password'),     key: 'current', placeholder: '••••••••' },
+              { label: t('new_password'),         key: 'next',    placeholder: t('pw_min_ph') },
+              { label: t('confirm_new_password'), key: 'confirm', placeholder: '••••••••' },
             ].map(({ label, key, placeholder }) => (
               <View key={key} style={s.formField}>
                 <Text style={s.formLabel}>{label}</Text>
@@ -206,7 +247,7 @@ export default function MoreScreen() {
             {!!pwErr && <View style={s.errBox}><Text style={s.errText}>{pwErr}</Text></View>}
 
             <TouchableOpacity style={[s.submitBtn, pwSaving && s.submitDisabled]} onPress={submitPassword} disabled={pwSaving}>
-              {pwSaving ? <ActivityIndicator color="white" /> : <Text style={s.submitText}>Update Password</Text>}
+              {pwSaving ? <ActivityIndicator color="white" /> : <Text style={s.submitText}>{t('update_password')}</Text>}
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
@@ -216,7 +257,7 @@ export default function MoreScreen() {
       <Modal visible={showTicket} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowTicket(false)}>
         <SafeAreaView style={s.modal}>
           <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>New HR Request</Text>
+            <Text style={s.modalTitle}>{tr('New HR Request', 'طلب موارد بشرية جديد', 'طلب HR جديد')}</Text>
             <TouchableOpacity onPress={() => setShowTicket(false)}>
               <Text style={s.modalClose}>✕</Text>
             </TouchableOpacity>
@@ -224,14 +265,14 @@ export default function MoreScreen() {
           <ScrollView style={s.modalScroll} keyboardShouldPersistTaps="handled">
 
             <View style={s.formField}>
-              <Text style={s.formLabel}>Priority</Text>
+              <Text style={s.formLabel}>{tr('Priority', 'الأولوية')}</Text>
               <View style={s.priorityRow}>
                 {['low','medium','high'].map(p => (
                   <TouchableOpacity key={p}
                     style={[s.prioBtn, form.priority === p && s.prioBtnActive]}
                     onPress={() => setForm(f => ({ ...f, priority: p }))}>
                     <Text style={[s.prioBtnText, form.priority === p && s.prioBtnTextActive]}>
-                      {p.charAt(0).toUpperCase() + p.slice(1)}
+                      {priorityLabel(p, tr)}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -239,15 +280,15 @@ export default function MoreScreen() {
             </View>
 
             <View style={s.formField}>
-              <Text style={s.formLabel}>Subject</Text>
-              <TextInput style={s.formInput} placeholder="What do you need help with?" placeholderTextColor="#94a3b8"
+              <Text style={s.formLabel}>{tr('Subject', 'الموضوع')}</Text>
+              <TextInput style={s.formInput} placeholder={tr('What do you need help with?', 'بماذا يمكننا مساعدتك؟', 'محتاج مساعدة في إيه؟')} placeholderTextColor="#94a3b8"
                 value={form.subject} onChangeText={v => setForm(f => ({ ...f, subject: v }))} />
             </View>
 
             <View style={s.formField}>
-              <Text style={s.formLabel}>Description</Text>
+              <Text style={s.formLabel}>{tr('Description', 'الوصف', 'التفاصيل')}</Text>
               <TextInput style={[s.formInput, s.formTextarea]}
-                placeholder="Please describe your request in detail…"
+                placeholder={tr('Please describe your request in detail…', 'يرجى وصف طلبك بالتفصيل…', 'احكيلنا طلبك بالتفصيل…')}
                 placeholderTextColor="#94a3b8"
                 value={form.description}
                 onChangeText={v => setForm(f => ({ ...f, description: v }))}
@@ -259,7 +300,7 @@ export default function MoreScreen() {
             )}
 
             <TouchableOpacity style={[s.submitBtn, saving && s.submitDisabled]} onPress={submitTicket} disabled={saving}>
-              {saving ? <ActivityIndicator color="white" /> : <Text style={s.submitText}>Submit Request</Text>}
+              {saving ? <ActivityIndicator color="white" /> : <Text style={s.submitText}>{tr('Submit Request', 'إرسال الطلب', 'ابعت الطلب')}</Text>}
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
@@ -280,7 +321,7 @@ const s = StyleSheet.create({
   roleText:        { fontSize: 12, fontWeight: '700', color: '#1e3a8a', textTransform: 'capitalize' },
   section:         { marginBottom: 20 },
   sectionHeader:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  sectionTitle:    { fontSize: 13, fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionTitle:    { fontSize: 13, fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: ls(0.5) },
   newBtn:          { backgroundColor: '#0F1829', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
   newBtnText:      { color: 'white', fontWeight: '700', fontSize: 12 },
   ticketCard:      { marginBottom: 8 },
@@ -293,6 +334,7 @@ const s = StyleSheet.create({
   menuItem:        { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14 },
   menuIcon:        { fontSize: 18, width: 28, textAlign: 'center' },
   menuLabel:       { flex: 1, fontSize: 15, color: '#1e293b', fontWeight: '500' },
+  menuSub:         { fontSize: 12, color: '#94a3b8', marginTop: 1 },
   menuDanger:      { color: '#dc2626' },
   menuArrow:       { fontSize: 20, color: '#94a3b8' },
   divider:         { height: 1, backgroundColor: '#f1f5f9', marginLeft: 58 },
@@ -304,7 +346,7 @@ const s = StyleSheet.create({
   modalClose:      { fontSize: 22, color: '#64748b' },
   modalScroll:     { padding: 20 },
   formField:       { marginBottom: 18 },
-  formLabel:       { fontSize: 12, fontWeight: '600', color: '#374151', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 },
+  formLabel:       { fontSize: 12, fontWeight: '600', color: '#374151', textTransform: 'uppercase', letterSpacing: ls(0.4), marginBottom: 8 },
   formInput:       { borderWidth: 1.5, borderColor: '#e2e8f0', borderRadius: 12, padding: 14, fontSize: 15, color: '#1e293b', backgroundColor: '#fafafa' },
   formTextarea:    { minHeight: 120 },
   priorityRow:     { flexDirection: 'row', gap: 10 },

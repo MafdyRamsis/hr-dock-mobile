@@ -7,8 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useTheme } from '../src/context/ThemeContext'
 import api from '../src/services/api'
-
-const fmt = d => d ? d.split('T')[0].split('-').reverse().join('/') : '—'
+import { useLang } from '../src/context/LanguageContext'
+import { back } from '../src/utils/rtl'
 
 const CAT_ICONS = {
   hr:        '👤',
@@ -21,6 +21,18 @@ const CAT_ICONS = {
   other:     '📋',
 }
 
+const catLabel = (c, tr) => ({
+  all:      tr('All', 'الكل'),
+  hr:       tr('HR', 'الموارد البشرية', 'HR'),
+  policy:   tr('Policy', 'السياسات'),
+  finance:  tr('Finance', 'المالية'),
+  legal:    tr('Legal', 'الشؤون القانونية', 'قانوني'),
+  training: tr('Training', 'التدريب'),
+  general:  tr('General', 'عام'),
+  template: tr('Template', 'النماذج'),
+  other:    tr('Other', 'أخرى', 'تانية'),
+}[c] || (c.charAt(0).toUpperCase() + c.slice(1)))
+
 const fmtSize = bytes => {
   if (!bytes) return null
   if (bytes < 1024)       return `${bytes} B`
@@ -31,6 +43,8 @@ const fmtSize = bytes => {
 export default function DocumentsScreen() {
   const { colors } = useTheme()
   const router     = useRouter()
+  const { tr, date } = useLang()
+  const fmt = d => d ? date(d) : '—'
 
   const [docs,       setDocs]       = useState([])
   const [loading,    setLoading]    = useState(true)
@@ -58,13 +72,13 @@ export default function DocumentsScreen() {
 
   const openDoc = async (doc) => {
     if (!doc.file_url) {
-      Alert.alert('No file', 'This document has no attached file.')
+      Alert.alert(tr('No file', 'لا يوجد ملف', 'مفيش ملف'), tr('This document has no attached file.', 'لا يوجد ملف مرفق بهذا المستند.', 'المستند ده مفيهوش ملف مرفق.'))
       return
     }
     try {
       await Linking.openURL(doc.file_url)
     } catch {
-      Alert.alert('Error', 'Could not open the document.')
+      Alert.alert(tr('Error', 'خطأ', 'حصلت مشكلة'), tr('Could not open the document.', 'تعذّر فتح المستند.', 'معرفناش نفتح المستند. يلا نجرّب تاني.'))
     }
   }
 
@@ -79,9 +93,9 @@ export default function DocumentsScreen() {
       {/* Nav */}
       <View style={[s.nav, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={s.back}>
-          <Text style={[s.backText, { color: colors.text }]}>‹</Text>
+          <Text style={[s.backText, { color: colors.text }]}>{back}</Text>
         </TouchableOpacity>
-        <Text style={[s.navTitle, { color: colors.text }]}>Documents</Text>
+        <Text style={[s.navTitle, { color: colors.text }]}>{tr('Documents', 'المستندات')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -90,7 +104,7 @@ export default function DocumentsScreen() {
         <Text style={s.searchIcon}>🔍</Text>
         <TextInput
           style={[s.searchInput, { color: colors.text }]}
-          placeholder="Search documents…"
+          placeholder={tr('Search documents…', 'ابحث في المستندات…', 'دوّر في المستندات…')}
           placeholderTextColor={colors.sub}
           value={search}
           onChangeText={setSearch}
@@ -108,7 +122,7 @@ export default function DocumentsScreen() {
               onPress={() => setFilter(c)}
             >
               <Text style={[s.chipText, filter === c && s.chipTextActive]}>
-                {c === 'all' ? 'All' : (c.charAt(0).toUpperCase() + c.slice(1))}
+                {catLabel(c, tr)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -123,7 +137,7 @@ export default function DocumentsScreen() {
         {filtered.length === 0 ? (
           <View style={s.empty}>
             <Text style={s.emptyIcon}>📂</Text>
-            <Text style={[s.emptyText, { color: colors.sub }]}>No documents found</Text>
+            <Text style={[s.emptyText, { color: colors.sub }]}>{tr('No documents found', 'لم يتم العثور على مستندات', 'ملقيناش مستندات')}</Text>
           </View>
         ) : filtered.map(doc => (
           <TouchableOpacity key={doc.id} style={[s.card, { backgroundColor: colors.card }]} onPress={() => openDoc(doc)} activeOpacity={0.8}>

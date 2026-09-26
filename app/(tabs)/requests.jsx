@@ -14,53 +14,58 @@ import PillTag from '../../src/components/PillTag'
 import GradientIconBubble from '../../src/components/GradientIconBubble'
 import FeedItem from '../../src/components/FeedItem'
 import Skeleton, { SkeletonCard, SkeletonRow } from '../../src/components/Skeleton'
+import { ls } from '../../src/utils/rtl'
+import { useLang } from '../../src/context/LanguageContext'
+import { fmtTime } from '../../src/i18n/format'
 
-const fmt    = d => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
 const toISO  = d => d.toISOString().split('T')[0]
-const fmtISO = s => s ? s.split('-').reverse().join('/') : 'Select date'
 
 /* ── Permission types ── */
-const PERMISSIONS = [
-  { key: 'wfh',       icon: '🏠', label: 'Work From Home',   gradient: 'mint',     desc: 'Request to work remotely' },
-  { key: 'overtime',  icon: '⏱️', label: 'Overtime',          gradient: 'sunshine', desc: 'Log extra hours worked' },
-  { key: 'late',      icon: '🕐', label: 'Late Arrival',      gradient: 'coral',    desc: 'Permission to arrive late' },
-  { key: 'early',     icon: '🚪', label: 'Early Departure',   gradient: 'lavender', desc: 'Permission to leave early' },
+const PERMISSIONS = tr => [
+  { key: 'wfh',       icon: '🏠', label: tr('Work From Home', 'العمل من المنزل', 'شغل من البيت'),   gradient: 'mint',     desc: tr('Request to work remotely', 'طلب العمل عن بُعد', 'اطلب تشتغل من البيت') },
+  { key: 'overtime',  icon: '⏱️', label: tr('Overtime', 'العمل الإضافي', 'أوفر تايم'),          gradient: 'sunshine', desc: tr('Log extra hours worked', 'تسجيل ساعات العمل الإضافية', 'سجّل الساعات الزيادة') },
+  { key: 'late',      icon: '🕐', label: tr('Late Arrival', 'إذن تأخير'),      gradient: 'coral',    desc: tr('Permission to arrive late', 'إذن بالحضور متأخرًا', 'هتيجي متأخر شوية') },
+  { key: 'early',     icon: '🚪', label: tr('Early Departure', 'إذن انصراف مبكر', 'إذن خروج بدري'),   gradient: 'lavender', desc: tr('Permission to leave early', 'إذن بالانصراف مبكرًا', 'هتمشي بدري شوية') },
 ]
 
 const SOLID = { mint: '#2ED573', sunshine: '#FFA801', coral: '#FF6B6B', lavender: '#8854D0' }
 
 /* ── Helpdesk categories ── */
-const CATEGORIES = [
-  { key: 'hr',      icon: '👤', label: 'HR',         desc: 'Policies, queries, general HR', gradient: 'mint' },
-  { key: 'it',      icon: '🖥️', label: 'IT Support', desc: 'Equipment, access, software',   gradient: 'lavender' },
-  { key: 'finance', icon: '💰', label: 'Finance',     desc: 'Reimbursement, advances',       gradient: 'sunshine' },
-  { key: 'admin',   icon: '🏢', label: 'Admin',       desc: 'Office, facilities, supplies',  gradient: 'coral' },
-  { key: 'doc',     icon: '📄', label: 'Documents',   desc: 'Certificates, salary letters',  gradient: 'lavender' },
-  { key: 'other',   icon: '📋', label: 'Other',       desc: 'Anything else',                 gradient: 'mint' },
+const CATEGORIES = tr => [
+  { key: 'hr',      icon: '👤', label: tr('HR', 'الموارد البشرية', 'الـ HR'),         desc: tr('Policies, queries, general HR', 'السياسات والاستفسارات وشؤون الموظفين', 'اللوايح والاستفسارات وأي حاجة HR'), gradient: 'mint' },
+  { key: 'it',      icon: '🖥️', label: tr('IT Support', 'الدعم الفني', 'الـ IT'), desc: tr('Equipment, access, software', 'الأجهزة والصلاحيات والبرامج'),   gradient: 'lavender' },
+  { key: 'finance', icon: '💰', label: tr('Finance', 'المالية', 'الحسابات'),     desc: tr('Reimbursement, advances', 'استرداد المصروفات والسُّلف', 'المصروفات والسلف'),       gradient: 'sunshine' },
+  { key: 'admin',   icon: '🏢', label: tr('Admin', 'الشؤون الإدارية'),       desc: tr('Office, facilities, supplies', 'المكتب والمرافق والمستلزمات'),  gradient: 'coral' },
+  { key: 'doc',     icon: '📄', label: tr('Documents', 'المستندات', 'الورق'),   desc: tr('Certificates, salary letters', 'الشهادات وخطابات الراتب', 'الشهادات وخطابات المرتب'),  gradient: 'lavender' },
+  { key: 'other',   icon: '📋', label: tr('Other', 'أخرى', 'حاجة تانية'),       desc: tr('Anything else', 'أي طلب آخر', 'أي حاجة تانية'),                 gradient: 'mint' },
 ]
 
 const CAT_COLORS = { hr:'#2ED573', it:'#3b82f6', finance:'#FFA801', admin:'#FF6B6B', doc:'#8854D0', other:'#8A8DA3' }
 const CAT_GRADIENT = { hr:'mint', it:'lavender', finance:'sunshine', admin:'coral', doc:'lavender', other:'mint' }
 
-const PRIORITIES = [
-  { key: 'low', label: 'Low', color: '#2ED573' },
-  { key: 'medium', label: 'Medium', color: '#FFA801' },
-  { key: 'high', label: 'High', color: '#FF6B6B' },
+const PRIORITIES = tr => [
+  { key: 'low', label: tr('Low', 'منخفضة', 'عادي'), color: '#2ED573' },
+  { key: 'medium', label: tr('Medium', 'متوسطة', 'مهم'), color: '#FFA801' },
+  { key: 'high', label: tr('High', 'عالية', 'مستعجل'), color: '#FF6B6B' },
 ]
 
-const QUICK = [
-  { category: 'doc', subject: 'Employment Certificate', icon: '📃' },
-  { category: 'doc', subject: 'Salary Certificate',     icon: '💵' },
-  { category: 'doc', subject: 'Experience Letter',      icon: '🏅' },
-  { category: 'finance', subject: 'Expense Reimbursement', icon: '🧾' },
-  { category: 'hr',  subject: 'Policy Clarification',   icon: '📘' },
-  { category: 'it',  subject: 'Equipment Request',      icon: '💻' },
+// Subjects prefill the (editable) request subject, so they use the formal wording.
+const QUICK = tr => [
+  { category: 'doc', subject: tr('Employment Certificate', 'شهادة عمل'), icon: '📃' },
+  { category: 'doc', subject: tr('Salary Certificate', 'مفردات مرتب'),     icon: '💵' },
+  { category: 'doc', subject: tr('Experience Letter', 'شهادة خبرة'),      icon: '🏅' },
+  { category: 'finance', subject: tr('Expense Reimbursement', 'مطالبة مصروفات'), icon: '🧾' },
+  { category: 'hr',  subject: tr('Policy Clarification', 'استفسار عن سياسة'),   icon: '📘' },
+  { category: 'it',  subject: tr('Equipment Request', 'طلب أجهزة'),      icon: '💻' },
 ]
 
 /* ─────────────────── Permission Form ─────────────────── */
 function PermissionModal({ type, employeeId, onClose, onDone }) {
-  const perm  = PERMISSIONS.find(p => p.key === type)
+  const { tr, date: fmtDay } = useLang()
+  const perm  = PERMISSIONS(tr).find(p => p.key === type)
   const solid = SOLID[perm.gradient]
+  const selectDate = tr('Select date', 'اختر التاريخ', 'اختار التاريخ')
+  const doneLabel  = tr('Done', 'تم', 'تمام')
   const [date,    setDate]    = useState('')
   const [endDate, setEndDate] = useState('')
   const [hours,   setHours]   = useState('')
@@ -93,17 +98,17 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
     if (Platform.OS === 'android') setShowTimePicker(false)
     if (e.type === 'dismissed' || !sel) return
     setPickerTime(sel)
-    setTime(sel.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }))
+    setTime(fmtTime(sel))
   }
 
   const submit = async () => {
-    if (!date) { setErr('Please select a date.'); return }
+    if (!date) { setErr(tr('Please select a date.', 'يرجى اختيار التاريخ.', 'اختار التاريخ الأول.')); return }
     setErr(''); setSaving(true)
     try {
       if (type === 'wfh') {
         await api.post('/wfh', { employee_id: employeeId, date, end_date: endDate || undefined, reason })
       } else if (type === 'overtime') {
-        if (!hours || isNaN(hours) || Number(hours) <= 0) { setErr('Please enter valid hours.'); setSaving(false); return }
+        if (!hours || isNaN(hours) || Number(hours) <= 0) { setErr(tr('Please enter valid hours.', 'يرجى إدخال عدد ساعات صحيح.', 'اكتب عدد ساعات صحيح.')); setSaving(false); return }
         await api.post('/overtime', { employee_id: employeeId, date, hours: Number(hours), reason })
       } else {
         // late / early → helpdesk ticket
@@ -112,9 +117,9 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
         await api.post('/helpdesk', { subject: `${label} Permission – ${date}`, description: body, priority: 'medium', category: 'hr' })
       }
       onDone()
-      Alert.alert('Submitted', 'Your permission request has been sent for approval.')
+      Alert.alert(tr('Submitted', 'تم الإرسال', 'اتبعت'), tr('Your permission request has been sent for approval.', 'تم إرسال طلب الإذن للموافقة.', 'طلب الإذن اتبعت، ومستني رد.'))
     } catch (e) {
-      setErr(e.response?.data?.message || 'Submission failed. Please try again.')
+      setErr(e.response?.data?.message || tr('Submission failed. Please try again.', 'تعذّر إرسال الطلب. حاول مرة أخرى.', 'معرفناش نبعت الطلب. يلا نجرّب تاني.'))
     } finally { setSaving(false) }
   }
 
@@ -122,7 +127,7 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
     <TouchableOpacity style={pf.dateBtn} onPress={() => openPicker(target)}>
       <Text style={pf.dateBtnLabel}>{label}</Text>
       <Text style={[pf.dateBtnVal, !value && pf.datePlaceholder]}>
-        {value ? fmtISO(value) : 'Select date'} 📅
+        {value ? fmtDay(value) : selectDate} 📅
       </Text>
     </TouchableOpacity>
   )
@@ -141,20 +146,20 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
 
         <ScrollView style={pf.scroll} keyboardShouldPersistTaps="handled">
           {/* Date */}
-          <DateBtn target="start" value={date} label="Date" />
+          <DateBtn target="start" value={date} label={tr('Date', 'التاريخ')} />
 
           {/* WFH: optional end date */}
           {type === 'wfh' && (
-            <DateBtn target="end" value={endDate} label="End Date (optional – for multi-day)" />
+            <DateBtn target="end" value={endDate} label={tr('End Date (optional – for multi-day)', 'تاريخ النهاية (اختياري – لأكثر من يوم)', 'تاريخ النهاية (لو أكتر من يوم)')} />
           )}
 
           {/* iOS picker */}
           {showPicker && Platform.OS === 'ios' && (
             <View style={pf.iosPicker}>
               <View style={pf.iosPickerHeader}>
-                <Text style={pf.iosPickerLabel}>{pickerTarget === 'end' ? 'End Date' : 'Date'}</Text>
+                <Text style={pf.iosPickerLabel}>{pickerTarget === 'end' ? tr('End Date', 'تاريخ النهاية') : tr('Date', 'التاريخ')}</Text>
                 <TouchableOpacity onPress={() => setShowPicker(false)}>
-                  <Text style={pf.iosPickerDone}>Done</Text>
+                  <Text style={pf.iosPickerDone}>{doneLabel}</Text>
                 </TouchableOpacity>
               </View>
               <DateTimePicker value={pickerDate} mode="date" display="spinner" onChange={onDateChange} textColor="#000000" themeVariant="light" />
@@ -167,10 +172,10 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
           {/* Overtime: hours */}
           {type === 'overtime' && (
             <View style={pf.field}>
-              <Text style={pf.label}>Hours of Overtime</Text>
+              <Text style={pf.label}>{tr('Hours of Overtime', 'ساعات العمل الإضافي', 'ساعات الأوفر تايم')}</Text>
               <TextInput
                 style={pf.input}
-                placeholder="e.g. 2"
+                placeholder={tr('e.g. 2', 'مثال: 2', 'مثلًا 2')}
                 placeholderTextColor="#B0B3C6"
                 value={hours}
                 onChangeText={setHours}
@@ -182,19 +187,19 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
           {/* Late / Early: expected time */}
           {(type === 'late' || type === 'early') && (
             <View style={pf.field}>
-              <Text style={pf.label}>{type === 'late' ? 'Expected Arrival Time' : 'Expected Departure Time'}</Text>
+              <Text style={pf.label}>{type === 'late' ? tr('Expected Arrival Time', 'وقت الحضور المتوقع', 'هتوصل إمتى؟') : tr('Expected Departure Time', 'وقت الانصراف المتوقع', 'هتمشي إمتى؟')}</Text>
               <TouchableOpacity style={pf.dateBtn} onPress={() => { setPickerTime(new Date()); setShowTimePicker(true) }}>
-                <Text style={pf.dateBtnLabel}>{type === 'late' ? 'Arrival Time' : 'Departure Time'}</Text>
+                <Text style={pf.dateBtnLabel}>{type === 'late' ? tr('Arrival Time', 'وقت الحضور', 'وقت الوصول') : tr('Departure Time', 'وقت الانصراف', 'وقت الخروج')}</Text>
                 <Text style={[pf.dateBtnVal, !time && pf.datePlaceholder]}>
-                  {time || 'Select time'} 🕐
+                  {time || tr('Select time', 'اختر الوقت', 'اختار الوقت')} 🕐
                 </Text>
               </TouchableOpacity>
               {showTimePicker && Platform.OS === 'ios' && (
                 <View style={pf.iosPicker}>
                   <View style={pf.iosPickerHeader}>
-                    <Text style={pf.iosPickerLabel}>Select Time</Text>
+                    <Text style={pf.iosPickerLabel}>{tr('Select Time', 'اختر الوقت', 'اختار الوقت')}</Text>
                     <TouchableOpacity onPress={() => setShowTimePicker(false)}>
-                      <Text style={pf.iosPickerDone}>Done</Text>
+                      <Text style={pf.iosPickerDone}>{doneLabel}</Text>
                     </TouchableOpacity>
                   </View>
                   <DateTimePicker value={pickerTime} mode="time" display="spinner" onChange={onTimeChange} textColor="#000000" themeVariant="light" />
@@ -208,10 +213,10 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
 
           {/* Reason */}
           <View style={pf.field}>
-            <Text style={pf.label}>Reason</Text>
+            <Text style={pf.label}>{tr('Reason', 'السبب')}</Text>
             <TextInput
               style={[pf.input, pf.textarea]}
-              placeholder="Please explain your request…"
+              placeholder={tr('Please explain your request…', 'يرجى توضيح طلبك…', 'اكتب تفاصيل طلبك…')}
               placeholderTextColor="#B0B3C6"
               value={reason}
               onChangeText={setReason}
@@ -225,7 +230,7 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
 
           <TouchableOpacity onPress={submit} disabled={saving} activeOpacity={0.85}>
             <LinearGradient colors={GRADIENTS[perm.gradient]} style={[pf.btn, saving && pf.btnDis]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-              {saving ? <ActivityIndicator color="white" /> : <Text style={pf.btnText}>Submit Request</Text>}
+              {saving ? <ActivityIndicator color="white" /> : <Text style={pf.btnText}>{tr('Submit Request', 'إرسال الطلب', 'ابعت الطلب')}</Text>}
             </LinearGradient>
           </TouchableOpacity>
         </ScrollView>
@@ -238,6 +243,11 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
 export default function RequestsScreen() {
   const { user } = useAuth()
   const { colors } = useTheme()
+  const { tr, date } = useLang()
+  const fmt = d => (d ? date(d) : '')
+  const PERMS = PERMISSIONS(tr)
+  const CATS  = CATEGORIES(tr)
+  const PRIOS = PRIORITIES(tr)
   const [tickets,    setTickets]    = useState([])
   const [wfhList,    setWfhList]    = useState([])
   const [otList,     setOtList]     = useState([])
@@ -292,22 +302,22 @@ export default function RequestsScreen() {
   }
 
   const submit = async () => {
-    if (!form.subject.trim())     { setFormErr('Please enter a subject.'); return }
-    if (!form.description.trim()) { setFormErr('Please describe your request.'); return }
+    if (!form.subject.trim())     { setFormErr(tr('Please enter a subject.', 'يرجى إدخال عنوان الطلب.', 'اكتب عنوان الطلب.')); return }
+    if (!form.description.trim()) { setFormErr(tr('Please describe your request.', 'يرجى وصف طلبك.', 'اكتب تفاصيل طلبك.')); return }
     setFormErr(''); setSaving(true)
     try {
       await api.post('/helpdesk', { subject: form.subject.trim(), description: form.description.trim(), priority: form.priority, category: form.category })
       setShowForm(false)
       await load()
-      Alert.alert('Submitted', 'Your request has been sent to HR.')
+      Alert.alert(tr('Submitted', 'تم الإرسال', 'اتبعت'), tr('Your request has been sent to HR.', 'تم إرسال طلبك إلى الموارد البشرية.', 'طلبك وصل للـ HR، ومستني رد.'))
     } catch (e) {
-      setFormErr(e.response?.data?.message || 'Failed to submit.')
+      setFormErr(e.response?.data?.message || tr('Failed to submit.', 'تعذّر إرسال الطلب. حاول مرة أخرى.', 'معرفناش نبعت الطلب. يلا نجرّب تاني.'))
     } finally { setSaving(false) }
   }
 
   const allPermissions = [
-    ...wfhList.map(x => ({ ...x, _type: 'wfh',      icon: '🏠', label: 'Work From Home', gradient: 'mint' })),
-    ...otList.map(x =>  ({ ...x, _type: 'overtime',  icon: '⏱️', label: 'Overtime',       gradient: 'sunshine' })),
+    ...wfhList.map(x => ({ ...x, _type: 'wfh',      icon: '🏠', label: PERMS[0].label, gradient: 'mint' })),
+    ...otList.map(x =>  ({ ...x, _type: 'overtime',  icon: '⏱️', label: PERMS[1].label, gradient: 'sunshine' })),
   ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 
 
@@ -318,18 +328,18 @@ export default function RequestsScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor="#8854D0" />}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[s.pageTitle, { color: colors.text }]}>Requests</Text>
+        <Text style={[s.pageTitle, { color: colors.text }]}>{tr('Requests', 'الطلبات', 'طلباتك')}</Text>
 
         {loadError && (
           <View style={s.errorBanner}>
-            <Text style={s.errorText}>⚠️  Could not load requests — pull down to retry</Text>
+            <Text style={s.errorText}>⚠️  {tr('Could not load requests — pull down to retry', 'تعذّر تحميل الطلبات — اسحب للأسفل لإعادة المحاولة', 'معرفناش نحمّل الطلبات — اسحب لتحت ونجرّب تاني')}</Text>
           </View>
         )}
 
         {/* ── Permission Requests ── */}
-        <Text style={[s.sectionLabel, { color: colors.sub }]}>Permission Requests</Text>
+        <Text style={[s.sectionLabel, { color: colors.sub }]}>{tr('Permission Requests', 'طلبات الأذونات', 'الأذونات')}</Text>
         <View style={s.permGrid}>
-          {PERMISSIONS.map(p => (
+          {PERMS.map(p => (
             <TouchableOpacity key={p.key} style={[s.permCard, { backgroundColor: colors.card, borderColor: colors.glassBorder }]} onPress={() => setActivePerm(p.key)} activeOpacity={0.85}>
               <GradientIconBubble icon={p.icon} gradient={p.gradient} size={40} radius={13} />
               <Text style={[s.permLabel, { color: SOLID[p.gradient] }]}>{p.label}</Text>
@@ -341,14 +351,14 @@ export default function RequestsScreen() {
         {/* Recent permissions list */}
         {allPermissions.length > 0 && (
           <View style={s.section}>
-            <Text style={[s.sectionLabel, { color: colors.sub }]}>Permission History</Text>
+            <Text style={[s.sectionLabel, { color: colors.sub }]}>{tr('Permission History', 'سجل الأذونات', 'أذوناتك اللي فاتت')}</Text>
             {allPermissions.slice(0, 6).map(p => (
               <FeedItem
                 key={p.id}
                 icon={p.icon}
                 gradient={p.gradient}
                 title={p.label}
-                subtitle={`${fmt(p.date)}${p._type === 'overtime' && p.minutes ? ` · ${Math.round(p.minutes / 60)}h` : ''}`}
+                subtitle={`${fmt(p.date)}${p._type === 'overtime' && p.minutes ? ` · ${Math.round(p.minutes / 60)}${tr('h', ' ساعة')}` : ''}`}
                 right={<StatusBadge status={p.status} />}
               />
             ))}
@@ -357,17 +367,17 @@ export default function RequestsScreen() {
 
         {/* ── HR / General Requests ── */}
         <View style={s.sectionRow}>
-          <Text style={[s.sectionLabel, { color: colors.sub }]}>HR Requests</Text>
+          <Text style={[s.sectionLabel, { color: colors.sub }]}>{tr('HR Requests', 'طلبات الموارد البشرية', 'طلبات الـ HR')}</Text>
           <TouchableOpacity onPress={() => openForm()} activeOpacity={0.85}>
             <LinearGradient colors={GRADIENTS.lavender} style={s.newBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-              <Text style={s.newBtnText}>+ New</Text>
+              <Text style={s.newBtnText}>+ {tr('New', 'جديد', 'اطلب')}</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
 
         {/* Quick chips */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.quickScroll} contentContainerStyle={s.quickContent}>
-          {QUICK.map((q, i) => (
+          {QUICK(tr).map((q, i) => (
             <TouchableOpacity key={i} style={[s.quickChip, { backgroundColor: colors.card, borderColor: colors.glassBorder }]} onPress={() => openForm({ category: q.category, subject: q.subject })} activeOpacity={0.85}>
               <Text style={s.quickIcon}>{q.icon}</Text>
               <Text style={[s.quickLabel, { color: colors.sub }]}>{q.subject}</Text>
@@ -377,7 +387,7 @@ export default function RequestsScreen() {
 
         {/* Category grid */}
         <View style={s.catGrid}>
-          {CATEGORIES.map(c => (
+          {CATS.map(c => (
             <TouchableOpacity key={c.key} style={[s.catCard, { backgroundColor: colors.card, borderColor: colors.glassBorder }]} onPress={() => openForm({ category: c.key })} activeOpacity={0.85}>
               <GradientIconBubble icon={c.icon} gradient={CAT_GRADIENT[c.key]} size={36} radius={11} />
               <Text style={[s.catLabel, { color: colors.text }]}>{c.label}</Text>
@@ -394,12 +404,12 @@ export default function RequestsScreen() {
         ) : tickets.length === 0 ? (
           <View style={s.emptyBox}>
             <Text style={s.emptyIcon}>📭</Text>
-            <Text style={[s.emptyTitle, { color: colors.text2 }]}>No requests yet</Text>
-            <Text style={[s.emptySub, { color: colors.muted }]}>Use the categories above to submit your first request to HR.</Text>
+            <Text style={[s.emptyTitle, { color: colors.text2 }]}>{tr('No requests yet', 'لا توجد طلبات بعد', 'لسه مفيش طلبات')}</Text>
+            <Text style={[s.emptySub, { color: colors.muted }]}>{tr('Use the categories above to submit your first request to HR.', 'اختر أحد الأقسام أعلاه لإرسال أول طلب إلى الموارد البشرية.', 'اختار من الأقسام اللي فوق وابعت أول طلب للـ HR.')}</Text>
           </View>
         ) : (
           <View style={s.section}>
-            <Text style={[s.sectionLabel, { color: colors.sub }]}>All HR Requests</Text>
+            <Text style={[s.sectionLabel, { color: colors.sub }]}>{tr('All HR Requests', 'كل طلبات الموارد البشرية', 'كل طلباتك للـ HR')}</Text>
             {tickets.map(t => <TicketCard key={t.id} ticket={t} colors={colors} />)}
           </View>
         )}
@@ -419,16 +429,16 @@ export default function RequestsScreen() {
       <Modal visible={showForm} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowForm(false)}>
         <SafeAreaView style={m.safe}>
           <View style={m.header}>
-            <Text style={m.title}>New HR Request</Text>
+            <Text style={m.title}>{tr('New HR Request', 'طلب جديد للموارد البشرية', 'طلب جديد للـ HR')}</Text>
             <TouchableOpacity onPress={() => setShowForm(false)}>
               <Text style={m.close}>✕</Text>
             </TouchableOpacity>
           </View>
           <ScrollView style={m.scroll} keyboardShouldPersistTaps="handled">
-            <Text style={m.label}>Category</Text>
+            <Text style={m.label}>{tr('Category', 'التصنيف', 'النوع')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 18 }}>
               <View style={{ flexDirection: 'row', gap: 8 }}>
-                {CATEGORIES.map(c => {
+                {CATS.map(c => {
                   const active = form.category === c.key
                   return (
                     <TouchableOpacity key={c.key} onPress={() => setForm(f => ({ ...f, category: c.key }))} activeOpacity={0.85}>
@@ -449,9 +459,9 @@ export default function RequestsScreen() {
               </View>
             </ScrollView>
 
-            <Text style={m.label}>Priority</Text>
+            <Text style={m.label}>{tr('Priority', 'الأولوية')}</Text>
             <View style={m.prioRow}>
-              {PRIORITIES.map(p => (
+              {PRIOS.map(p => (
                 <TouchableOpacity
                   key={p.key}
                   style={[m.prioBtn, form.priority === p.key && { backgroundColor: p.color, borderColor: p.color }]}
@@ -461,14 +471,14 @@ export default function RequestsScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-            <Text style={m.label}>Subject</Text>
-            <TextInput style={m.input} placeholder="What do you need?" placeholderTextColor="#B0B3C6" value={form.subject} onChangeText={v => setForm(f => ({ ...f, subject: v }))} />
-            <Text style={m.label}>Details</Text>
-            <TextInput style={[m.input, m.textarea]} placeholder="Please provide details…" placeholderTextColor="#B0B3C6" value={form.description} onChangeText={v => setForm(f => ({ ...f, description: v }))} multiline numberOfLines={5} textAlignVertical="top" />
+            <Text style={m.label}>{tr('Subject', 'العنوان')}</Text>
+            <TextInput style={m.input} placeholder={tr('What do you need?', 'ما الذي تحتاجه؟', 'محتاج إيه؟')} placeholderTextColor="#B0B3C6" value={form.subject} onChangeText={v => setForm(f => ({ ...f, subject: v }))} />
+            <Text style={m.label}>{tr('Details', 'التفاصيل')}</Text>
+            <TextInput style={[m.input, m.textarea]} placeholder={tr('Please provide details…', 'يرجى كتابة التفاصيل…', 'اكتب التفاصيل…')} placeholderTextColor="#B0B3C6" value={form.description} onChangeText={v => setForm(f => ({ ...f, description: v }))} multiline numberOfLines={5} textAlignVertical="top" />
             {!!formErr && <View style={m.errBox}><Text style={m.errText}>{formErr}</Text></View>}
             <TouchableOpacity onPress={submit} disabled={saving} activeOpacity={0.85}>
               <LinearGradient colors={GRADIENTS.lavender} style={[m.submitBtn, saving && m.submitDis]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-                {saving ? <ActivityIndicator color="white" /> : <Text style={m.submitText}>Submit Request</Text>}
+                {saving ? <ActivityIndicator color="white" /> : <Text style={m.submitText}>{tr('Submit Request', 'إرسال الطلب', 'ابعت الطلب')}</Text>}
               </LinearGradient>
             </TouchableOpacity>
           </ScrollView>
@@ -479,9 +489,12 @@ export default function RequestsScreen() {
 }
 
 function TicketCard({ ticket: t, colors }) {
-  const cat = CATEGORIES.find(c => c.key === t.category) || CATEGORIES[5]
+  const { tr, date } = useLang()
+  const fmt = d => (d ? date(d) : '')
+  const CATS = CATEGORIES(tr)
+  const cat = CATS.find(c => c.key === t.category) || CATS[5]
   const color = CAT_COLORS[t.category] || '#8A8DA3'
-  const prio = PRIORITIES.find(p => p.key === t.priority)
+  const prio = PRIORITIES(tr).find(p => p.key === t.priority)
   return (
     <View style={[tc.card, { backgroundColor: colors.card, borderColor: colors.glassBorder }]}>
       <View style={tc.top}>
@@ -507,7 +520,7 @@ const s = StyleSheet.create({
   safe:         { flex: 1 },
   scroll:       { padding: 14, paddingBottom: 130 },
   pageTitle:    { fontSize: 26, fontWeight: '900', marginBottom: 18 },
-  sectionLabel: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
+  sectionLabel: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: ls(0.5), marginBottom: 10 },
   sectionRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   section:      { marginBottom: 8 },
   newBtn:       { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8 },
@@ -556,11 +569,11 @@ const pf = StyleSheet.create({
   close:          { fontSize: 22, color: '#8A8DA3' },
   scroll:         { padding: 20 },
   field:          { marginBottom: 16 },
-  label:          { fontSize: 11, fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 },
+  label:          { fontSize: 11, fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: ls(0.4), marginBottom: 8 },
   input:          { borderWidth: 1.5, borderColor: '#E3E6F3', borderRadius: 16, padding: 14, fontSize: 14, color: '#1A1B2E', backgroundColor: '#F5F6FC', marginBottom: 16 },
   textarea:       { minHeight: 90, textAlignVertical: 'top' },
   dateBtn:        { borderWidth: 1.5, borderColor: '#E3E6F3', borderRadius: 16, padding: 14, backgroundColor: '#F5F6FC', marginBottom: 16 },
-  dateBtnLabel:   { fontSize: 10, fontWeight: '700', color: '#8A8DA3', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4 },
+  dateBtnLabel:   { fontSize: 10, fontWeight: '700', color: '#8A8DA3', textTransform: 'uppercase', letterSpacing: ls(0.4), marginBottom: 4 },
   dateBtnVal:     { fontSize: 14, fontWeight: '600', color: '#1A1B2E' },
   datePlaceholder:{ color: '#B0B3C6', fontWeight: '400' },
   iosPicker:      { backgroundColor: '#ffffff', borderRadius: 16, marginBottom: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#E3E6F3' },
@@ -580,7 +593,7 @@ const m = StyleSheet.create({
   title:      { fontSize: 18, fontWeight: '800', color: '#1A1B2E' },
   close:      { fontSize: 22, color: '#8A8DA3' },
   scroll:     { padding: 20 },
-  label:      { fontSize: 11, fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 },
+  label:      { fontSize: 11, fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: ls(0.4), marginBottom: 8 },
   catChip:    { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },
   catChipInactive: { borderWidth: 1.5, borderColor: '#E3E6F3', backgroundColor: '#F5F6FC' },
   catChipIcon:{ fontSize: 13 },

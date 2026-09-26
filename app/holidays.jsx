@@ -4,23 +4,33 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useTheme } from '../src/context/ThemeContext'
 import api from '../src/services/api'
+import { useLang } from '../src/context/LanguageContext'
+import { ls, back, chevron, IS_RTL } from '../src/utils/rtl'
 
-const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
-const DAYS   = ['S','M','T','W','T','F','S']
+// "previous" chevron points against reading order
+const prevChevron = IS_RTL ? '›' : '‹'
 
 const TYPE_CONFIG = {
-  public:    { label: 'Public Holiday', color: '#E8583C', bg: '#fef2f2' },
-  company:   { label: 'Company Event',  color: '#2BC4BE', bg: '#f0fdfc' },
-  national:  { label: 'National Day',   color: '#3b82f6', bg: '#eff6ff' },
-  religious: { label: 'Religious',      color: '#f59e0b', bg: '#fffbeb' },
+  public:    { label: tr => tr('Public Holiday', 'إجازة رسمية'),                 color: '#E8583C', bg: '#fef2f2' },
+  company:   { label: tr => tr('Company Event',  'مناسبة الشركة', 'مناسبة للشركة'), color: '#2BC4BE', bg: '#f0fdfc' },
+  national:  { label: tr => tr('National Day',   'عيد قومي'),                    color: '#3b82f6', bg: '#eff6ff' },
+  religious: { label: tr => tr('Religious',      'مناسبة دينية'),                color: '#f59e0b', bg: '#fffbeb' },
 }
-const getType = t => TYPE_CONFIG[t] || { label: t || 'Holiday', color: '#64748b', bg: '#f1f5f9' }
+const getType = (t, tr) => {
+  const c = TYPE_CONFIG[t]
+  return c ? { ...c, label: c.label(tr) } : { label: t || tr('Holiday', 'إجازة رسمية'), color: '#64748b', bg: '#f1f5f9' }
+}
+
+// Arabic counted nouns: 1 / 2 / 3–10 / 11+
+const arDays = n => (n === 1 ? 'يوم' : n === 2 ? 'يومين' : n <= 10 ? `${n} أيام` : `${n} يوم`)
+const arHolidaysF = n => (n === 0 ? 'مفيش إجازات' : n === 1 ? 'إجازة واحدة' : n === 2 ? 'إجازتين' : n <= 10 ? `${n} إجازات` : `${n} إجازة`)
 
 const toDateStr = d => d ? d.split('T')[0] : ''
 
 export default function HolidaysScreen() {
   const router = useRouter()
   const { colors } = useTheme()
+  const { tr, date: fmtD, month, day: dayName } = useLang()
 
   const now = new Date()
   const [year,       setYear]       = useState(now.getFullYear())
@@ -84,11 +94,8 @@ export default function HolidaysScreen() {
     else setViewMonth(m => m + 1)
   }
 
-  const fmtDate = iso => {
-    if (!iso) return ''
-    const d = new Date(iso)
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-  }
+  const fmtDate = iso => (iso ? fmtD(toDateStr(iso)) : '')
+  const monthLabel = month(viewMonth)
 
   const yearHolidayCount = holidays.length
 
@@ -97,10 +104,10 @@ export default function HolidaysScreen() {
       {/* Nav */}
       <View style={[s.navBar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <Text style={[s.backArrow, { color: colors.text }]}>←</Text>
-          <Text style={[s.backText,  { color: colors.text }]}>Back</Text>
+          <Text style={[s.backArrow, { color: colors.text }]}>{back}</Text>
+          <Text style={[s.backText,  { color: colors.text }]}>{tr('Back', 'رجوع')}</Text>
         </TouchableOpacity>
-        <Text style={[s.navTitle, { color: colors.text }]}>Holiday Calendar</Text>
+        <Text style={[s.navTitle, { color: colors.text }]}>{tr('Holiday Calendar', 'تقويم الإجازات الرسمية', 'الإجازات الرسمية')}</Text>
         <View style={{ width: 64 }} />
       </View>
 
@@ -115,15 +122,19 @@ export default function HolidaysScreen() {
           {/* Year hero */}
           <View style={s.hero}>
             <View style={s.yearNav}>
-              <TouchableOpacity onPress={prevYear} style={s.yearBtn}>
-                <Text style={s.yearArrow}>‹</Text>
+              <TouchableOpacity onPress={prevYear} style={s.yearBtn} accessibilityLabel={tr('Previous year', 'السنة السابقة', 'السنة اللي فاتت')}>
+                <Text style={s.yearArrow}>{prevChevron}</Text>
               </TouchableOpacity>
               <View style={s.yearCenter}>
                 <Text style={s.heroYear}>{year}</Text>
-                <Text style={s.heroCount}>{yearHolidayCount} holiday{yearHolidayCount !== 1 ? 's' : ''} this year</Text>
+                <Text style={s.heroCount}>{tr(
+                  `${yearHolidayCount} holiday${yearHolidayCount !== 1 ? 's' : ''} this year`,
+                  `عدد الإجازات الرسمية هذا العام: ${yearHolidayCount}`,
+                  `${arHolidaysF(yearHolidayCount)} السنة دي`,
+                )}</Text>
               </View>
-              <TouchableOpacity onPress={nextYear} style={s.yearBtn}>
-                <Text style={s.yearArrow}>›</Text>
+              <TouchableOpacity onPress={nextYear} style={s.yearBtn} accessibilityLabel={tr('Next year', 'السنة التالية', 'السنة الجاية')}>
+                <Text style={s.yearArrow}>{chevron}</Text>
               </TouchableOpacity>
             </View>
 
@@ -132,7 +143,7 @@ export default function HolidaysScreen() {
               {Object.entries(TYPE_CONFIG).map(([key, cfg]) => (
                 <View key={key} style={s.legendItem}>
                   <View style={[s.legendDot, { backgroundColor: cfg.color }]} />
-                  <Text style={s.legendText}>{cfg.label}</Text>
+                  <Text style={s.legendText}>{cfg.label(tr)}</Text>
                 </View>
               ))}
             </View>
@@ -141,9 +152,9 @@ export default function HolidaysScreen() {
           {/* Upcoming strip */}
           {upcoming.length > 0 && (
             <View style={[s.upcomingCard, { backgroundColor: colors.card }]}>
-              <Text style={[s.upcomingTitle, { color: colors.sub }]}>NEXT UP</Text>
+              <Text style={[s.upcomingTitle, { color: colors.sub }]}>{tr('NEXT UP', 'الإجازات القادمة', 'اللي جاية')}</Text>
               {upcoming.map((h, i) => {
-                const cfg = getType(h.type)
+                const cfg = getType(h.type, tr)
                 const daysLeft = Math.ceil((new Date(toDateStr(h.date)) - new Date(todayStr)) / 86400000)
                 return (
                   <View key={h.id} style={[s.upcomingRow, i < upcoming.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
@@ -158,7 +169,7 @@ export default function HolidaysScreen() {
                     </View>
                     <View style={[s.daysLeftBadge, { backgroundColor: cfg.bg }]}>
                       <Text style={[s.daysLeftText, { color: cfg.color }]}>
-                        {daysLeft === 0 ? 'Today' : `${daysLeft}d`}
+                        {daysLeft === 0 ? tr('Today', 'اليوم', 'النهارده') : tr(`${daysLeft}d`, `بعد ${arDays(daysLeft)}`, `فاضل ${arDays(daysLeft)}`)}
                       </Text>
                     </View>
                   </View>
@@ -171,18 +182,25 @@ export default function HolidaysScreen() {
           <View style={[s.calCard, { backgroundColor: colors.card }]}>
             {/* Month nav */}
             <View style={s.monthNav}>
-              <TouchableOpacity onPress={prevMonth} style={s.monthNavBtn}>
-                <Text style={[s.monthNavArrow, { color: colors.sub }]}>‹</Text>
+              <TouchableOpacity onPress={prevMonth} style={s.monthNavBtn} accessibilityLabel={tr('Previous month', 'الشهر السابق', 'الشهر اللي فات')}>
+                <Text style={[s.monthNavArrow, { color: colors.sub }]}>{prevChevron}</Text>
               </TouchableOpacity>
-              <Text style={[s.monthTitle, { color: colors.text }]}>{MONTHS[viewMonth]}</Text>
-              <TouchableOpacity onPress={nextMonth} style={s.monthNavBtn}>
-                <Text style={[s.monthNavArrow, { color: colors.sub }]}>›</Text>
+              <Text style={[s.monthTitle, { color: colors.text }]}>{monthLabel}</Text>
+              <TouchableOpacity onPress={nextMonth} style={s.monthNavBtn} accessibilityLabel={tr('Next month', 'الشهر التالي', 'الشهر اللي جاي')}>
+                <Text style={[s.monthNavArrow, { color: colors.sub }]}>{chevron}</Text>
               </TouchableOpacity>
             </View>
 
             {/* Day headers */}
             <View style={s.dayHeaders}>
-              {DAYS.map((d, i) => <Text key={i} style={s.dayLabel}>{d}</Text>)}
+              {[0, 1, 2, 3, 4, 5, 6].map(i => {
+                // Arabic short names are full words: drop the leading "ال" and shrink to fit the cell
+                const d = dayName(i, true)
+                return (
+                  <Text key={i} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}
+                    style={[s.dayLabel, IS_RTL && s.dayLabelAr]}>{IS_RTL ? d.replace(/^ال/, '') : d}</Text>
+                )
+              })}
             </View>
 
             {/* Grid */}
@@ -222,22 +240,22 @@ export default function HolidaysScreen() {
           </View>
 
           {/* This month's holidays */}
-          <Text style={[s.sectionTitle, { color: colors.sub }]}>{MONTHS[viewMonth]} Holidays</Text>
+          <Text style={[s.sectionTitle, { color: colors.sub }]}>{tr(`${monthLabel} Holidays`, `الإجازات الرسمية في ${monthLabel}`, `إجازات ${monthLabel}`)}</Text>
           {monthHolidays.length === 0 ? (
             <View style={[s.emptyBox, { backgroundColor: colors.card }]}>
               <Text style={s.emptyIcon}>🎉</Text>
-              <Text style={[s.emptyText, { color: colors.sub }]}>No holidays in {MONTHS[viewMonth]}</Text>
+              <Text style={[s.emptyText, { color: colors.sub }]}>{tr(`No holidays in ${monthLabel}`, `لا توجد إجازات رسمية في ${monthLabel}`, `مفيش إجازات في ${monthLabel}`)}</Text>
             </View>
           ) : (
             monthHolidays.map((h, i) => {
-              const cfg  = getType(h.type)
+              const cfg  = getType(h.type, tr)
               const date = new Date(toDateStr(h.date))
               return (
                 <View key={h.id} style={[s.holidayCard, { backgroundColor: colors.card }]}>
                   <View style={[s.holidayLeft, { backgroundColor: cfg.bg }]}>
                     <Text style={[s.holidayDay, { color: cfg.color }]}>{date.getDate()}</Text>
                     <Text style={[s.holidayWeekday, { color: cfg.color }]}>
-                      {date.toLocaleDateString('en-GB', { weekday: 'short' })}
+                      {dayName(date.getDay(), true)}
                     </Text>
                   </View>
                   <View style={s.holidayBody}>
@@ -260,10 +278,9 @@ export default function HolidaysScreen() {
           {/* Full year list */}
           {holidays.length > 0 && (
             <>
-              <Text style={[s.sectionTitle, { color: colors.sub, marginTop: 8 }]}>All {year} Holidays</Text>
+              <Text style={[s.sectionTitle, { color: colors.sub, marginTop: 8 }]}>{tr(`All ${year} Holidays`, `جميع إجازات ${year}`, `كل إجازات ${year}`)}</Text>
               {holidays.map(h => {
-                const cfg  = getType(h.type)
-                const date = new Date(toDateStr(h.date))
+                const cfg  = getType(h.type, tr)
                 const isPast = toDateStr(h.date) < todayStr
                 return (
                   <View key={h.id} style={[s.listRow, { backgroundColor: colors.card }, isPast && { opacity: 0.5 }]}>
@@ -271,11 +288,11 @@ export default function HolidaysScreen() {
                     <View style={{ flex: 1 }}>
                       <Text style={[s.listName, { color: colors.text2 }]} numberOfLines={1}>{h.name}</Text>
                       <Text style={[s.listDate, { color: colors.sub }]}>
-                        {date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+                        {fmtD(toDateStr(h.date), { weekday: 'long', month: 'long', year: false })}
                       </Text>
                     </View>
                     <View style={[s.listBadge, { backgroundColor: cfg.bg }]}>
-                      <Text style={[s.listBadgeText, { color: cfg.color }]}>{h.type || 'holiday'}</Text>
+                      <Text style={[s.listBadgeText, { color: cfg.color }]}>{cfg.label}</Text>
                     </View>
                   </View>
                 )
@@ -304,7 +321,7 @@ const s = StyleSheet.create({
   yearBtn:        { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   yearArrow:      { fontSize: 28, color: 'rgba(255,255,255,0.6)', fontWeight: '300' },
   yearCenter:     { alignItems: 'center' },
-  heroYear:       { color: 'white', fontSize: 36, fontWeight: '900', letterSpacing: 1 },
+  heroYear:       { color: 'white', fontSize: 36, fontWeight: '900', letterSpacing: ls(1) },
   heroCount:      { color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 2 },
   legend:         { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
   legendItem:     { flexDirection: 'row', alignItems: 'center', gap: 5 },
@@ -313,7 +330,7 @@ const s = StyleSheet.create({
 
   // Upcoming
   upcomingCard:   { borderRadius: 16, padding: 16, marginBottom: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
-  upcomingTitle:  { fontSize: 10, fontWeight: '800', letterSpacing: 0.8, marginBottom: 12 },
+  upcomingTitle:  { fontSize: 10, fontWeight: '800', letterSpacing: ls(0.8), marginBottom: 12 },
   upcomingRow:    { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
   upcomingDot:    { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   upcomingDotText:{ fontSize: 16, fontWeight: '900' },
@@ -330,6 +347,7 @@ const s = StyleSheet.create({
   monthTitle:     { fontSize: 16, fontWeight: '800' },
   dayHeaders:     { flexDirection: 'row', marginBottom: 6 },
   dayLabel:       { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '700', color: '#94a3b8' },
+  dayLabelAr:     { fontSize: 9, fontWeight: '600' },
   grid:           { flexDirection: 'row', flexWrap: 'wrap' },
   cell:           { width: '14.28%', alignItems: 'center', marginBottom: 6 },
   dayCircle:      { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
@@ -340,14 +358,14 @@ const s = StyleSheet.create({
   dotEmpty:       { width: 5, height: 5, marginTop: 1 },
 
   // Month holiday cards
-  sectionTitle:   { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
+  sectionTitle:   { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: ls(0.5), marginBottom: 10 },
   emptyBox:       { borderRadius: 14, padding: 24, alignItems: 'center', marginBottom: 8 },
   emptyIcon:      { fontSize: 32, marginBottom: 8 },
   emptyText:      { fontSize: 13 },
   holidayCard:    { flexDirection: 'row', alignItems: 'center', borderRadius: 14, marginBottom: 10, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
   holidayLeft:    { width: 60, alignItems: 'center', justifyContent: 'center', paddingVertical: 16 },
   holidayDay:     { fontSize: 22, fontWeight: '900', lineHeight: 26 },
-  holidayWeekday: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 },
+  holidayWeekday: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: ls(0.3) },
   holidayBody:    { flex: 1, padding: 14 },
   holidayName:    { fontSize: 14, fontWeight: '700', marginBottom: 3 },
   holidayDesc:    { fontSize: 12, lineHeight: 17, marginBottom: 6 },

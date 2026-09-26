@@ -8,9 +8,10 @@ import { useRouter } from 'expo-router'
 import { useAuth } from '../src/context/AuthContext'
 import { useTheme } from '../src/context/ThemeContext'
 import api from '../src/services/api'
+import { useLang } from '../src/context/LanguageContext'
+import { back } from '../src/utils/rtl'
 
-const fmt    = d => d ? d.split('T')[0].split('-').reverse().join('/') : '—'
-const fmtNum = n => n != null ? Number(n).toLocaleString('en-EG', { minimumFractionDigits: 2 }) : '—'
+const fmtNum = n => n != null ? Number(n).toLocaleString('en-US', { minimumFractionDigits: 2 }) : '—'
 
 const STATUS_STYLE = {
   active:    { bg: '#dbeafe', color: '#1e40af' },
@@ -19,10 +20,19 @@ const STATUS_STYLE = {
   pending:   { bg: '#fef9c3', color: '#854d0e' },
 }
 
+const statusLabel = (st, tr) => ({
+  active:    tr('Active', 'سارية', 'شغّالة'),
+  completed: tr('Completed', 'مسددة بالكامل', 'اتسددت'),
+  cancelled: tr('Cancelled', 'ملغاة', 'اتلغت'),
+  pending:   tr('Pending', 'قيد الانتظار', 'مستنية رد'),
+}[st] || st)
+
 export default function LoansScreen() {
   const { user }   = useAuth()
   const { colors } = useTheme()
   const router     = useRouter()
+  const { tr, date, cur } = useLang()
+  const fmt = d => d ? date(d) : '—'
 
   const [loans,      setLoans]      = useState([])
   const [loading,    setLoading]    = useState(true)
@@ -58,9 +68,9 @@ export default function LoansScreen() {
       {/* Nav */}
       <View style={[s.nav, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={s.back}>
-          <Text style={[s.backText, { color: colors.text }]}>‹</Text>
+          <Text style={[s.backText, { color: colors.text }]}>{back}</Text>
         </TouchableOpacity>
-        <Text style={[s.navTitle, { color: colors.text }]}>Loans</Text>
+        <Text style={[s.navTitle, { color: colors.text }]}>{tr('Loans', 'السلف')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -74,13 +84,13 @@ export default function LoansScreen() {
           <View style={s.summaryCard}>
             <View style={s.summaryRow}>
               <View style={s.summaryItem}>
-                <Text style={s.summaryLabel}>Outstanding Balance</Text>
-                <Text style={s.summaryVal}>EGP {fmtNum(totalRemaining)}</Text>
+                <Text style={s.summaryLabel}>{tr('Outstanding Balance', 'الرصيد المتبقي', 'الباقي عليك')}</Text>
+                <Text style={s.summaryVal}>{cur} {fmtNum(totalRemaining)}</Text>
               </View>
               <View style={[s.summaryDivider]} />
               <View style={s.summaryItem}>
-                <Text style={s.summaryLabel}>Monthly Deduction</Text>
-                <Text style={[s.summaryVal, { color: '#E8583C' }]}>EGP {fmtNum(totalMonthly)}</Text>
+                <Text style={s.summaryLabel}>{tr('Monthly Deduction', 'الخصم الشهري', 'القسط الشهري')}</Text>
+                <Text style={[s.summaryVal, { color: '#E8583C' }]}>{cur} {fmtNum(totalMonthly)}</Text>
               </View>
             </View>
           </View>
@@ -89,7 +99,7 @@ export default function LoansScreen() {
         {loans.length === 0 ? (
           <View style={s.empty}>
             <Text style={s.emptyIcon}>💳</Text>
-            <Text style={[s.emptyText, { color: colors.sub }]}>No loans on record</Text>
+            <Text style={[s.emptyText, { color: colors.sub }]}>{tr('No loans on record', 'لا توجد سلف مسجلة', 'مفيش سلف متسجلة')}</Text>
           </View>
         ) : loans.map(loan => {
           const ss = STATUS_STYLE[loan.status] || STATUS_STYLE.active
@@ -100,28 +110,28 @@ export default function LoansScreen() {
               <View style={s.cardTop}>
                 <View style={{ flex: 1 }}>
                   <Text style={[s.loanReason, { color: colors.text }]} numberOfLines={1}>
-                    {loan.reason || 'Loan'}
+                    {loan.reason || tr('Loan', 'سلفة')}
                   </Text>
-                  <Text style={[s.loanDate, { color: colors.sub }]}>Started {fmt(loan.start_date)}</Text>
+                  <Text style={[s.loanDate, { color: colors.sub }]}>{tr('Started', 'بدأت في', 'بدأت')} {fmt(loan.start_date)}</Text>
                 </View>
                 <View style={[s.statusBadge, { backgroundColor: ss.bg }]}>
-                  <Text style={[s.statusText, { color: ss.color }]}>{loan.status}</Text>
+                  <Text style={[s.statusText, { color: ss.color }]}>{statusLabel(loan.status, tr)}</Text>
                 </View>
               </View>
 
               {/* Amounts */}
               <View style={s.amtRow}>
                 <View style={s.amtItem}>
-                  <Text style={[s.amtLabel, { color: colors.sub }]}>Total</Text>
-                  <Text style={[s.amtVal, { color: colors.text }]}>EGP {fmtNum(loan.amount)}</Text>
+                  <Text style={[s.amtLabel, { color: colors.sub }]}>{tr('Total', 'الإجمالي')}</Text>
+                  <Text style={[s.amtVal, { color: colors.text }]}>{cur} {fmtNum(loan.amount)}</Text>
                 </View>
                 <View style={s.amtItem}>
-                  <Text style={[s.amtLabel, { color: colors.sub }]}>Paid</Text>
-                  <Text style={[s.amtVal, { color: '#16a34a' }]}>EGP {fmtNum(loan.paid_amount)}</Text>
+                  <Text style={[s.amtLabel, { color: colors.sub }]}>{tr('Paid', 'المسدد', 'اتدفع')}</Text>
+                  <Text style={[s.amtVal, { color: '#16a34a' }]}>{cur} {fmtNum(loan.paid_amount)}</Text>
                 </View>
                 <View style={s.amtItem}>
-                  <Text style={[s.amtLabel, { color: colors.sub }]}>Remaining</Text>
-                  <Text style={[s.amtVal, { color: '#dc2626' }]}>EGP {fmtNum(loan.remaining_amount)}</Text>
+                  <Text style={[s.amtLabel, { color: colors.sub }]}>{tr('Remaining', 'المتبقي', 'فاضل')}</Text>
+                  <Text style={[s.amtVal, { color: '#dc2626' }]}>{cur} {fmtNum(loan.remaining_amount)}</Text>
                 </View>
               </View>
 
@@ -130,7 +140,7 @@ export default function LoansScreen() {
                 <View style={[s.progressFill, { width: `${pct}%` }]} />
               </View>
               <Text style={[s.progressLabel, { color: colors.sub }]}>
-                {pct.toFixed(0)}% repaid · EGP {fmtNum(loan.monthly_deduction)}/month
+                {tr(`${pct.toFixed(0)}% repaid`, `تم سداد ${pct.toFixed(0)}%`, `اتسدد ${pct.toFixed(0)}%`)} · {cur} {fmtNum(loan.monthly_deduction)}{tr('/month', '/شهرياً', '/في الشهر')}
               </Text>
             </View>
           )
