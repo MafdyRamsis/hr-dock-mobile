@@ -36,11 +36,12 @@ export function AuthProvider({ children }) {
           if (!usable) {
             const saved = JSON.parse(u)
             setToken(t); setUser(saved)
-            // Sessions saved before sign-in returned employee_id: fill it in once,
+            // Sessions saved before sign-in returned employee_id / Arabic names: fill them in once,
             // otherwise every "my own record" screen finds nobody.
-            if (!('employee_id' in saved)) {
+            if (!('employee_id' in saved) || !('first_name_ar' in saved)) {
               api.get('/auth/me').then(async r => {
-                const next = { ...saved, employee_id: r.data?.data?.employee_id ?? null }
+                const me = r.data?.data || {}
+                const next = { ...saved, employee_id: me.employee_id ?? null, first_name_ar: me.first_name_ar ?? null, last_name_ar: me.last_name_ar ?? null }
                 setUser(next)
                 await SecureStore.setItemAsync('user', JSON.stringify(next))
               }).catch(() => {})

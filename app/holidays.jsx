@@ -30,7 +30,7 @@ const toDateStr = d => d ? d.split('T')[0] : ''
 export default function HolidaysScreen() {
   const router = useRouter()
   const { colors } = useTheme()
-  const { tr, date: fmtD, month, day: dayName } = useLang()
+  const { tr, ar, date: fmtD, month, day: dayName } = useLang()
 
   const now = new Date()
   const [year,       setYear]       = useState(now.getFullYear())
@@ -164,7 +164,7 @@ export default function HolidaysScreen() {
                       </Text>
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[s.upcomingName, { color: colors.text }]} numberOfLines={1}>{h.name}</Text>
+                      <Text style={[s.upcomingName, { color: colors.text }]} numberOfLines={1}>{(ar && h.name_ar) || h.name}</Text>
                       <Text style={[s.upcomingDate, { color: colors.sub }]}>{fmtDate(h.date)}</Text>
                     </View>
                     <View style={[s.daysLeftBadge, { backgroundColor: cfg.bg }]}>
@@ -259,7 +259,7 @@ export default function HolidaysScreen() {
                     </Text>
                   </View>
                   <View style={s.holidayBody}>
-                    <Text style={[s.holidayName, { color: colors.text }]} numberOfLines={1}>{h.name}</Text>
+                    <Text style={[s.holidayName, { color: colors.text }]} numberOfLines={1}>{(ar && h.name_ar) || h.name}</Text>
                     {h.description ? (
                       <Text style={[s.holidayDesc, { color: colors.sub }]} numberOfLines={2}>{h.description}</Text>
                     ) : null}
@@ -286,7 +286,7 @@ export default function HolidaysScreen() {
                   <View key={h.id} style={[s.listRow, { backgroundColor: colors.card }, isPast && { opacity: 0.5 }]}>
                     <View style={[s.listDot, { backgroundColor: cfg.color }]} />
                     <View style={{ flex: 1 }}>
-                      <Text style={[s.listName, { color: colors.text2 }]} numberOfLines={1}>{h.name}</Text>
+                      <Text style={[s.listName, { color: colors.text2 }]} numberOfLines={1}>{(ar && h.name_ar) || h.name}</Text>
                       <Text style={[s.listDate, { color: colors.sub }]}>
                         {fmtD(toDateStr(h.date), { weekday: 'long', month: 'long', year: false })}
                       </Text>

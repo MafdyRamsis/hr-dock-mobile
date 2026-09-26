@@ -52,3 +52,7 @@ export const fmtNum = (n, decimals = 0) =>
   n == null || n === '' || isNaN(Number(n)) ? '—'
     : Number(n).toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: Math.max(decimals, 2) })
 export const currency = lang => (lang === 'ar' ? 'ج.م' : 'EGP')
+
+/** The signed-in person's name in the app language (Arabic name when available). */
+export const personName = (u, ar) =>
+  ((ar && `${u?.first_name_ar || ''} ${u?.last_name_ar || ''}`.trim()) || `${u?.first_name || ''} ${u?.last_name || ''}`.trim())

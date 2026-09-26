@@ -12,6 +12,7 @@ import Avatar from '../../src/components/Avatar'
 import StatusBadge from '../../src/components/StatusBadge'
 import { useLang } from '../../src/context/LanguageContext'
 import { ls, chevron } from '../../src/utils/rtl'
+import { personName } from '../../src/i18n/format'
 
 const roleLabel = (role, tr) => ({
   employee:     tr('Employee', 'موظف'),
@@ -31,7 +32,7 @@ const priorityLabel = (p, tr) => ({
 export default function MoreScreen() {
   const { user, logout } = useAuth()
   const router = useRouter()
-  const { t, tr, lang, date, setLanguage } = useLang()
+  const { t, tr, lang, date, setLanguage, ar } = useLang()
   const [tickets,   setTickets]   = useState([])
   const [loading,   setLoading]   = useState(true)
   const [refreshing,setRefreshing]= useState(false)
@@ -134,7 +135,7 @@ export default function MoreScreen() {
             backgroundColor="#E8583C"
             style={s.avatar}
           />
-          <Text style={s.profileName}>{user?.first_name} {user?.last_name}</Text>
+          <Text style={s.profileName}>{personName(user, ar)}</Text>
           <Text style={s.profileEmail}>{user?.email}</Text>
           <View style={s.roleBadge}>
             <Text style={s.roleText}>{roleLabel(user?.role, tr)}</Text>

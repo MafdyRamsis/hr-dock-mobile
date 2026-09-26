@@ -22,6 +22,7 @@ import InsightCard from '../../src/components/InsightCard'
 import { ls, fwd } from '../../src/utils/rtl'
 import { useLang } from '../../src/context/LanguageContext'
 import { fmtTime as fmtHM } from '../../src/i18n/format'
+import { personName } from '../../src/i18n/format'
 
 const fmtNum   = n => n != null ? Number(n).toLocaleString('en-US') : '—'
 const fmtTime  = iso => (iso ? fmtHM(iso) : '--:--')
@@ -129,7 +130,7 @@ function CheckInOutCard({ todayLog, onCheckIn, onCheckOut, actioning, employeeId
 export default function HomeScreen() {
   const { user }  = useAuth()
   const { colors } = useTheme()
-  const { tr, date, monthYear, cur } = useLang()
+  const { tr, ar, date, monthYear, cur } = useLang()
   const router    = useRouter()
 
   const [ctx,            setCtx]            = useState(null)
@@ -307,7 +308,7 @@ export default function HomeScreen() {
             />
             <View>
               <Text style={[s.greeting, { color: colors.sub }]}>{greeting()} 👋</Text>
-              <Text style={[s.name, { color: colors.text }]}>{user?.first_name} {user?.last_name}</Text>
+              <Text style={[s.name, { color: colors.text }]}>{personName(user, ar)}</Text>
             </View>
           </TouchableOpacity>
           <View style={s.headerRight}>

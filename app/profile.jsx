@@ -14,6 +14,7 @@ import Skeleton from '../src/components/Skeleton'
 import Avatar from '../src/components/Avatar'
 import api from '../src/services/api'
 import { ls, back, chevron } from '../src/utils/rtl'
+import { personName } from '../src/i18n/format'
 
 const roleLabel = (role, tr) => ({
   employee:     tr('Employee', 'موظف'),
@@ -57,7 +58,7 @@ export default function ProfileScreen() {
   const [bioAvailable,  setBioAvailable]  = useState(false)
   const [emp,           setEmp]           = useState(null)
   const [empLoading,    setEmpLoading]    = useState(true)
-  const { lang: language, setLanguage, t, tr, date } = useLang()
+  const { lang: language, setLanguage, t, tr, date, ar } = useLang()
   const fmtDate = d => (d ? date(d.split('T')[0]) : null)
 
   useEffect(() => {
@@ -176,7 +177,7 @@ export default function ProfileScreen() {
             backgroundColor="#E8583C"
             style={s.avatar}
           />
-          <Text style={[s.name, { color: colors.text }]}>{user?.first_name} {user?.last_name}</Text>
+          <Text style={[s.name, { color: colors.text }]}>{personName(user, ar)}</Text>
           <Text style={[s.email, { color: colors.sub }]}>{user?.email}</Text>
           <View style={s.roleBadge}>
             <Text style={s.roleText}>{roleLabel(user?.role, tr)}</Text>
