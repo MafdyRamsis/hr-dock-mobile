@@ -26,6 +26,8 @@ const PERMISSIONS = tr => [
   { key: 'overtime',  icon: '⏱️', label: tr('Overtime', 'العمل الإضافي', 'أوفر تايم'),          gradient: 'sunshine', desc: tr('Log extra hours worked', 'تسجيل ساعات العمل الإضافية', 'سجّل الساعات الزيادة') },
   { key: 'late',      icon: '🕐', label: tr('Late Arrival', 'إذن تأخير'),      gradient: 'coral',    desc: tr('Permission to arrive late', 'إذن بالحضور متأخرًا', 'هتيجي متأخر شوية') },
   { key: 'early',     icon: '🚪', label: tr('Early Departure', 'إذن انصراف مبكر', 'إذن خروج بدري'),   gradient: 'lavender', desc: tr('Permission to leave early', 'إذن بالانصراف مبكرًا', 'هتمشي بدري شوية') },
+  { key: 'dayoff',    icon: '🛌', label: tr('Day Off', 'يوم راحة'),             gradient: 'mint',     desc: tr('Pick your rest day (weekend by request)', 'اختر يوم راحتك (العطلة بالطلب)', 'اختار يوم راحتك') },
+  { key: 'missed',    icon: '🛠️', label: tr('Missed Punch', 'بصمة منسية', 'نسيت أبصم'), gradient: 'sunshine', desc: tr('Forgot to check in or out', 'نسيت تسجيل الحضور أو الانصراف', 'نسيت تبصم دخول أو خروج') },
 ]
 
 const SOLID = { mint: '#2ED573', sunshine: '#FFA801', coral: '#FF6B6B', lavender: '#8854D0' }
@@ -71,6 +73,9 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
   const [hours,   setHours]   = useState('')
   const [time,    setTime]    = useState('')
   const [reason,  setReason]  = useState('')
+  const [punchKind, setPunchKind] = useState('missing_check_in')
+  const [otType,  setOtType]  = useState('weekday')
+  const [otComp,  setOtComp]  = useState('payment')
   const [err,     setErr]     = useState('')
   const [saving,  setSaving]  = useState(false)
 
@@ -109,7 +114,18 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
         await api.post('/wfh', { employee_id: employeeId, date, end_date: endDate || undefined, reason })
       } else if (type === 'overtime') {
         if (!hours || isNaN(hours) || Number(hours) <= 0) { setErr(tr('Please enter valid hours.', 'يرجى إدخال عدد ساعات صحيح.', 'اكتب عدد ساعات صحيح.')); setSaving(false); return }
-        await api.post('/overtime', { employee_id: employeeId, date, hours: Number(hours), reason })
+        await api.post('/overtime', { employee_id: employeeId, date, hours: Number(hours), reason, overtime_type: otType, compensation_type: otComp })
+      } else if (type === 'dayoff') {
+        await api.post('/day-offs', { date, reason: reason || undefined })
+      } else if (type === 'missed') {
+        if (!time) { setErr(tr('Please select the time you actually came / left.', 'يرجى اختيار الوقت الفعلي للحضور / الانصراف.', 'اختار الوقت اللي جيت أو مشيت فيه.')); setSaving(false); return }
+        if (!reason || reason.trim().length < 3) { setErr(tr('Please write a short reason.', 'يرجى كتابة سبب مختصر.', 'اكتب سبب صغير.')); setSaving(false); return }
+        const [y, m, d] = date.split('-').map(Number)
+        const at = new Date(y, m - 1, d, pickerTime.getHours(), pickerTime.getMinutes()).toISOString()
+        await api.post('/attendance/corrections', {
+          date, correction_type: punchKind, reason,
+          ...(punchKind === 'missing_check_in' ? { requested_check_in: at } : { requested_check_out: at }),
+        })
       } else {
         // late / early → helpdesk ticket
         const label = type === 'late' ? 'Late Arrival' : 'Early Departure'
@@ -117,7 +133,7 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
         await api.post('/helpdesk', { subject: `${label} Permission – ${date}`, description: body, priority: 'medium', category: 'hr' })
       }
       onDone()
-      Alert.alert(tr('Submitted', 'تم الإرسال', 'اتبعت'), tr('Your permission request has been sent for approval.', 'تم إرسال طلب الإذن للموافقة.', 'طلب الإذن اتبعت، ومستني رد.'))
+      Alert.alert(tr('Submitted', 'تم الإرسال', 'اتبعت'), tr('Your request has been sent for approval.', 'تم إرسال الطلب للموافقة.', 'طلبك اتبعت، ومستني رد.'))
     } catch (e) {
       setErr(e.response?.data?.message || tr('Submission failed. Please try again.', 'تعذّر إرسال الطلب. حاول مرة أخرى.', 'معرفناش نبعت الطلب. يلا نجرّب تاني.'))
     } finally { setSaving(false) }
@@ -185,9 +201,39 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
           )}
 
           {/* Late / Early: expected time */}
-          {(type === 'late' || type === 'early') && (
+          {type === 'missed' && (
+            <View style={[pf.field, { flexDirection: 'row', gap: 8 }]}>
+              {[['missing_check_in', tr('Check-in', 'حضور', 'دخول')], ['missing_check_out', tr('Check-out', 'انصراف', 'خروج')]].map(([k, l]) => (
+                <TouchableOpacity key={k} onPress={() => setPunchKind(k)} style={[pf.dateBtn, { flex: 1, borderColor: punchKind === k ? solid : '#E6E8F0', borderWidth: 1.5 }]}>
+                  <Text style={[pf.dateBtnVal, { color: punchKind === k ? solid : '#8A8DA3', textAlign: 'center' }]}>{l}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+          {type === 'overtime' && (
             <View style={pf.field}>
-              <Text style={pf.label}>{type === 'late' ? tr('Expected Arrival Time', 'وقت الحضور المتوقع', 'هتوصل إمتى؟') : tr('Expected Departure Time', 'وقت الانصراف المتوقع', 'هتمشي إمتى؟')}</Text>
+              <Text style={pf.label}>{tr('Overtime type', 'نوع العمل الإضافي', 'نوع الأوفر تايم')}</Text>
+              <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+                {[['weekday', tr('Workday', 'يوم عمل')], ['weekend', tr('Weekend', 'عطلة أسبوعية', 'الويك إند')], ['holiday', tr('Holiday', 'عطلة رسمية')]].map(([k, l]) => (
+                  <TouchableOpacity key={k} onPress={() => { setOtType(k); if (k === 'weekday') setOtComp('payment') }} style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1.5, borderColor: otType === k ? solid : '#E6E8F0' }}>
+                    <Text style={{ color: otType === k ? solid : '#8A8DA3', fontWeight: '700' }}>{l}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              {otType !== 'weekday' && (
+                <View style={{ flexDirection: 'row', gap: 6, marginTop: 10 }}>
+                  {[['payment', tr('Get paid', 'مقابل مادي', 'فلوس')], ['time_off', tr('Day off instead', 'يوم راحة بدلًا منه', 'يوم راحة بداله')]].map(([k, l]) => (
+                    <TouchableOpacity key={k} onPress={() => setOtComp(k)} style={{ flex: 1, paddingVertical: 10, borderRadius: 12, borderWidth: 1.5, borderColor: otComp === k ? solid : '#E6E8F0', alignItems: 'center' }}>
+                      <Text style={{ color: otComp === k ? solid : '#8A8DA3', fontWeight: '700' }}>{l}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
+          {(type === 'late' || type === 'early' || type === 'missed') && (
+            <View style={pf.field}>
+              <Text style={pf.label}>{type === 'missed' ? tr('The time you actually came / left', 'الوقت الفعلي للحضور / الانصراف', 'الوقت اللي جيت أو مشيت فيه') : type === 'late' ? tr('Expected Arrival Time', 'وقت الحضور المتوقع', 'هتوصل إمتى؟') : tr('Expected Departure Time', 'وقت الانصراف المتوقع', 'هتمشي إمتى؟')}</Text>
               <TouchableOpacity style={pf.dateBtn} onPress={() => { setPickerTime(new Date()); setShowTimePicker(true) }}>
                 <Text style={pf.dateBtnLabel}>{type === 'late' ? tr('Arrival Time', 'وقت الحضور', 'وقت الوصول') : tr('Departure Time', 'وقت الانصراف', 'وقت الخروج')}</Text>
                 <Text style={[pf.dateBtnVal, !time && pf.datePlaceholder]}>

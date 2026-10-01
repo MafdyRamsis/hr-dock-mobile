@@ -3,6 +3,7 @@ import { View, Text } from 'react-native'
 import { BlurView } from 'expo-blur'
 import { BRAND, useTheme } from '../../src/context/ThemeContext'
 import { useLang } from '../../src/context/LanguageContext'
+import { useAuth } from '../../src/context/AuthContext'
 
 // Distinct solid colors per category — no gradients, no low-opacity fades,
 // so each tab reads clearly at a glance (active and inactive alike).
@@ -38,7 +39,23 @@ const Icon = ({ emoji, focused, color }) => (
 
 export default function TabLayout() {
   const { colors, isDark } = useTheme()
-  const { t } = useLang()
+  const { t, tr } = useLang()
+  const { can = () => true, logout } = useAuth() || {}
+  // HR/Admin can switch mobile features off per role (Fawry 2.7.0 parity).
+  const hide = (...features) => (features.every(f => !can(f)) ? { href: null } : {})
+
+  if (!can('app')) return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, backgroundColor: colors.bg }}>
+      <Text style={{ fontSize: 40, marginBottom: 12 }}>🔒</Text>
+      <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text, textAlign: 'center' }}>
+        {tr('The mobile app is not enabled for your role', 'تطبيق الجوال غير مفعّل لدورك', 'تطبيق الموبايل مش متاح لدورك')}
+      </Text>
+      <Text style={{ fontSize: 13, color: colors.sub, textAlign: 'center', marginTop: 8 }}>
+        {tr('Please contact HR, or use HR Dock on the web.', 'يرجى التواصل مع الموارد البشرية أو استخدام HR Dock على الويب.', 'كلّم الـ HR أو استخدم HR Dock على الويب.')}
+      </Text>
+      {logout && <Text onPress={logout} style={{ marginTop: 18, color: colors.text, fontWeight: '700' }}>{tr('Sign out', 'تسجيل الخروج', 'اخرج')}</Text>}
+    </View>
+  )
 
   return (
     <Tabs screenOptions={{
@@ -79,12 +96,12 @@ export default function TabLayout() {
       tabBarItemStyle: { paddingTop: 6 },
     }}>
       <Tabs.Screen name="index"      options={{ title: t('tab_home'),       tabBarIcon: ({ focused }) => <Icon emoji="🏠" focused={focused} color={TAB_COLORS.home} /> }} />
-      <Tabs.Screen name="attendance" options={{ title: t('tab_attendance'), tabBarIcon: ({ focused }) => <Icon emoji="🕐" focused={focused} color={TAB_COLORS.attendance} /> }} />
-      <Tabs.Screen name="leave"      options={{ title: t('tab_leave'),      tabBarIcon: ({ focused }) => <Icon emoji="🏖" focused={focused} color={TAB_COLORS.leave} /> }} />
-      <Tabs.Screen name="pulse"      options={{ title: t('tab_pulse'),      tabBarIcon: ({ focused }) => <Icon emoji="✨" focused={focused} color={TAB_COLORS.pulse} /> }} />
-      <Tabs.Screen name="team"       options={{ title: t('tab_team'),       tabBarIcon: ({ focused }) => <Icon emoji="🤝" focused={focused} color={TAB_COLORS.team} /> }} />
-      <Tabs.Screen name="requests"   options={{ title: t('tab_requests'),   tabBarIcon: ({ focused }) => <Icon emoji="📋" focused={focused} color={TAB_COLORS.requests} /> }} />
-      <Tabs.Screen name="payslips"   options={{ title: t('tab_payslips'),   tabBarIcon: ({ focused }) => <Icon emoji="💰" focused={focused} color={TAB_COLORS.payslips} /> }} />
+      <Tabs.Screen name="attendance" options={{ ...hide('attendance'), title: t('tab_attendance'), tabBarIcon: ({ focused }) => <Icon emoji="🕐" focused={focused} color={TAB_COLORS.attendance} /> }} />
+      <Tabs.Screen name="leave"      options={{ ...hide('leave'), title: t('tab_leave'),      tabBarIcon: ({ focused }) => <Icon emoji="🏖" focused={focused} color={TAB_COLORS.leave} /> }} />
+      <Tabs.Screen name="pulse"      options={{ ...hide('pulse'), title: t('tab_pulse'),      tabBarIcon: ({ focused }) => <Icon emoji="✨" focused={focused} color={TAB_COLORS.pulse} /> }} />
+      <Tabs.Screen name="team"       options={{ ...hide('team_approvals', 'pulse'), title: t('tab_team'),       tabBarIcon: ({ focused }) => <Icon emoji="🤝" focused={focused} color={TAB_COLORS.team} /> }} />
+      <Tabs.Screen name="requests"   options={{ ...hide('requests'), title: t('tab_requests'),   tabBarIcon: ({ focused }) => <Icon emoji="📋" focused={focused} color={TAB_COLORS.requests} /> }} />
+      <Tabs.Screen name="payslips"   options={{ ...hide('payslips'), title: t('tab_payslips'),   tabBarIcon: ({ focused }) => <Icon emoji="💰" focused={focused} color={TAB_COLORS.payslips} /> }} />
       <Tabs.Screen name="more"       options={{ href: null }} />
     </Tabs>
   )

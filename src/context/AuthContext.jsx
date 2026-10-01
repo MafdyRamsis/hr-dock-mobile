@@ -11,6 +11,27 @@ export function AuthProvider({ children }) {
   const [loading,    setLoading]    = useState(true)
   // Set between a correct password and a correct 2FA code: { token, user }
   const [pending2fa, setPending2fa] = useState(null)
+  // Mobile permissions set by HR/Admin (Fawry 2.7.0 parity). null = not
+  // loaded yet → everything visible; the server enforces the switches anyway.
+  const [features,   setFeatures]   = useState(null)
+
+  useEffect(() => {
+    if (!token) { setFeatures(null); return }
+    let alive = true
+    api.get('/mobile-access/me')
+      .then(r => {
+        const f = r.data?.data?.features || null
+        if (alive) setFeatures(f)
+        if (f) SecureStore.setItemAsync('mobile_features', JSON.stringify(f)).catch(() => {})
+      })
+      .catch(async () => {
+        // Offline: use the last known permissions.
+        const cached = await SecureStore.getItemAsync('mobile_features').catch(() => null)
+        if (alive && cached) setFeatures(JSON.parse(cached))
+      })
+    return () => { alive = false }
+  }, [token])
+  const can = (feature) => !features || features[feature] !== false
 
   // Keep UI state in step with what the API layer learns (expired session / expired password).
   useEffect(() => {
@@ -123,6 +144,7 @@ export function AuthProvider({ children }) {
     } catch {}
     await SecureStore.deleteItemAsync('token')
     await SecureStore.deleteItemAsync('user')
+    await SecureStore.deleteItemAsync('mobile_features').catch(() => {})
     setToken(null)
     setUser(null)
     setPending2fa(null)
@@ -134,7 +156,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, pending2fa, login, verify2fa, cancel2fa, loginWithBiometric, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, token, loading, pending2fa, login, verify2fa, cancel2fa, loginWithBiometric, logout, updateUser, features, can }}>
       {children}
     </AuthContext.Provider>
   )

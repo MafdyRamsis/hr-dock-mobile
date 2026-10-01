@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl, Alert, ActivityIndicator } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl, Alert, ActivityIndicator, AppState } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient'
 import * as Location from 'expo-location'
 import api from '../../src/services/api'
+import { useAuth } from '../../src/context/AuthContext'
+import { enqueuePunch, flushPunches, pendingPunches, isRetryable, uuidv4 } from '../../src/utils/punchQueue'
 import Card from '../../src/components/Card'
 import FeedItem from '../../src/components/FeedItem'
 import Skeleton, { SkeletonCard, SkeletonRow } from '../../src/components/Skeleton'
@@ -111,6 +113,7 @@ function MonthCalendar({ logs, month, year, colors }) {
 export default function AttendanceScreen() {
   const { colors } = useTheme()
   const { tr, date, monthYear } = useLang()
+  const { user } = useAuth()
   const [today,      setToday]      = useState(null)
   const [employeeId, setEmployeeId] = useState(null)
   const [logs,       setLogs]       = useState([])
@@ -169,43 +172,83 @@ export default function AttendanceScreen() {
       const { status } = await Location.requestForegroundPermissionsAsync()
       if (status !== 'granted') return {}
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+      // Reverse geocoding needs the network — skip it quietly when offline.
       const [place] = await Location.reverseGeocodeAsync(loc.coords).catch(() => [null])
       const location_name = place
         ? [place.name, place.street, place.city].filter(Boolean).join(', ')
         : undefined
-      return { location_lat: loc.coords.latitude, location_lng: loc.coords.longitude, location_name }
+      return { location_lat: loc.coords.latitude, location_lng: loc.coords.longitude, location_name, is_mock_location: loc.mocked === true }
     } catch { return {} }
   }
 
-  const handleCheckIn = async () => {
-    setActioning(true)
-    try {
-      const loc = await getLocation()
-      await api.post('/attendance/check-in', { source: 'mobile', ...loc })
-      await load()
-    } catch (err) {
-      Alert.alert(
-        tr('Check-in failed', 'تعذّر تسجيل الحضور', 'بصمة الدخول متسجلتش'),
-        err.response?.data?.message || tr('Please try again.', 'يرجى المحاولة مرة أخرى.', 'معرفناش نكمّل. يلا نجرّب تاني.'),
-        [{ text: tr('OK', 'حسنًا', 'تمام') }],
-      )
-    } finally { setActioning(false) }
-  }
+  // ── Resilience mode: punches captured offline are queued and synced ──
+  const [queued, setQueued] = useState(0)
+  const refreshQueued = useCallback(async () => {
+    if (!user?.id) return
+    setQueued((await pendingPunches(user.id)).length)
+  }, [user?.id])
 
-  const handleCheckOut = async () => {
+  const syncQueued = useCallback(async ({ silent = true } = {}) => {
+    if (!user?.id) return
+    const pending = await pendingPunches(user.id)
+    if (!pending.length) { setQueued(0); return }
+    const r = await flushPunches(user.id, (path, body) => api.post(path, body))
+    setQueued(r.remaining)
+    if (r.sent || r.review || r.failed) {
+      await load()
+      if (!silent || r.review || r.failed) {
+        Alert.alert(
+          tr('Offline punches synced', 'تمت مزامنة البصمات', 'البصمات اتبعتت'),
+          [
+            r.sent ? tr(`${r.sent} recorded.`, `تم تسجيل ${r.sent}.`) : null,
+            r.review ? tr(`${r.review} sent to HR for review.`, `${r.review} أُرسلت للموارد البشرية للمراجعة.`) : null,
+            r.failed ? (r.messages.filter(Boolean)[0] || tr(`${r.failed} could not be recorded.`, `تعذّر تسجيل ${r.failed}.`)) : null,
+          ].filter(Boolean).join('\n'),
+        )
+      }
+    }
+  }, [user?.id, load, tr])
+
+  useEffect(() => {
+    refreshQueued()
+    syncQueued()
+    const sub = AppState.addEventListener('change', st => { if (st === 'active') syncQueued() })
+    const timer = setInterval(() => syncQueued(), 30000)
+    return () => { sub.remove(); clearInterval(timer) }
+  }, [refreshQueued, syncQueued])
+
+  const punch = async (kind) => {
     setActioning(true)
+    const device_time = new Date().toISOString()
+    const loc = await getLocation()
+    const client_punch_id = uuidv4()
+    const path = kind === 'check_in' ? '/attendance/check-in' : '/attendance/check-out'
     try {
-      const loc = await getLocation()
-      await api.post('/attendance/check-out', { source: 'mobile', ...loc })
+      const res = await api.post(path, { source: 'mobile', client_punch_id, ...loc })
+      if (res.status === 202) Alert.alert(tr('Sent for review', 'أُرسلت للمراجعة', 'اتبعتت للمراجعة'), res.data?.message || '')
       await load()
     } catch (err) {
-      Alert.alert(
-        tr('Check-out failed', 'تعذّر تسجيل الانصراف', 'بصمة الخروج متسجلتش'),
-        err.response?.data?.message || tr('Please try again.', 'يرجى المحاولة مرة أخرى.', 'معرفناش نكمّل. يلا نجرّب تاني.'),
-        [{ text: tr('OK', 'حسنًا', 'تمام') }],
-      )
+      if (isRetryable(err)) {
+        // No connection: keep the punch on the phone with the tap time and GPS.
+        await enqueuePunch(user?.id, { kind, device_time, client_punch_id, ...loc })
+        await refreshQueued()
+        Alert.alert(
+          tr('Saved offline', 'تم الحفظ دون اتصال', 'اتسجلت من غير نت'),
+          tr('No connection. Your punch is saved with its time and will be sent automatically.', 'لا يوجد اتصال. تم حفظ البصمة بوقتها وسيتم إرسالها تلقائيًا.', 'مفيش نت. البصمة اتحفظت بوقتها وهتتبعت لوحدها أول ما النت يرجع.'),
+        )
+      } else {
+        const sentForReview = err.response?.data?.errors?.sent_for_review
+        Alert.alert(
+          kind === 'check_in' ? tr('Check-in failed', 'تعذّر تسجيل الحضور', 'بصمة الدخول متسجلتش') : tr('Check-out failed', 'تعذّر تسجيل الانصراف', 'بصمة الخروج متسجلتش'),
+          (err.response?.data?.message || tr('Please try again.', 'يرجى المحاولة مرة أخرى.', 'معرفناش نكمّل. يلا نجرّب تاني.'))
+            + (sentForReview ? '\n\n' + tr('The attempt was saved and sent to HR for review.', 'تم حفظ المحاولة وإرسالها للموارد البشرية للمراجعة.', 'المحاولة اتحفظت واتبعتت للـ HR يراجعها.') : ''),
+          [{ text: tr('OK', 'حسنًا', 'تمام') }],
+        )
+      }
     } finally { setActioning(false) }
   }
+  const handleCheckIn  = () => punch('check_in')
+  const handleCheckOut = () => punch('check_out')
 
   const canCheckIn  = !today?.check_in
   const canCheckOut = today?.check_in && !today?.check_out
@@ -238,6 +281,18 @@ export default function AttendanceScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor="#2ED573" />}
       >
         <Text style={[s.pageTitle, { color: colors.text }]}>{tr('Attendance', 'الحضور')}</Text>
+
+        {queued > 0 && (
+          <TouchableOpacity onPress={() => syncQueued({ silent: false })} activeOpacity={0.8}
+            style={{ backgroundColor: '#FFF7E6', borderColor: '#FFA801', borderWidth: 1, borderRadius: 14, padding: 12, marginBottom: 12 }}>
+            <Text style={{ color: '#9A5B00', fontWeight: '700' }}>
+              {tr(`${queued} punch(es) saved offline`, `${queued} بصمة محفوظة دون اتصال`, `${queued} بصمة متسجلة من غير نت`)}
+            </Text>
+            <Text style={{ color: '#9A5B00', fontSize: 12, marginTop: 2 }}>
+              {tr('They will be sent automatically. Tap to try now.', 'سيتم إرسالها تلقائيًا. اضغط للمحاولة الآن.', 'هتتبعت لوحدها. دوس عشان تجرب دلوقتي.')}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {/* Today card */}
         <View style={s.todayCard}>
