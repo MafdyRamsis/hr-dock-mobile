@@ -222,9 +222,6 @@ export default function LoginScreen() {
                   <Text style={[s.trustText, { color: colors.sub }]}>🔒 {t('trust_encrypted')}</Text>
                 </View>
                 <View style={[s.trustChip, { borderColor: colors.border, backgroundColor: colors.cardAlt }]}>
-                  <Text style={[s.trustText, { color: colors.sub }]}>✓ {t('trust_compliant')}</Text>
-                </View>
-                <View style={[s.trustChip, { borderColor: colors.border, backgroundColor: colors.cardAlt }]}>
                   <Text style={[s.trustText, { color: colors.sub }]}>⚡ {t('trust_fast')}</Text>
                 </View>
               </View>
