@@ -38,22 +38,24 @@ export default function HolidaysScreen() {
   const [holidays,   setHolidays]   = useState([])
   const [loading,    setLoading]    = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [loadError,  setLoadError]  = useState(false)
 
   const load = useCallback(async (y) => {
+    setLoadError(false)
     try {
       const r = await api.get(`/holidays?year=${y}&limit=200`)
       const raw = r.data.data || []
       setHolidays(Array.isArray(raw) ? raw : (raw?.rows || []))
-    } catch {}
+    } catch { setLoadError(true) }
     finally { setLoading(false); setRefreshing(false) }
   }, [])
 
-  useEffect(() => { load(year) }, [year])
+  useEffect(() => { load(year) }, [year, load])
 
-  const prevYear = () => setYear(y => { const n = y - 1; load(n); return n })
+  const prevYear = () => setYear(y => y - 1)
   const nextYear = () => {
     if (year >= now.getFullYear() + 2) return
-    setYear(y => { const n = y + 1; load(n); return n })
+    setYear(y => y + 1)
   }
 
   // Map: "YYYY-MM-DD" → holiday
@@ -86,11 +88,14 @@ export default function HolidaysScreen() {
   for (let d = 1; d <= daysInMonth; d++) cells.push(d)
 
   const prevMonth = () => {
-    if (viewMonth === 0) setViewMonth(11)
+    if (viewMonth === 0) { setViewMonth(11); setYear(y => y - 1) }
     else setViewMonth(m => m - 1)
   }
   const nextMonth = () => {
-    if (viewMonth === 11) setViewMonth(0)
+    if (viewMonth === 11) {
+      if (year >= now.getFullYear() + 2) return
+      setViewMonth(0); setYear(y => y + 1)
+    }
     else setViewMonth(m => m + 1)
   }
 
@@ -119,6 +124,11 @@ export default function HolidaysScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(year) }} tintColor="#2BC4BE" />}
           showsVerticalScrollIndicator={false}
         >
+          {loadError && (
+            <TouchableOpacity style={s.errorBanner} onPress={() => load(year)} activeOpacity={0.8}>
+              <Text style={s.errorText}>{tr('Could not load holidays. Tap to retry.', 'تعذّر تحميل الإجازات. اضغط لإعادة المحاولة.', 'معرفناش نحمّل الإجازات. اضغط ونجرب تاني.')}</Text>
+            </TouchableOpacity>
+          )}
           {/* Year hero */}
           <View style={s.hero}>
             <View style={s.yearNav}>
@@ -211,7 +221,7 @@ export default function HolidaysScreen() {
                 const holiday = holidayMap[iso]
                 const isToday = iso === todayStr
                 const isWeekend = [0, 6].includes(new Date(iso).getDay())
-                const cfg = holiday ? getType(holiday.type) : null
+                const cfg = holiday ? getType(holiday.type, tr) : null
 
                 return (
                   <View key={iso} style={s.cell}>
@@ -314,6 +324,8 @@ const s = StyleSheet.create({
   navTitle:       { fontSize: 16, fontWeight: '800' },
   center:         { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll:         { padding: 16, paddingBottom: 40 },
+  errorBanner:    { backgroundColor: '#FEE2E2', borderColor: '#FCA5A5', borderWidth: 1, borderRadius: 12, padding: 12, marginBottom: 12 },
+  errorText:      { color: '#991B1B', fontSize: 13, fontWeight: '700', textAlign: 'center' },
 
   // Hero
   hero:           { backgroundColor: '#0F1829', borderRadius: 20, padding: 20, marginBottom: 14 },

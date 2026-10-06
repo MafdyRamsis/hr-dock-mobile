@@ -76,6 +76,7 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
   const [punchKind, setPunchKind] = useState('missing_check_in')
   const [otType,  setOtType]  = useState('weekday')
   const [otComp,  setOtComp]  = useState('payment')
+  const [otPolicy, setOtPolicy] = useState(null)
   const [err,     setErr]     = useState('')
   const [saving,  setSaving]  = useState(false)
 
@@ -86,6 +87,15 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
   // time picker
   const [showTimePicker, setShowTimePicker] = useState(false)
   const [pickerTime,     setPickerTime]     = useState(new Date())
+
+  useEffect(() => {
+    if (type !== 'overtime') return
+    let active = true
+    api.get('/settings/overtime-rates')
+      .then(r => { if (active) setOtPolicy(r.data.data || null) })
+      .catch(() => {})
+    return () => { active = false }
+  }, [type])
 
   const openPicker = (target) => {
     const cur = target === 'end' ? endDate : date
@@ -271,6 +281,17 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
               textAlignVertical="top"
             />
           </View>
+
+          {type === 'overtime' && otPolicy && (
+            <View style={[pf.errBox, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}>
+              <Text style={[pf.errText, { color: '#9A3412' }]}>{otPolicy.enforce_overtime_limits === false
+                ? tr('Your company currently allows overtime requests without an automatic hour cap.', 'تسمح سياسة الشركة حاليًا بطلبات العمل الإضافي دون حد تلقائي للساعات.', 'الشركة سامحة حاليًا بطلبات أوفر تايم من غير حد ساعات تلقائي.')
+                : otType === 'weekday'
+                  ? tr(`Company policy: up to ${otPolicy.weekday_daily_cap_hours} hours per day and ${otPolicy.weekday_monthly_cap_hours} hours per month.`, `سياسة الشركة: بحد أقصى ${otPolicy.weekday_daily_cap_hours} ساعة يوميًا و${otPolicy.weekday_monthly_cap_hours} ساعة شهريًا.`, `سياسة الشركة: لحد ${otPolicy.weekday_daily_cap_hours} ساعة في اليوم و${otPolicy.weekday_monthly_cap_hours} ساعة في الشهر.`)
+                  : tr(`Company policy: up to ${otPolicy.rest_day_daily_cap_hours} hours on a rest day or holiday.`, `سياسة الشركة: بحد أقصى ${otPolicy.rest_day_daily_cap_hours} ساعة في يوم الراحة أو الإجازة الرسمية.`, `سياسة الشركة: لحد ${otPolicy.rest_day_daily_cap_hours} ساعة في يوم الراحة أو الإجازة.`)
+              }</Text>
+            </View>
+          )}
 
           {!!err && <View style={pf.errBox}><Text style={pf.errText}>{err}</Text></View>}
 

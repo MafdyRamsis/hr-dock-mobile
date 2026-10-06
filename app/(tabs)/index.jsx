@@ -4,7 +4,7 @@ import {
   RefreshControl, Animated, Alert, Modal, TextInput, ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useRouter } from 'expo-router'
+import { useFocusEffect, useRouter } from 'expo-router'
 import { LinearGradient } from 'expo-linear-gradient'
 import * as Location from 'expo-location'
 import { useAuth } from '../../src/context/AuthContext'
@@ -150,44 +150,43 @@ export default function HomeScreen() {
   const load = useCallback(async () => {
     setLoadError(false)
     try {
-      const [ctxRes, annRes, logsRes, empRes, tickRes] = await Promise.allSettled([
+      const [ctxRes, annRes, logsRes, notifRes] = await Promise.allSettled([
         api.get('/ai/context'),
         api.get('/announcements'),
         api.get('/attendance/logs?limit=30&mine=1'),
-        api.get('/employees'),
-        api.get('/helpdesk?limit=10'),
+        api.get('/notifications/unread-count'),
       ])
       if (ctxRes.status === 'fulfilled') setCtx(ctxRes.value.data.data)
       if (annRes.status === 'fulfilled') setAnnouncements((annRes.value.data.data || []).slice(0, 3))
-      if (tickRes.status === 'fulfilled') {
-        const tickets = tickRes.value.data.data || []
-        const updated = tickets.filter(t => t.status !== 'pending').length
-        setNotifBadge(updated)
-      }
+      if (notifRes.status === 'fulfilled') setNotifBadge(Number(notifRes.value.data.data) || 0)
 
-      // Resolve employee_id — prefer employees list match, fall back to logs
-      let empId = user?.employee_id
-      if (empRes.status === 'fulfilled') {
-        const emps = empRes.value.data.data || []
-        const me   = emps.find(e => e.email === user?.email) || emps[0]
-        if (me?.id) empId = me.id
-        if (me?.photo_url) setPhotoUrl(me.photo_url)
-      }
+      // Identity must come only from the authenticated account. Never infer it
+      // from the company employee list or an attendance row: doing so can show
+      // or mutate another employee's data when this user is not linked yet.
+      const empId = user?.employee_id || null
+      setEmployeeId(empId)
+      setPhotoUrl(user?.photo_url || null)
 
       if (logsRes.status === 'fulfilled') {
         const raw  = logsRes.value.data.data
         const rows = Array.isArray(raw) ? raw : (raw?.rows || [])
-        if (!empId && rows[0]?.employee_id) empId = rows[0].employee_id
         const todayRec = rows.find(l => (l.date || l.created_at || '').startsWith(todayISO()))
         setTodayLog(todayRec || null)
       }
-
-      if (empId) setEmployeeId(empId)
     } catch { setLoadError(true) }
     finally { setLoading(false); setRefreshing(false) }
   }, [user])
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [load])
+
+  // Refresh the badge whenever the user returns from the notifications screen.
+  useFocusEffect(useCallback(() => {
+    let active = true
+    api.get('/notifications/unread-count')
+      .then(res => { if (active) setNotifBadge(Number(res.data.data) || 0) })
+      .catch(() => {})
+    return () => { active = false }
+  }, []))
 
   const getLocation = async () => {
     try {
@@ -203,20 +202,36 @@ export default function HomeScreen() {
   }
 
   const handleCheckIn = async () => {
+    if (!employeeId) {
+      Alert.alert(
+        tr('Employee profile not linked', 'ملف الموظف غير مرتبط', 'حساب الموظف مش مربوط'),
+        tr('Ask HR to link this login to the correct employee record, then sign in again.', 'اطلب من الموارد البشرية ربط تسجيل الدخول بملف الموظف الصحيح، ثم سجل الدخول مرة أخرى.', 'اطلب من الـ HR يربطوا الحساب بملف الموظف الصح، وبعدها سجل دخول تاني.'),
+      )
+      return
+    }
     setActioning(true)
     try {
       const loc = await getLocation()
-      await api.post('/attendance/check-in', { source: 'mobile', ...(employeeId ? { employee_id: employeeId } : {}), ...loc })
+      // The backend derives the employee from the authenticated token for
+      // mobile punches. Do not send a client-selected employee identity.
+      await api.post('/attendance/check-in', { source: 'mobile', ...loc })
       await load()
     } catch (e) { Alert.alert(tr('Check-in failed', 'تعذّر تسجيل الحضور', 'البصمة مدخلتش'), e.response?.data?.message || tr('Please try again.', 'حاول مرة أخرى.', 'يلا نجرّب تاني.')) }
     finally { setActioning(false) }
   }
 
   const handleCheckOut = async () => {
+    if (!employeeId) {
+      Alert.alert(
+        tr('Employee profile not linked', 'ملف الموظف غير مرتبط', 'حساب الموظف مش مربوط'),
+        tr('Ask HR to link this login to the correct employee record, then sign in again.', 'اطلب من الموارد البشرية ربط تسجيل الدخول بملف الموظف الصحيح، ثم سجل الدخول مرة أخرى.', 'اطلب من الـ HR يربطوا الحساب بملف الموظف الصح، وبعدها سجل دخول تاني.'),
+      )
+      return
+    }
     setActioning(true)
     try {
       const loc = await getLocation()
-      await api.post('/attendance/check-out', { source: 'mobile', ...(employeeId ? { employee_id: employeeId } : {}), ...loc })
+      await api.post('/attendance/check-out', { source: 'mobile', ...loc })
       await load()
     } catch (e) { Alert.alert(tr('Check-out failed', 'تعذّر تسجيل الانصراف', 'بصمة الخروج مدخلتش'), e.response?.data?.message || tr('Please try again.', 'حاول مرة أخرى.', 'يلا نجرّب تاني.')) }
     finally { setActioning(false) }
