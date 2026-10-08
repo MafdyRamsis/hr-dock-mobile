@@ -5,6 +5,7 @@ import {
 } from 'react-native'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useRouter } from 'expo-router'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useAuth } from '../../src/context/AuthContext'
 import { useTheme, GRADIENTS } from '../../src/context/ThemeContext'
@@ -28,6 +29,7 @@ const PERMISSIONS = tr => [
   { key: 'early',     icon: '🚪', label: tr('Early Departure', 'إذن انصراف مبكر', 'إذن خروج بدري'),   gradient: 'lavender', desc: tr('Permission to leave early', 'إذن بالانصراف مبكرًا', 'هتمشي بدري شوية') },
   { key: 'dayoff',    icon: '🛌', label: tr('Day Off', 'يوم راحة'),             gradient: 'mint',     desc: tr('Pick your rest day (weekend by request)', 'اختر يوم راحتك (العطلة بالطلب)', 'اختار يوم راحتك') },
   { key: 'missed',    icon: '🛠️', label: tr('Missed Punch', 'بصمة منسية', 'نسيت أبصم'), gradient: 'sunshine', desc: tr('Forgot to check in or out', 'نسيت تسجيل الحضور أو الانصراف', 'نسيت تبصم دخول أو خروج') },
+  { key: 'shift',     icon: '🔄', label: tr('Change Shift', 'تغيير الوردية', 'غيّر الوردية'), gradient: 'lavender', desc: tr('Request a different work shift', 'طلب تغيير وردية العمل', 'اطلب وردية مختلفة') },
 ]
 
 const SOLID = { mint: '#2ED573', sunshine: '#FFA801', coral: '#FF6B6B', lavender: '#8854D0' }
@@ -62,7 +64,7 @@ const QUICK = tr => [
 ]
 
 /* ─────────────────── Permission Form ─────────────────── */
-function PermissionModal({ type, employeeId, onClose, onDone }) {
+function PermissionModal({ type, employeeId, reports = [], isManager = false, onClose, onDone }) {
   const { tr, date: fmtDay } = useLang()
   const perm  = PERMISSIONS(tr).find(p => p.key === type)
   const solid = SOLID[perm.gradient]
@@ -79,6 +81,9 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
   const [otPolicy, setOtPolicy] = useState(null)
   const [err,     setErr]     = useState('')
   const [saving,  setSaving]  = useState(false)
+  const [shifts, setShifts] = useState([])
+  const [shiftId, setShiftId] = useState('')
+  const [targetEmployeeId, setTargetEmployeeId] = useState(employeeId)
 
   // date picker
   const [pickerTarget,   setPickerTarget]   = useState(null)
@@ -95,6 +100,11 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
       .then(r => { if (active) setOtPolicy(r.data.data || null) })
       .catch(() => {})
     return () => { active = false }
+  }, [type])
+
+  useEffect(() => {
+    if (type !== 'shift') return
+    api.get('/attendance/shifts').then(r => setShifts(r.data.data || [])).catch(() => setShifts([]))
   }, [type])
 
   const openPicker = (target) => {
@@ -135,6 +145,12 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
         await api.post('/attendance/corrections', {
           date, correction_type: punchKind, reason,
           ...(punchKind === 'missing_check_in' ? { requested_check_in: at } : { requested_check_out: at }),
+        })
+      } else if (type === 'shift') {
+        if (!shiftId) { setErr(tr('Please select a shift.', 'يرجى اختيار الوردية.', 'اختار الوردية.')); setSaving(false); return }
+        await api.post('/employee-requests/shift_change', {
+          employee_id: targetEmployeeId,
+          payload: { shift_id: shiftId, effective_date: date, reason: reason || undefined },
         })
       } else {
         // late / early → helpdesk ticket
@@ -177,6 +193,32 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
           {/* WFH: optional end date */}
           {type === 'wfh' && (
             <DateBtn target="end" value={endDate} label={tr('End Date (optional – for multi-day)', 'تاريخ النهاية (اختياري – لأكثر من يوم)', 'تاريخ النهاية (لو أكتر من يوم)')} />
+          )}
+
+          {type === 'shift' && isManager && reports.length > 0 && (
+            <View style={pf.field}>
+              <Text style={pf.label}>{tr('Employee', 'الموظف')}</Text>
+              <View style={{ gap: 7 }}>
+                {[{ id: employeeId, first_name: tr('Myself', 'نفسي') }, ...reports].map(emp => (
+                  <TouchableOpacity key={emp.id} onPress={() => setTargetEmployeeId(emp.id)} style={[pf.dateBtn, { borderWidth: 1.5, borderColor: targetEmployeeId === emp.id ? solid : '#E6E8F0' }]}>
+                    <Text style={[pf.dateBtnVal, { color: targetEmployeeId === emp.id ? solid : '#0F1829' }]}>{emp.first_name} {emp.last_name || ''}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {type === 'shift' && (
+            <View style={pf.field}>
+              <Text style={pf.label}>{tr('Requested Shift', 'الوردية المطلوبة', 'الوردية الجديدة')}</Text>
+              <View style={{ gap: 7 }}>
+                {shifts.map(shift => (
+                  <TouchableOpacity key={shift.id} onPress={() => setShiftId(shift.id)} style={[pf.dateBtn, { borderWidth: 1.5, borderColor: shiftId === shift.id ? solid : '#E6E8F0' }]}>
+                    <Text style={[pf.dateBtnVal, { color: shiftId === shift.id ? solid : '#0F1829' }]}>{shift.name} · {String(shift.start_time || '').slice(0,5)}–{String(shift.end_time || '').slice(0,5)}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
           )}
 
           {/* iOS picker */}
@@ -309,6 +351,7 @@ function PermissionModal({ type, employeeId, onClose, onDone }) {
 /* ─────────────────── Main Screen ─────────────────── */
 export default function RequestsScreen() {
   const { user } = useAuth()
+  const router = useRouter()
   const { colors } = useTheme()
   const { tr, date } = useLang()
   const fmt = d => (d ? date(d) : '')
@@ -318,6 +361,7 @@ export default function RequestsScreen() {
   const [tickets,    setTickets]    = useState([])
   const [wfhList,    setWfhList]    = useState([])
   const [otList,     setOtList]     = useState([])
+  const [shiftList,  setShiftList]  = useState([])
   const [loading,    setLoading]    = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [employeeId, setEmployeeId] = useState(user?.employee_id || null)
@@ -329,6 +373,9 @@ export default function RequestsScreen() {
   const [formErr,    setFormErr]    = useState('')
 
   const [loadError, setLoadError] = useState(false)
+  const [view, setView] = useState('new')
+  const [reports, setReports] = useState([])
+  const isManager = ['manager', 'admin', 'hr_manager'].includes(user?.role)
 
   // Kept in sync with the auth context directly (see load()'s comment) —
   // no more resolving it from an unscoped /employees list fetch.
@@ -348,17 +395,25 @@ export default function RequestsScreen() {
       // context is already the source of truth for this (used the same way
       // elsewhere in the app, e.g. team.jsx).
       const empQS = user?.employee_id ? `?employee_id=${user.employee_id}` : ''
-      const [tickRes, wfhRes, otRes] = await Promise.allSettled([
+      const [tickRes, wfhRes, otRes, shiftRes] = await Promise.allSettled([
         api.get('/helpdesk?limit=50&mine=1'),
         api.get(`/wfh${empQS}`),
         api.get(`/overtime${empQS}`),
+        api.get('/employee-requests?type=shift_change'),
       ])
       if (tickRes.status === 'fulfilled') setTickets(tickRes.value.data.data || [])
       if (wfhRes.status  === 'fulfilled') setWfhList(wfhRes.value.data.data  || [])
       if (otRes.status   === 'fulfilled') setOtList(otRes.value.data.data    || [])
+      if (shiftRes.status === 'fulfilled') {
+        setShiftList((shiftRes.value.data.data || []).filter(r => r.employee_id === user?.employee_id || r.requested_by === user?.id))
+      }
+      if (isManager && user?.employee_id) {
+        const empRes = await api.get('/employees?limit=10000&status=active')
+        setReports((empRes.data.data || []).filter(e => e.manager_id === user.employee_id))
+      }
     } catch { setLoadError(true) }
     finally { setLoading(false); setRefreshing(false) }
-  }, [user])
+  }, [user, isManager])
 
   useEffect(() => { load() }, [])
 
@@ -385,6 +440,7 @@ export default function RequestsScreen() {
   const allPermissions = [
     ...wfhList.map(x => ({ ...x, _type: 'wfh',      icon: '🏠', label: PERMS[0].label, gradient: 'mint' })),
     ...otList.map(x =>  ({ ...x, _type: 'overtime',  icon: '⏱️', label: PERMS[1].label, gradient: 'sunshine' })),
+    ...shiftList.map(x => ({ ...x, date: x.payload?.effective_date, _type: 'shift', icon: '🔄', label: PERMS.find(p => p.key === 'shift')?.label, gradient: 'lavender' })),
   ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 
 
@@ -403,7 +459,34 @@ export default function RequestsScreen() {
           </View>
         )}
 
+        <View style={s.viewTabs}>
+          {[
+            ['new', tr('New Request', 'طلب جديد', 'طلب جديد')],
+            ['history', tr('My History', 'سجل طلباتي', 'طلباتي القديمة')],
+            ...(isManager ? [['manager', tr('Manager', 'المدير', 'إدارة الفريق')]] : []),
+          ].map(([key, label]) => (
+            <TouchableOpacity key={key} onPress={() => setView(key)} style={[s.viewTab, view === key && s.viewTabActive]}>
+              <Text style={[s.viewTabText, view === key && s.viewTabTextActive]}>{label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {view === 'manager' && (
+          <View style={s.section}>
+            <TouchableOpacity style={[s.managerAction, { backgroundColor: colors.card }]} onPress={() => router.push('/manager-dashboard')}>
+              <Text style={s.managerIcon}>📊</Text><View style={{flex:1}}><Text style={[s.managerTitle,{color:colors.text}]}>{tr('Manager Dashboard','لوحة المدير')}</Text><Text style={{color:colors.muted}}>{tr('Attendance and team overview','الحضور ونظرة عامة على الفريق')}</Text></View>
+            </TouchableOpacity>
+            <TouchableOpacity style={[s.managerAction, { backgroundColor: colors.card }]} onPress={() => router.push('/leave-approvals')}>
+              <Text style={s.managerIcon}>✅</Text><View style={{flex:1}}><Text style={[s.managerTitle,{color:colors.text}]}>{tr('Pending Approvals','الموافقات المعلقة')}</Text><Text style={{color:colors.muted}}>{tr('Review team leave requests','مراجعة إجازات الفريق')}</Text></View>
+            </TouchableOpacity>
+            <TouchableOpacity style={[s.managerAction, { backgroundColor: colors.card }]} onPress={() => setActivePerm('shift')}>
+              <Text style={s.managerIcon}>🔄</Text><View style={{flex:1}}><Text style={[s.managerTitle,{color:colors.text}]}>{tr('Request Team Shift Change','طلب تغيير وردية للفريق')}</Text><Text style={{color:colors.muted}}>{tr('Choose a direct report and a new shift','اختر موظفًا مباشرًا والوردية الجديدة')}</Text></View>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* ── Permission Requests ── */}
+        {view === 'new' && <>
         <Text style={[s.sectionLabel, { color: colors.sub }]}>{tr('Permission Requests', 'طلبات الأذونات', 'الأذونات')}</Text>
         <View style={s.permGrid}>
           {PERMS.map(p => (
@@ -415,8 +498,10 @@ export default function RequestsScreen() {
           ))}
         </View>
 
+        </>}
+
         {/* Recent permissions list */}
-        {allPermissions.length > 0 && (
+        {view === 'history' && allPermissions.length > 0 && (
           <View style={s.section}>
             <Text style={[s.sectionLabel, { color: colors.sub }]}>{tr('Permission History', 'سجل الأذونات', 'أذوناتك اللي فاتت')}</Text>
             {allPermissions.slice(0, 6).map(p => (
@@ -433,6 +518,7 @@ export default function RequestsScreen() {
         )}
 
         {/* ── HR / General Requests ── */}
+        {view === 'new' && <>
         <View style={s.sectionRow}>
           <Text style={[s.sectionLabel, { color: colors.sub }]}>{tr('HR Requests', 'طلبات الموارد البشرية', 'طلبات الـ HR')}</Text>
           <TouchableOpacity onPress={() => openForm()} activeOpacity={0.85}>
@@ -441,6 +527,8 @@ export default function RequestsScreen() {
             </LinearGradient>
           </TouchableOpacity>
         </View>
+
+        </>}
 
         {/* Quick chips */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.quickScroll} contentContainerStyle={s.quickContent}>
@@ -464,7 +552,7 @@ export default function RequestsScreen() {
         </View>
 
         {/* Helpdesk list */}
-        {loading ? (
+        {view === 'history' && (loading ? (
           <View style={{ marginTop: 8 }}>
             <SkeletonRow /><SkeletonRow /><SkeletonRow />
           </View>
@@ -479,7 +567,7 @@ export default function RequestsScreen() {
             <Text style={[s.sectionLabel, { color: colors.sub }]}>{tr('All HR Requests', 'كل طلبات الموارد البشرية', 'كل طلباتك للـ HR')}</Text>
             {tickets.map(t => <TicketCard key={t.id} ticket={t} colors={colors} />)}
           </View>
-        )}
+        ))}
       </ScrollView>
 
       {/* Permission Modal */}
@@ -487,6 +575,8 @@ export default function RequestsScreen() {
         <PermissionModal
           type={activePerm}
           employeeId={employeeId}
+          reports={reports}
+          isManager={isManager}
           onClose={() => setActivePerm(null)}
           onDone={() => { setActivePerm(null); load() }}
         />
@@ -590,6 +680,14 @@ const s = StyleSheet.create({
   sectionLabel: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: ls(0.5), marginBottom: 10 },
   sectionRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   section:      { marginBottom: 8 },
+  viewTabs:     { flexDirection:'row', backgroundColor:'#E8EDF5', borderRadius:14, padding:4, marginBottom:18, gap:4 },
+  viewTab:      { flex:1, paddingVertical:9, alignItems:'center', borderRadius:10 },
+  viewTabActive:{ backgroundColor:'white' },
+  viewTabText:  { fontSize:12, fontWeight:'700', color:'#64748b' },
+  viewTabTextActive:{ color:'#1e3a8a' },
+  managerAction:{ flexDirection:'row', alignItems:'center', gap:12, padding:15, borderRadius:14, marginBottom:10 },
+  managerIcon:  { fontSize:25 },
+  managerTitle: { fontSize:14, fontWeight:'800', marginBottom:3 },
   newBtn:       { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8 },
   newBtnText:   { color: 'white', fontWeight: '800', fontSize: 12 },
 

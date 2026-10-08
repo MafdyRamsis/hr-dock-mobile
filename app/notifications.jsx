@@ -26,6 +26,7 @@ const timeAgo = (iso, tr, date) => {
 
 const TYPE_META = {
   leave_reviewed:       { icon: '🏖️', color: '#8854D0', label: 'Leave' },
+  leave_decided:        { icon: '🏖️', color: '#8854D0', label: 'Leave' },
   day_off_reviewed:     { icon: '🛏️', color: '#2BC4BE', label: 'Day Off' },
   attendance_reviewed:  { icon: '🕐', color: '#3b82f6', label: 'Attendance' },
   approval_required:    { icon: '📋', color: '#f59e0b', label: 'Approval' },
