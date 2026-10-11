@@ -127,6 +127,14 @@ function CheckInOutCard({ todayLog, onCheckIn, onCheckOut, actioning, employeeId
   )
 }
 
+// GET /notifications/unread-count answers { data: { count: N } }. The badge
+// used Number(data) — NaN for an object, so it always showed nothing.
+const unreadOf = (res) => {
+  const d = res?.data?.data
+  const n = Number(typeof d === 'object' && d !== null ? d.count : d)
+  return Number.isFinite(n) && n > 0 ? n : 0
+}
+
 export default function HomeScreen() {
   const { user }  = useAuth()
   const { colors } = useTheme()
@@ -158,7 +166,7 @@ export default function HomeScreen() {
       ])
       if (ctxRes.status === 'fulfilled') setCtx(ctxRes.value.data.data)
       if (annRes.status === 'fulfilled') setAnnouncements((annRes.value.data.data || []).slice(0, 3))
-      if (notifRes.status === 'fulfilled') setNotifBadge(Number(notifRes.value.data.data) || 0)
+      if (notifRes.status === 'fulfilled') setNotifBadge(unreadOf(notifRes.value))
 
       // Identity must come only from the authenticated account. Never infer it
       // from the company employee list or an attendance row: doing so can show
@@ -183,7 +191,7 @@ export default function HomeScreen() {
   useFocusEffect(useCallback(() => {
     let active = true
     api.get('/notifications/unread-count')
-      .then(res => { if (active) setNotifBadge(Number(res.data.data) || 0) })
+      .then(res => { if (active) setNotifBadge(unreadOf(res)) })
       .catch(() => {})
     return () => { active = false }
   }, []))
