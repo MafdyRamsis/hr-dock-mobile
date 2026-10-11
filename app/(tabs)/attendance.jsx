@@ -37,13 +37,28 @@ const STATUS_COLOR = {
 }
 const STATUS_ICON = { present: '✅', late: '⏱️', absent: '❌', leave: '🏖️' }
 
-function MonthCalendar({ logs, month, year, colors }) {
+// One day's status for the calendar dot / day card. The calendar endpoint
+// returns every day (weekend, holiday, on_leave, not_yet …); a "present" day
+// with late minutes is shown as late.
+const dayStatus = (l) => {
+  if (!l) return null
+  const st = String(l.status || '').toLowerCase()
+  if (st === 'on_leave') return 'leave'
+  if ((st === 'present' || st === 'half_day') && Number(l.late_minutes) > 0) return 'late'
+  if (st === 'present' || st === 'late' || st === 'absent') return st
+  if (st === 'half_day') return 'present'
+  return null
+}
+const pad2 = n => String(n).padStart(2, '0')
+const phoneToday = () => { const d = new Date(); return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}` }
+
+function MonthCalendar({ logs, month, year, colors, selected, onSelect }) {
   const { tr, ar, day: dayName } = useLang()
   const logMap = useMemo(() => {
     const m = {}
     logs.forEach(l => {
       const d = toDateStr(l.date || l.created_at)
-      if (d) m[d] = l.status || 'present'
+      if (d) m[d] = dayStatus(l)
     })
     return m
   }, [logs])
@@ -73,15 +88,17 @@ function MonthCalendar({ logs, month, year, colors }) {
           const isFuture = new Date(iso) > today
           const isWeekend = [0, 6].includes(new Date(iso).getDay())
           const dotColor = status ? STATUS_COLOR[status] : null
+          const isSel = selected === iso
 
           return (
-            <View key={iso} style={cal.cell}>
+            <TouchableOpacity key={iso} style={cal.cell} disabled={isFuture} onPress={() => onSelect?.(iso)}
+              accessibilityRole="button" accessibilityState={{ selected: isSel }}>
               {isToday ? (
                 <LinearGradient colors={GRADIENTS.coral} style={cal.dayCircle} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
                   <Text style={[cal.dayNum, cal.todayNum]}>{day}</Text>
                 </LinearGradient>
               ) : (
-                <View style={cal.dayCircle}>
+                <View style={[cal.dayCircle, isSel && { borderWidth: 2, borderColor: GRADIENTS.coral[0] }]}>
                   <Text style={[
                     cal.dayNum, { color: colors.text2 },
                     (isFuture || isWeekend) && { color: colors.muted },
@@ -93,7 +110,7 @@ function MonthCalendar({ logs, month, year, colors }) {
               ) : (
                 <View style={cal.dotEmpty} />
               )}
-            </View>
+            </TouchableOpacity>
           )
         })}
       </View>
@@ -124,6 +141,10 @@ export default function AttendanceScreen() {
   const now = new Date()
   const [viewMonth, setViewMonth] = useState(now.getMonth())
   const [viewYear,  setViewYear]  = useState(now.getFullYear())
+  // Days of the month being viewed (from /attendance/calendar), and the day
+  // the employee tapped to see its check-in / check-out.
+  const [monthDays,   setMonthDays]   = useState(null)
+  const [selectedDay, setSelectedDay] = useState(phoneToday())
 
   const load = useCallback(async () => {
     try {
@@ -154,13 +175,39 @@ export default function AttendanceScreen() {
 
   useEffect(() => { load() }, [])
 
+  // Load every day of the viewed month — the list of recent punches only
+  // covered ~60 rows, so earlier months showed an empty calendar.
+  const meId = user?.employee_id || employeeId
+  const loadMonth = useCallback(async () => {
+    if (!meId) return
+    const from = `${viewYear}-${pad2(viewMonth + 1)}-01`
+    const last = `${viewYear}-${pad2(viewMonth + 1)}-${pad2(new Date(viewYear, viewMonth + 1, 0).getDate())}`
+    const t = phoneToday()
+    const to = last < t ? last : t
+    if (to < from) { setMonthDays([]); return }
+    try {
+      const r = await api.get(`/attendance/calendar?employee_id=${meId}&from_date=${from}&to_date=${to}`)
+      const raw = r.data?.data
+      setMonthDays(Array.isArray(raw) ? raw : [])
+    } catch {
+      try {
+        const r = await api.get(`/attendance/logs?mine=1&from_date=${from}&to_date=${to}&limit=40`)
+        const raw = r.data?.data
+        setMonthDays(Array.isArray(raw) ? raw : (raw?.rows || []))
+      } catch { setMonthDays(null) }
+    }
+  }, [meId, viewMonth, viewYear])
+  useEffect(() => { loadMonth() }, [loadMonth])
+
   const prevMonth = () => {
+    setSelectedDay(null)
     if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1) }
     else setViewMonth(m => m - 1)
   }
   const nextMonth = () => {
     const n = new Date()
     if (viewYear > n.getFullYear() || (viewYear === n.getFullYear() && viewMonth >= n.getMonth())) return
+    setSelectedDay(null)
     if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1) }
     else setViewMonth(m => m + 1)
   }
@@ -353,7 +400,56 @@ export default function AttendanceScreen() {
               <Text style={[s.navArrow, { color: colors.sub }]}>{chevron}</Text>
             </TouchableOpacity>
           </View>
-          <MonthCalendar logs={logs} month={viewMonth} year={viewYear} colors={colors} />
+          <MonthCalendar logs={monthDays || logs} month={viewMonth} year={viewYear} colors={colors}
+            selected={selectedDay} onSelect={setSelectedDay} />
+          {selectedDay ? (() => {
+            const rec = (monthDays || logs).find(l => toDateStr(l.date || l.created_at) === selectedDay)
+            const st = dayStatus(rec)
+            const raw = String(rec?.status || '').toLowerCase()
+            const note = raw === 'weekend' ? tr('Weekly day off', 'إجازة أسبوعية', 'أجازة أسبوعية')
+              : raw === 'holiday' ? tr('Public holiday', 'عطلة رسمية', 'أجازة رسمية')
+              : raw === 'excused' ? tr('Approved excuse', 'إذن معتمد', 'إذن متوافق عليه')
+              : raw === 'mission' ? tr('Approved mission', 'مأمورية معتمدة', 'مأمورية متوافق عليها')
+              : null
+            return (
+              <View style={[s.dayCard, { borderTopColor: colors.border }]}>
+                <View style={s.dayCardHead}>
+                  <Text style={[s.dayCardDate, { color: colors.text }]}>{date(selectedDay, { weekday: 'long', month: 'long' })}</Text>
+                  {st ? (
+                    <View style={[s.statusPill, { backgroundColor: `${STATUS_COLOR[st]}1A` }]}>
+                      <Text style={[s.statusPillText, { color: STATUS_COLOR[st] }]}>{statusLabel(st, tr)}</Text>
+                    </View>
+                  ) : null}
+                </View>
+                {rec?.check_in || rec?.check_out ? (
+                  <View style={s.dayCardRow}>
+                    <View style={s.dayCardCol}>
+                      <Text style={[s.dayCardLbl, { color: colors.muted }]}>{tr('Check in', 'الحضور', 'الحضور')}</Text>
+                      <Text style={[s.dayCardVal, { color: colors.text }]}>{fmtTime(rec.check_in)}</Text>
+                    </View>
+                    <View style={s.dayCardCol}>
+                      <Text style={[s.dayCardLbl, { color: colors.muted }]}>{tr('Check out', 'الانصراف', 'الانصراف')}</Text>
+                      <Text style={[s.dayCardVal, { color: colors.text }]}>{fmtTime(rec.check_out)}</Text>
+                    </View>
+                    {Number(rec.late_minutes) > 0 && (
+                      <View style={s.dayCardCol}>
+                        <Text style={[s.dayCardLbl, { color: colors.muted }]}>{tr('Late by', 'تأخير', 'متأخر')}</Text>
+                        <Text style={[s.dayCardVal, { color: STATUS_COLOR.late }]}>{tr(`${rec.late_minutes} min`, `${rec.late_minutes} د`)}</Text>
+                      </View>
+                    )}
+                  </View>
+                ) : (
+                  <Text style={[s.dayCardNote, { color: colors.sub }]}>
+                    {note || (selectedDay === phoneToday()
+                      ? tr('No check-in yet today', 'لم يتم تسجيل الحضور اليوم بعد', 'لسه مفيش بصمة النهارده')
+                      : tr('No check-in or check-out recorded', 'لا يوجد تسجيل حضور أو انصراف', 'مفيش بصمة حضور أو انصراف'))}
+                  </Text>
+                )}
+              </View>
+            )
+          })() : (
+            <Text style={[s.dayCardHint, { color: colors.muted }]}>{tr('Tap a day to see your check-in and check-out', 'اضغط على يوم لعرض الحضور والانصراف', 'دوس على أي يوم تشوف الحضور والانصراف')}</Text>
+          )}
         </Card>
 
         {/* Recent list */}
@@ -404,6 +500,15 @@ const cal = StyleSheet.create({
 })
 
 const s = StyleSheet.create({
+  dayCard:     { marginTop: 12, paddingTop: 12, borderTopWidth: 1 },
+  dayCardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 },
+  dayCardDate: { fontSize: 14, fontWeight: '700', flexShrink: 1 },
+  dayCardRow:  { flexDirection: 'row', gap: 16 },
+  dayCardCol:  { flex: 1 },
+  dayCardLbl:  { fontSize: 11, fontWeight: '600', marginBottom: 2 },
+  dayCardVal:  { fontSize: 16, fontWeight: '800' },
+  dayCardNote: { fontSize: 13 },
+  dayCardHint: { fontSize: 12, textAlign: 'center', marginTop: 10 },
   safe:        { flex: 1 },
   scroll:      { padding: 16, paddingBottom: 130 },
   center:      { flex: 1, alignItems: 'center', justifyContent: 'center' },
