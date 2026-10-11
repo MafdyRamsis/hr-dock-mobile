@@ -23,7 +23,7 @@ export default function DirectoryScreen() {
 
   const load = useCallback(async () => {
     try {
-      const r = await api.get('/employees?limit=300&status=active')
+      const r = await api.get('/employees?limit=5000&status=active')
       const raw = r.data.data
       setEmployees(Array.isArray(raw) ? raw : (raw?.rows || []))
     } catch {}

@@ -11,8 +11,9 @@ import { useTheme } from '../src/context/ThemeContext'
 import api from '../src/services/api'
 import { useLang } from '../src/context/LanguageContext'
 import { ls, back } from '../src/utils/rtl'
+import { localDateOf } from '../src/i18n/format'
 
-const toISO  = d => d.toISOString().split('T')[0]
+const toISO  = localDateOf
 const fmtNum = n => n != null ? Number(n).toLocaleString('en-US', { minimumFractionDigits: 2 }) : '—'
 
 const getCategories = tr => [
@@ -83,7 +84,7 @@ export default function ExpensesScreen() {
     if (!form.description.trim())                   { setFormErr(tr('Please add a description.', 'يرجى إضافة وصف.', 'اكتب وصف للمصروف.')); return }
     setFormErr(''); setSaving(true)
     try {
-      await api.post('/expenses', {
+      const created = await api.post('/expenses', {
         employee_id:    user?.employee_id,
         expense_date:   form.expense_date,
         category:       form.category,
@@ -91,6 +92,10 @@ export default function ExpensesScreen() {
         description:    form.description,
         receipt_number: form.receipt_number || undefined,
       })
+      // A new claim is saved as a draft; it only reaches HR's approval queue
+      // once submitted. The app said "Submitted" but never did this step.
+      const newId = created?.data?.data?.id
+      if (newId) await api.patch(`/expenses/${newId}`, { status: 'submitted' }).catch(() => {})
       setShowForm(false)
       setForm({ expense_date: toISO(new Date()), category: 'other', amount: '', description: '', receipt_number: '' })
       await load()
@@ -105,6 +110,17 @@ export default function ExpensesScreen() {
     if (event.type === 'dismissed' || !selected) return
     setPickerDate(selected)
     setForm(f => ({ ...f, expense_date: toISO(selected) }))
+  }
+
+  // Claims sent from older app versions were left as drafts — let the
+  // employee send them on from here.
+  const submitDraft = async (id) => {
+    try {
+      await api.patch(`/expenses/${id}`, { status: 'submitted' })
+      await load()
+    } catch (err) {
+      Alert.alert(tr('Error', 'خطأ', 'حصلت مشكلة'), err.response?.data?.message || tr('Failed to submit. Please try again.', 'تعذّر الإرسال. يرجى المحاولة مرة أخرى.', 'معرفناش نبعت. يلا نجرّب تاني.'))
+    }
   }
 
   const totalPending = expenses
@@ -171,6 +187,11 @@ export default function ExpensesScreen() {
               </View>
               {e.receipt_number ? (
                 <Text style={[s.receipt, { color: colors.sub }]}>{tr('Receipt', 'الإيصال')}: {e.receipt_number}</Text>
+              ) : null}
+              {e.status === 'draft' ? (
+                <TouchableOpacity onPress={() => submitDraft(e.id)} style={s.submitDraft}>
+                  <Text style={s.submitDraftText}>{tr('Submit for approval', 'إرسال للاعتماد', 'ابعتها للموافقة')}</Text>
+                </TouchableOpacity>
               ) : null}
             </View>
           )
@@ -291,6 +312,8 @@ const s = StyleSheet.create({
   cardDesc:     { fontSize: 14, fontWeight: '600' },
   cardMeta:     { fontSize: 12, marginTop: 2 },
   cardAmt:      { fontSize: 15, fontWeight: '800', textAlign: 'right' },
+  submitDraft:  { marginTop: 10, alignSelf: 'flex-start', backgroundColor: '#2563eb', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7 },
+  submitDraftText: { color: 'white', fontSize: 12, fontWeight: '700' },
   statusBadge:  { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2, marginTop: 4, alignSelf: 'flex-end' },
   statusText:   { fontSize: 10, fontWeight: '600', textTransform: 'capitalize' },
   receipt:      { fontSize: 11, marginTop: 8, marginLeft: 38 },

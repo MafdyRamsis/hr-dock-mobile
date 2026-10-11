@@ -5,7 +5,7 @@ import {
 } from 'react-native'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useRouter } from 'expo-router'
+import { useRouter, useLocalSearchParams } from 'expo-router'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useAuth } from '../../src/context/AuthContext'
 import { useTheme, GRADIENTS } from '../../src/context/ThemeContext'
@@ -17,9 +17,9 @@ import FeedItem from '../../src/components/FeedItem'
 import Skeleton, { SkeletonCard, SkeletonRow } from '../../src/components/Skeleton'
 import { ls } from '../../src/utils/rtl'
 import { useLang } from '../../src/context/LanguageContext'
-import { fmtTime } from '../../src/i18n/format'
+import { fmtTime, localDateOf } from '../../src/i18n/format'
 
-const toISO  = d => d.toISOString().split('T')[0]
+const toISO  = localDateOf
 
 /* ── Permission types ── */
 const PERMISSIONS = tr => [
@@ -367,6 +367,11 @@ export default function RequestsScreen() {
   const [employeeId, setEmployeeId] = useState(user?.employee_id || null)
 
   const [activePerm, setActivePerm] = useState(null) // wfh | overtime | late | early
+  // Home's "Incorrect record? Request a correction" opens a form here directly.
+  const { open: openParam } = useLocalSearchParams()
+  useEffect(() => {
+    if (openParam === 'missed') setActivePerm('missed')
+  }, [openParam])
   const [showForm,   setShowForm]   = useState(false)
   const [saving,     setSaving]     = useState(false)
   const [form,       setForm]       = useState({ category: 'hr', subject: '', description: '', priority: 'medium' })

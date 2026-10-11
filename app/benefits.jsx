@@ -77,7 +77,7 @@ export default function BenefitsScreen() {
 
   useEffect(() => { load() }, [])
 
-  const allowances = components.filter(c => c.type !== 'deduction')
+  const allowances = components.filter(c => c.type !== 'deduction' && c.type !== 'basic')
   const totalAllowances = allowances.reduce((s, c) => s + Number(c.amount || 0), 0)
 
   if (loading) return (

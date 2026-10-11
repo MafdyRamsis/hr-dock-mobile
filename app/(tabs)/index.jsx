@@ -26,7 +26,18 @@ import { personName } from '../../src/i18n/format'
 
 const fmtNum   = n => n != null ? Number(n).toLocaleString('en-US') : '—'
 const fmtTime  = iso => (iso ? fmtHM(iso) : '--:--')
-const todayISO = () => new Date().toISOString().split('T')[0]
+// Calendar date (YYYY-MM-DD) of a server value on this phone. A plain date
+// passes through; a timestamp is read in local time — slicing the ISO string
+// gave the UTC date, a day behind in Egypt between midnight and ~3 am.
+const localDateOf = v => {
+  if (!v) return ''
+  const str = String(v)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str
+  const d = new Date(str)
+  if (isNaN(d)) return str.slice(0, 10)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+const todayISO = () => localDateOf(new Date().toISOString())
 const CAT_COLORS  = { event: '#8854D0', policy: '#FFA801', hr: '#2ED573', general: '#8A8DA3' }
 const CAT_GRADIENT = { event: 'lavender', policy: 'sunshine', hr: 'mint', general: 'coral' }
 
@@ -178,7 +189,7 @@ export default function HomeScreen() {
       if (logsRes.status === 'fulfilled') {
         const raw  = logsRes.value.data.data
         const rows = Array.isArray(raw) ? raw : (raw?.rows || [])
-        const todayRec = rows.find(l => (l.date || l.created_at || '').startsWith(todayISO()))
+        const todayRec = rows.find(l => localDateOf(l.date || l.created_at) === todayISO())
         setTodayLog(todayRec || null)
       }
     } catch { setLoadError(true) }
@@ -249,7 +260,7 @@ export default function HomeScreen() {
     if (!corrReason.trim()) return
     setCorrSaving(true)
     try {
-      const dateStr  = todayLog?.date?.split('T')[0] || new Date().toISOString().split('T')[0]
+      const dateStr  = localDateOf(todayLog?.date) || todayISO()
       const checkIn  = fmtTime(todayLog?.check_in)
       const checkOut = fmtTime(todayLog?.check_out)
       await api.post('/helpdesk', {
@@ -360,8 +371,11 @@ export default function HomeScreen() {
           employeeId={employeeId}
         />
 
+        {/* Opens the real attendance-correction request (Requests → missed
+            punch). It used to file a helpdesk ticket, so approving it never
+            changed the attendance record. */}
         {todayLog && (
-          <TouchableOpacity style={s.corrLink} onPress={() => setShowCorrection(true)}>
+          <TouchableOpacity style={s.corrLink} onPress={() => router.push({ pathname: '/(tabs)/requests', params: { open: 'missed' } })}>
             <Text style={s.corrLinkText}>{tr('Incorrect record? Request a correction', 'السجل غير صحيح؟ اطلب تصحيحه', 'السجل مش مظبوط؟ اطلب تصحيح')} {fwd}</Text>
           </TouchableOpacity>
         )}

@@ -56,3 +56,18 @@ export const currency = lang => (lang === 'ar' ? 'ج.م' : 'EGP')
 /** The signed-in person's name in the app language (Arabic name when available). */
 export const personName = (u, ar) =>
   ((ar && `${u?.first_name_ar || ''} ${u?.last_name_ar || ''}`.trim()) || `${u?.first_name || ''} ${u?.last_name || ''}`.trim())
+
+// Calendar date (YYYY-MM-DD) on this phone. A plain date passes through; a
+// Date or timestamp is read in local time. Slicing toISOString() / an ISO
+// string gave the UTC date — a day behind in Egypt between midnight and
+// ~3 am, so a leave or expense picked then was sent with the wrong date.
+export const localDateOf = v => {
+  if (!v) return ''
+  if (!(v instanceof Date)) {
+    const str = String(v)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str
+    v = new Date(str)
+    if (isNaN(v)) return str.slice(0, 10)
+  }
+  return `${v.getFullYear()}-${String(v.getMonth() + 1).padStart(2, '0')}-${String(v.getDate()).padStart(2, '0')}`
+}

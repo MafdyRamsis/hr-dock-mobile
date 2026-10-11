@@ -6,6 +6,7 @@ import { useTheme } from '../src/context/ThemeContext'
 import api from '../src/services/api'
 import { useLang } from '../src/context/LanguageContext'
 import { ls, back, chevron, IS_RTL } from '../src/utils/rtl'
+import { localDateOf } from '../src/i18n/format'
 
 // "previous" chevron points against reading order
 const prevChevron = IS_RTL ? '›' : '‹'
@@ -25,7 +26,7 @@ const getType = (t, tr) => {
 const arDays = n => (n === 1 ? 'يوم' : n === 2 ? 'يومين' : n <= 10 ? `${n} أيام` : `${n} يوم`)
 const arHolidaysF = n => (n === 0 ? 'مفيش إجازات' : n === 1 ? 'إجازة واحدة' : n === 2 ? 'إجازتين' : n <= 10 ? `${n} إجازات` : `${n} إجازة`)
 
-const toDateStr = d => d ? d.split('T')[0] : ''
+const toDateStr = localDateOf
 
 export default function HolidaysScreen() {
   const router = useRouter()
@@ -74,7 +75,7 @@ export default function HolidaysScreen() {
   , [holidays, year, viewMonth])
 
   // Next upcoming holiday from today
-  const todayStr = now.toISOString().split('T')[0]
+  const todayStr = localDateOf(now)
   const upcoming = holidays
     .filter(h => toDateStr(h.date) >= todayStr)
     .sort((a, b) => a.date.localeCompare(b.date))

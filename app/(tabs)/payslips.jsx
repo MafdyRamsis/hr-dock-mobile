@@ -30,6 +30,11 @@ const L = {
   tax:       ['Income Tax', 'ضريبة كسب العمل'],
   martyrs:   ['Martyrs Fund (1%)', 'صندوق الشهداء (1%)'],
   loan:      ['Loan Deduction', 'قسط السلفة'],
+  late:      ['Late Deduction', 'خصم التأخير'],
+  absence:   ['Absence Deduction', 'خصم الغياب'],
+  medical:   ['Medical Insurance', 'التأمين الطبي'],
+  allowances:['Allowances', 'البدلات'],
+  travel:    ['Travel Allowance', 'بدل السفر'],
   otherDed:  ['Other Deductions', 'استقطاعات أخرى'],
   totalDed:  ['Total Deductions', 'إجمالي الاستقطاعات'],
   net:       ['Net Salary', 'صافي الراتب'],
@@ -44,28 +49,57 @@ const L = {
 const lbl = (k, lang) => L[k][lang === 'ar' ? 1 : 0]
 const cur = lang => (lang === 'ar' ? 'ج.م' : 'EGP')
 
+// Payslip lines, built the same way as the web payslip (Payroll.jsx). The
+// payslip row has no per-allowance columns (housing_allowance, … never
+// existed — the screen read them, so no allowance ever showed and earnings
+// didn't add up to Gross); each allowance/deduction is in `components`, and
+// the fixed deductions are loan_deductions, late_deductions,
+// absence_deductions, medical_insurance.
+const AR_NAMES = { 'Basic Salary': 'الأجر الأساسي', 'Housing Allowance': 'بدل السكن', 'Transportation Allowance': 'بدل المواصلات', 'Travel Allowance': 'بدل السفر', 'Mobile Allowance': 'بدل الهاتف', 'Meal Allowance': 'بدل الوجبات', 'Expense Reimbursement': 'تعويض مصروفات' }
+const num = v => Number(v || 0)
+const slipLines = (slip, lang = 'en') => {
+  const ar = lang === 'ar'
+  let comps = slip.components
+  if (typeof comps === 'string') { try { comps = JSON.parse(comps) } catch { comps = null } }
+  if (!Array.isArray(comps)) comps = null
+  const cName = c => (ar ? (c.name_ar || AR_NAMES[c.name] || c.name) : c.name) || '—'
+  // Net-to-gross employees see their guaranteed basic, as on the web slip.
+  const basic = slip.net_target != null ? num(slip.net_target) : num(slip.basic_salary)
+  const earnings = []
+  const shownAllow = comps ? comps.filter(c => c.type === 'allowance' && c.show_on_payslip !== false && num(c.amount) > 0) : []
+  if (shownAllow.length) shownAllow.forEach(c => earnings.push({ label: cName(c), amount: num(c.amount) }))
+  else {
+    const rest = num(slip.total_allowances) - num(slip.travel_allowance)
+    if (rest > 0) earnings.push({ label: lbl('allowances', lang), amount: rest })
+    if (num(slip.travel_allowance) > 0) earnings.push({ label: lbl('travel', lang), amount: num(slip.travel_allowance) })
+  }
+  if (num(slip.overtime_pay) > 0) earnings.push({ label: lbl('overtime', lang), amount: num(slip.overtime_pay) })
+  const gross = slip.net_target != null
+    ? Math.round((basic + num(slip.total_allowances) + num(slip.overtime_pay)) * 100) / 100
+    : num(slip.gross_salary)
+  const deductions = []
+  const d = (k, v) => { if (num(v) > 0) deductions.push({ label: lbl(k, lang), amount: num(v) }) }
+  d('si', slip.social_insurance); d('tax', slip.income_tax); d('martyrs', slip.martyrs_fund)
+  d('late', slip.late_deductions); d('absence', slip.absence_deductions)
+  d('loan', slip.loan_deductions ?? slip.loan_deduction); d('medical', slip.medical_insurance)
+  const named = comps ? comps.filter(c => c.type === 'deduction' && c.show_on_payslip !== false && num(c.amount) > 0) : []
+  named.forEach(c => deductions.push({ label: cName(c), amount: num(c.amount) }))
+  const otherRest = Math.max(0, Math.round((num(slip.other_deductions) - named.reduce((t, c) => t + num(c.amount), 0)) * 100) / 100)
+  if (otherRest > 0) deductions.push({ label: lbl('otherDed', lang), amount: otherRest })
+  return { basic, earnings, gross, deductions }
+}
+
 const buildShareText = (slip, run, lang = 'en') => {
   const line  = (label, val, minus) =>
     `  ${label.padEnd(28)} ${minus ? '-' : ' '} ${cur(lang)} ${fmtNum(val)}`
   const sep   = '─'.repeat(42)
 
+  const L2 = slipLines(slip, lang)
   const earnings = [
-    slip.basic_salary          && line(lbl('basic', lang),        slip.basic_salary),
-    slip.housing_allowance > 0 && line(lbl('housing', lang),   slip.housing_allowance),
-    slip.transport_allowance>0 && line(lbl('transport', lang), slip.transport_allowance),
-    slip.mobile_allowance  > 0 && line(lbl('mobile', lang),    slip.mobile_allowance),
-    slip.meal_allowance    > 0 && line(lbl('meal', lang),      slip.meal_allowance),
-    slip.other_allowances  > 0 && line(lbl('otherAl', lang),    slip.other_allowances),
-    slip.overtime_pay      > 0 && line(lbl('overtime', lang),            slip.overtime_pay),
-  ].filter(Boolean).join('\n')
-
-  const deductions = [
-    slip.social_insurance  > 0 && line(lbl('si', lang), slip.social_insurance,  true),
-    slip.income_tax        > 0 && line(lbl('tax', lang),             slip.income_tax,         true),
-    slip.martyrs_fund      > 0 && line(lbl('martyrs', lang),      slip.martyrs_fund,       true),
-    slip.loan_deduction    > 0 && line(lbl('loan', lang),         slip.loan_deduction,     true),
-    slip.other_deductions  > 0 && line(lbl('otherDed', lang),       slip.other_deductions,   true),
-  ].filter(Boolean).join('\n')
+    line(lbl('basic', lang), L2.basic),
+    ...L2.earnings.map(e => line(e.label, e.amount)),
+  ].join('\n')
+  const deductions = L2.deductions.map(e => line(e.label, e.amount, true)).join('\n')
 
   const name = slip.employee_name || `${slip.first_name || ''} ${slip.last_name || ''}`.trim()
 
@@ -80,7 +114,7 @@ const buildShareText = (slip, run, lang = 'en') => {
     sep,
     earnings,
     sep,
-    line(lbl('gross', lang), slip.gross_salary),
+    line(lbl('gross', lang), L2.gross),
     '',
     sep,
     lbl('deductions', lang),
@@ -105,8 +139,9 @@ export const buildPayslipHtml = (slip, run, lang = 'en') => {
   const period  = run ? fmtMonthYear(run.month - 1, run.year, lang) : '—'
   const end = ar ? 'left' : 'right'
   const money = v => `${cur(lang)} ${Number(v || 0).toLocaleString('en-US')}`
-  const row = (k, val, color='#1e293b', bold=false) =>
-    val > 0 ? `<tr><td style="padding:6px 0;color:#64748b;font-size:13px">${lbl(k, lang)}</td><td style="padding:6px 0;text-align:${end};font-size:13px;color:${color};font-weight:${bold?700:400}" dir="ltr">${money(val)}</td></tr>` : ''
+  const H = slipLines(slip, lang)
+  const row = (label, val, color='#1e293b', bold=false) =>
+    val > 0 ? `<tr><td style="padding:6px 0;color:#64748b;font-size:13px">${label}</td><td style="padding:6px 0;text-align:${end};font-size:13px;color:${color};font-weight:${bold?700:400}" dir="ltr">${money(val)}</td></tr>` : ''
 
   return `<!DOCTYPE html><html dir="${ar ? 'rtl' : 'ltr'}" lang="${lang}"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <style>body{font-family:${ar ? "'Noto Naskh Arabic','Noto Sans Arabic',Tahoma," : ''}Arial,sans-serif;margin:0;padding:24px;background:#F8F9FD;color:#1A1B2E}
@@ -129,24 +164,15 @@ h3{font-size:${ar ? 13 : 11}px;color:#8A8DA3;text-transform:uppercase;letter-spa
 <div class="card">
   <h3>${lbl('earnings', lang)}</h3>
   <table>
-    ${row('basic', slip.basic_salary)}
-    ${row('housing', slip.housing_allowance)}
-    ${row('transport', slip.transport_allowance)}
-    ${row('mobile', slip.mobile_allowance)}
-    ${row('meal', slip.meal_allowance)}
-    ${row('otherAl', slip.other_allowances)}
-    ${row('overtime', slip.overtime_pay)}
-    <tr class="total"><td>${lbl('gross', lang)}</td><td style="text-align:${end}" dir="ltr">${money(slip.gross_salary)}</td></tr>
+    ${row(lbl('basic', lang), H.basic)}
+    ${H.earnings.map(e => row(esc(e.label), e.amount)).join('')}
+    <tr class="total"><td>${lbl('gross', lang)}</td><td style="text-align:${end}" dir="ltr">${money(H.gross)}</td></tr>
   </table>
 </div>
 <div class="card">
   <h3>${lbl('deductions', lang)}</h3>
   <table>
-    ${row('si', slip.social_insurance, '#dc2626')}
-    ${row('tax', slip.income_tax, '#dc2626')}
-    ${row('martyrs', slip.martyrs_fund, '#dc2626')}
-    ${row('loan', slip.loan_deduction, '#dc2626')}
-    ${row('otherDed', slip.other_deductions, '#dc2626')}
+    ${H.deductions.map(e => row(esc(e.label), e.amount, '#dc2626')).join('')}
     <tr class="total"><td>${lbl('totalDed', lang)}</td><td style="text-align:${end};color:#dc2626" dir="ltr">− ${money(slip.total_deductions)}</td></tr>
   </table>
 </div>
@@ -187,7 +213,7 @@ export default function PayslipsScreen() {
   const openSlip = async (run) => {
     setSelected(run); setSlipLoad(true); setSlip(null)
     try {
-      const r = await api.get(`/payroll/runs/${run.id}?mine=1`)
+      const r = await api.get(`/payroll/runs/${run.id}?mine=1&per_page=2000`)
       const slips = r.data.data?.payslips || []
       // Defense in depth: even with ?mine=1, never blindly trust slips[0] —
       // this endpoint used to return every employee's payslip for the run
@@ -260,6 +286,8 @@ export default function PayslipsScreen() {
       </ScrollView>
     </SafeAreaView>
   )
+
+  const lines = slip ? slipLines(slip, lang) : null
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: colors.bg }]} edges={['top']}>
@@ -396,24 +424,15 @@ export default function PayslipsScreen() {
               {/* Earnings */}
               <View style={s.section2}>
                 <Text style={s.sectionTitle2}>{lbl('earnings', lang)}</Text>
-                <Row label={lbl('basic', lang)}      val={slip.basic_salary} />
-                {slip.housing_allowance      > 0 && <Row label={lbl('housing', lang)}   val={slip.housing_allowance} />}
-                {slip.transport_allowance    > 0 && <Row label={lbl('transport', lang)} val={slip.transport_allowance} />}
-                {slip.mobile_allowance       > 0 && <Row label={lbl('mobile', lang)}    val={slip.mobile_allowance} />}
-                {slip.meal_allowance         > 0 && <Row label={lbl('meal', lang)}      val={slip.meal_allowance} />}
-                {slip.other_allowances       > 0 && <Row label={lbl('otherAl', lang)}    val={slip.other_allowances} />}
-                {slip.overtime_pay           > 0 && <Row label={lbl('overtime', lang)}            val={slip.overtime_pay} />}
-                <Row label={lbl('gross', lang)} val={slip.gross_salary} bold />
+                <Row label={lbl('basic', lang)}      val={lines.basic} />
+                {lines.earnings.map((e, i) => <Row key={`e${i}`} label={e.label} val={e.amount} />)}
+                <Row label={lbl('gross', lang)} val={lines.gross} bold />
               </View>
 
               {/* Deductions */}
               <View style={s.section2}>
                 <Text style={s.sectionTitle2}>{lbl('deductions', lang)}</Text>
-                {slip.social_insurance  > 0 && <Row label={lbl('si', lang)} val={slip.social_insurance}  minus />}
-                {slip.income_tax        > 0 && <Row label={lbl('tax', lang)}             val={slip.income_tax}        minus />}
-                {slip.martyrs_fund      > 0 && <Row label={lbl('martyrs', lang)}      val={slip.martyrs_fund}      minus />}
-                {slip.loan_deduction    > 0 && <Row label={lbl('loan', lang)}         val={slip.loan_deduction}    minus />}
-                {slip.other_deductions  > 0 && <Row label={lbl('otherDed', lang)}       val={slip.other_deductions}  minus />}
+                {lines.deductions.map((e, i) => <Row key={`d${i}`} label={e.label} val={e.amount} minus />)}
                 <Row label={lbl('totalDed', lang)} val={slip.total_deductions} bold minus />
               </View>
 

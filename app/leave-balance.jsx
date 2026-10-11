@@ -7,6 +7,7 @@ import { useTheme } from '../src/context/ThemeContext'
 import api from '../src/services/api'
 import { useLang } from '../src/context/LanguageContext'
 import { ls, fwd, back } from '../src/utils/rtl'
+import { localDateOf } from '../src/i18n/format'
 
 const TYPE_ICONS = {
   annual:   '🏖️',
@@ -76,7 +77,7 @@ export default function LeaveBalanceScreen() {
     cancelled: tr('Cancelled', 'ملغي', 'اتلغى'),
   }
   const statusLabel = st => STATUS[st] || st
-  const dShort = v => (v ? date(String(v).split('T')[0]) : '')
+  const dShort = v => (v ? date(localDateOf(v)) : '')
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: colors.bg }]} edges={['top']}>

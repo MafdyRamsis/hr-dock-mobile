@@ -11,7 +11,18 @@ import { useLang } from '../src/context/LanguageContext'
 import { fmtTime } from '../src/i18n/format'
 import { ls, fwd, back } from '../src/utils/rtl'
 
-const toDateStr = d => (d ? String(d).split('T')[0] : '')
+// Calendar date (YYYY-MM-DD) of a server value on this phone. A plain date
+// passes through; a timestamp is read in local time — slicing the ISO string
+// gave the UTC date, a day behind in Egypt between midnight and ~3 am.
+const localDateOf = v => {
+  if (!v) return ''
+  const str = String(v)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str
+  const d = new Date(str)
+  if (isNaN(d)) return str.slice(0, 10)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+const toDateStr = localDateOf
 
 const statusLabel = (st, tr) => ({
   present:  tr('Present', 'حاضر'),
@@ -19,6 +30,11 @@ const statusLabel = (st, tr) => ({
   absent:   tr('Absent', 'غائب', 'غياب'),
   on_leave: tr('On Leave', 'في إجازة', 'إجازة'),
   half_day: tr('Half Day', 'نصف يوم', 'نص يوم'),
+  not_yet:  tr('Not checked in yet', 'لم يسجل الحضور بعد', 'لسه مابصمش'),
+  weekend:  tr('Day off', 'إجازة أسبوعية', 'أجازة أسبوعية'),
+  holiday:  tr('Holiday', 'عطلة رسمية', 'أجازة رسمية'),
+  excused:  tr('Excused', 'إذن', 'إذن'),
+  mission:  tr('Mission', 'مأمورية'),
 }[st] || String(st || '').replace('_', ' '))
 
 // Known leave types → Arabic; anything else shows as sent by the server
@@ -49,7 +65,13 @@ const STATUS_COLOR = {
   absent:   { bg: '#fee2e2', color: '#991b1b' },
   on_leave: { bg: '#dbeafe', color: '#1e40af' },
   half_day: { bg: '#fce7f3', color: '#9d174d' },
+  not_yet:  { bg: '#f1f5f9', color: '#475569' },
 }
+
+// The phone's own calendar date — toISOString() is the UTC date, which is
+// still "yesterday" for the first 2–3 hours after midnight in Egypt.
+const pad2 = n => String(n).padStart(2, '0')
+const localToday = () => { const d = new Date(); return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}` }
 
 export default function ManagerDashboard() {
   const { colors } = useTheme()
@@ -64,20 +86,28 @@ export default function ManagerDashboard() {
 
   const load = useCallback(async () => {
     try {
-      const today = new Date().toISOString().split('T')[0]
+      const today = localToday()
+      // The daily roster has one row per team member — including people who
+      // haven't checked in (not_yet). The plain log list only had people who
+      // punched, so "Absent" was always 0 during the day.
       const [attRes, leaveRes] = await Promise.allSettled([
-        api.get(`/attendance/logs?from_date=${today}&to_date=${today}&limit=200`),
+        api.get(`/attendance/daily-roster?date=${today}`)
+          .catch(() => api.get(`/attendance/logs?from_date=${today}&to_date=${today}&limit=200`)),
         api.get('/leave/requests?status=pending&limit=50'),
       ])
 
       if (attRes.status === 'fulfilled') {
         const raw = attRes.value.data.data
         const rows = Array.isArray(raw) ? raw : (raw?.rows || [])
-        setTodayLogs(rows)
+        // Days off and holidays aren't part of today's team picture.
+        const team = rows.filter(l => !['weekend', 'holiday'].includes(l.status))
+        setTodayLogs(team)
         const s = { present:0, late:0, absent:0, on_leave:0, notYet:0 }
-        rows.forEach(l => {
-          if (l.status === 'present')  s.present++
+        team.forEach(l => {
+          if (l.status === 'present' && Number(l.late_minutes) > 0) s.late++
+          else if (l.status === 'present' || l.status === 'half_day')  s.present++
           else if (l.status === 'late') s.late++
+          else if (l.status === 'not_yet') s.notYet++
           else if (l.status === 'absent') s.absent++
           else if (l.status === 'on_leave') s.on_leave++
         })
@@ -105,6 +135,7 @@ export default function ManagerDashboard() {
     { key: 'late',     label: tr('Late', 'متأخرون', 'متأخرين'),     value: stats.late,      bg: '#fef9c3', color: '#854d0e' },
     { key: 'absent',   label: tr('Absent', 'غائبون', 'غياب'),   value: stats.absent,    bg: '#fee2e2', color: '#991b1b' },
     { key: 'on_leave', label: tr('On Leave', 'في إجازة', 'إجازة'), value: stats.on_leave,  bg: '#dbeafe', color: '#1e40af' },
+    { key: 'not_yet',  label: tr('Not in yet', 'لم يحضروا بعد', 'لسه مجوش'), value: stats.notYet, bg: '#f1f5f9', color: '#475569' },
   ]
 
   return (
@@ -174,7 +205,7 @@ export default function ManagerDashboard() {
                     {p.employee_name || `${p.first_name} ${p.last_name}`}
                   </Text>
                   <Text style={[s.leaveMeta, { color: colors.sub }]}>
-                    {leaveTypeLabel(p.leave_type_name || p.leave_type, tr)} · {daysText(p.days, tr)}
+                    {leaveTypeLabel(p.leave_type_name || p.leave_type, tr)} · {daysText(p.days_requested ?? p.days, tr)}
                   </Text>
                 </View>
                 <View style={s.pendingBadge}>
@@ -200,9 +231,10 @@ export default function ManagerDashboard() {
               <Text style={[s.emptyText, { color: colors.sub }]}>{tr('No attendance records yet today', 'لا توجد سجلات حضور اليوم حتى الآن', 'لسه مفيش حد بصم النهارده')}</Text>
             </View>
           ) : todayLogs.map(l => {
-            const sc = STATUS_COLOR[l.status] || { bg: '#f1f5f9', color: '#475569' }
+            const st = l.status === 'present' && Number(l.late_minutes) > 0 ? 'late' : l.status
+            const sc = STATUS_COLOR[st] || { bg: '#f1f5f9', color: '#475569' }
             return (
-              <View key={l.id} style={[s.attCard, { backgroundColor: colors.card }]}>
+              <View key={l.id || l.employee_id} style={[s.attCard, { backgroundColor: colors.card }]}>
                 <View style={s.attRow}>
                   <View style={s.attAvatar}>
                     <Text style={s.attAvatarText}>
@@ -217,7 +249,7 @@ export default function ManagerDashboard() {
                   </View>
                   <View style={[s.statusBadge, { backgroundColor: sc.bg }]}>
                     <Text style={[s.statusText, { color: sc.color }]}>
-                      {statusLabel(l.status || 'present', tr)}
+                      {statusLabel(st || 'present', tr)}
                     </Text>
                   </View>
                 </View>

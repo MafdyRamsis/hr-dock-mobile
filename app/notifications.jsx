@@ -36,6 +36,18 @@ const TYPE_META = {
 
 const metaFor = type => TYPE_META[type] || { icon: '🔔', color: '#64748b', label: (type || 'Notification').replace(/_/g, ' ') }
 
+// Calendar date (YYYY-MM-DD) of a server value on this phone. A plain date
+// passes through; a timestamp is read in local time — slicing the ISO string
+// gave the UTC date, a day behind in Egypt between midnight and ~3 am.
+const localDateOf = v => {
+  if (!v) return ''
+  const str = String(v)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str
+  const d = new Date(str)
+  if (isNaN(d)) return str.slice(0, 10)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 export default function NotificationsScreen() {
   const router = useRouter()
   const { colors } = useTheme()
@@ -72,9 +84,9 @@ export default function NotificationsScreen() {
   }
 
   // Group by today vs earlier
-  const today = new Date().toISOString().split('T')[0]
-  const todayItems   = items.filter(n => (n.created_at || '').startsWith(today))
-  const earlierItems = items.filter(n => !(n.created_at || '').startsWith(today))
+  const today = localDateOf(new Date().toISOString())
+  const todayItems   = items.filter(n => localDateOf(n.created_at) === today)
+  const earlierItems = items.filter(n => localDateOf(n.created_at) !== today)
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: colors.bg }]} edges={['top']}>

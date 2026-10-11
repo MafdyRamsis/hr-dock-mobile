@@ -14,7 +14,7 @@ import Skeleton from '../src/components/Skeleton'
 import Avatar from '../src/components/Avatar'
 import api from '../src/services/api'
 import { ls, back, chevron } from '../src/utils/rtl'
-import { personName } from '../src/i18n/format'
+import { personName, localDateOf } from '../src/i18n/format'
 
 const roleLabel = (role, tr) => ({
   employee:     tr('Employee', 'موظف'),
@@ -59,7 +59,7 @@ export default function ProfileScreen() {
   const [emp,           setEmp]           = useState(null)
   const [empLoading,    setEmpLoading]    = useState(true)
   const { lang: language, setLanguage, t, tr, date, ar } = useLang()
-  const fmtDate = d => (d ? date(d.split('T')[0]) : null)
+  const fmtDate = d => (d ? date(localDateOf(d)) : null)
 
   useEffect(() => {
     const checkBio = async () => {

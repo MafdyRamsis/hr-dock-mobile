@@ -16,15 +16,16 @@ import StatusBadge from '../../src/components/StatusBadge'
 import FeedItem from '../../src/components/FeedItem'
 import { useLang } from '../../src/context/LanguageContext'
 import { ls, fwd } from '../../src/utils/rtl'
+import { localDateOf } from '../../src/i18n/format'
 
-const toISO  = d => d.toISOString().split('T')[0]
+const toISO  = localDateOf
 
 export default function LeaveScreen() {
   const { user } = useAuth()
   const { colors } = useTheme()
   const router = useRouter()
   const { tr, date } = useLang()
-  const fmt = d => (d ? date(String(d).split('T')[0]) : '—')
+  const fmt = d => (d ? date(localDateOf(d)) : '—')
   const [balances,   setBalances]   = useState([])
   const [requests,   setRequests]   = useState([])
   const [types,      setTypes]      = useState([])

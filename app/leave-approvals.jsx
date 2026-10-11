@@ -9,8 +9,9 @@ import { useTheme } from '../src/context/ThemeContext'
 import api from '../src/services/api'
 import { useLang } from '../src/context/LanguageContext'
 import { back } from '../src/utils/rtl'
+import { localDateOf } from '../src/i18n/format'
 
-const toDateStr = d => (d ? String(d).split('T')[0] : '')
+const toDateStr = localDateOf
 
 const statusLabel = (st, tr) => ({
   pending:  tr('Pending', 'قيد المراجعة', 'مستني رد'),
@@ -79,7 +80,9 @@ export default function LeaveApprovalsScreen() {
   const act = async (id, status, notes = '') => {
     setActing(id)
     try {
-      await api.patch(`/leave/requests/${id}/review`, { status, notes: notes || undefined })
+      // The server needs the reason as rejection_reason (it is required when
+      // rejecting); sending it as `notes` made every rejection fail.
+      await api.patch(`/leave/requests/${id}/review`, status === 'rejected' ? { status, rejection_reason: notes.trim() } : { status })
       setRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r))
       Alert.alert(
         status === 'approved' ? `✅ ${tr('Approved', 'تمت الموافقة', 'اتوافق عليه')}` : `❌ ${tr('Rejected', 'تم الرفض', 'اترفض')}`,
@@ -111,6 +114,10 @@ export default function LeaveApprovalsScreen() {
   }
 
   const confirmReject = () => {
+    if (!rejectNote.trim()) {
+      Alert.alert(tr('Reason required', 'السبب مطلوب', 'لازم سبب'), tr('Please write why the request is rejected — the employee will see it.', 'يرجى كتابة سبب الرفض — سيظهر للموظف.', 'اكتب سبب الرفض — الموظف هيشوفه.'))
+      return
+    }
     setShowReject(false)
     act(rejectId, 'rejected', rejectNote)
   }
@@ -184,9 +191,10 @@ export default function LeaveApprovalsScreen() {
                   <Row label={tr('Type', 'النوع')}    value={leaveTypeLabel(r.leave_type_name || r.leave_type, tr) || '—'} colors={colors} />
                   <Row label={tr('From', 'من')}      value={fmt(r.start_date)}  colors={colors} />
                   <Row label={tr('To', 'إلى', 'لحد')} value={fmt(r.end_date)}    colors={colors} />
-                  <Row label={tr('Days', 'عدد الأيام', 'الأيام')} value={daysText(r.days, tr)} colors={colors} />
+                  <Row label={tr('Days', 'عدد الأيام', 'الأيام')} value={daysText(r.days_requested ?? r.days, tr)} colors={colors} />
                   {r.reason ? <Row label={tr('Reason', 'السبب')} value={r.reason} colors={colors} /> : null}
                   {r.notes  ? <Row label={tr('Note', 'ملاحظة')}  value={r.notes}  colors={colors} /> : null}
+                  {r.rejection_reason ? <Row label={tr('Rejection reason', 'سبب الرفض')} value={r.rejection_reason} colors={colors} /> : null}
                 </View>
 
                 {/* Actions — only for pending */}
@@ -217,7 +225,7 @@ export default function LeaveApprovalsScreen() {
             <Text style={[s.modalTitle, { color: colors.text }]}>{tr('Rejection Reason', 'سبب الرفض')}</Text>
             <TextInput
               style={[s.textArea, { color: colors.text, borderColor: colors.border }]}
-              placeholder={tr('Optional reason for rejection…', 'سبب الرفض (اختياري)…', 'سبب الرفض (لو فيه)…')}
+              placeholder={tr('Reason for rejection (required)…', 'سبب الرفض (مطلوب)…', 'سبب الرفض (لازم)…')}
               placeholderTextColor={colors.sub}
               multiline
               numberOfLines={4}

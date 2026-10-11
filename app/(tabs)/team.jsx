@@ -66,7 +66,7 @@ export default function TeamScreen() {
       const calls = [
         api.get('/kudos?limit=30'),
         api.get('/kudos/leaderboard'),
-        api.get('/employees?limit=300&status=active'),
+        api.get('/employees?limit=5000&status=active'),
         api.get('/ai/context'),
         api.get('/pulse/today'),
       ]

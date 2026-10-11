@@ -17,7 +17,18 @@ import { ls, fwd, chevron, IS_RTL } from '../../src/utils/rtl'
 // Month navigation: "previous" points against reading order
 const prevChevron = IS_RTL ? '›' : '‹'
 
-const toDateStr = d => d ? d.split('T')[0] : ''
+// Calendar date (YYYY-MM-DD) of a server value on this phone. A plain date
+// passes through; a timestamp is read in local time — slicing the ISO string
+// gave the UTC date, a day behind in Egypt between midnight and ~3 am.
+const localDateOf = v => {
+  if (!v) return ''
+  const str = String(v)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str
+  const d = new Date(str)
+  if (isNaN(d)) return str.slice(0, 10)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+const toDateStr = localDateOf
 
 // Calendar header: short day names; Arabic names drop the leading "ال" to fit the narrow cell
 const dayHeader = (day, ar, i) => { const d = day(i, true); return ar ? d.replace(/^ال/, '') : d }
@@ -164,7 +175,7 @@ export default function AttendanceScreen() {
         // for the first 2–3 hours after midnight in Egypt.
         const d0 = new Date()
         const todayStr = `${d0.getFullYear()}-${String(d0.getMonth() + 1).padStart(2, '0')}-${String(d0.getDate()).padStart(2, '0')}`
-        const todayRec = rows.find(l => (l.date || l.created_at || '').startsWith(todayStr))
+        const todayRec = rows.find(l => localDateOf(l.date || l.created_at) === todayStr)
         setToday(todayRec || null)
         setLogs(rows)
       }
