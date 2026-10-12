@@ -153,10 +153,14 @@ function PermissionModal({ type, employeeId, reports = [], isManager = false, on
           payload: { shift_id: shiftId, effective_date: date, reason: reason || undefined },
         })
       } else {
-        // late / early → helpdesk ticket
-        const label = type === 'late' ? 'Late Arrival' : 'Early Departure'
-        const body  = `Date: ${date}${time ? `\nTime: ${time}` : ''}\nReason: ${reason || 'Not specified'}`
-        await api.post('/helpdesk', { subject: `${label} Permission – ${date}`, description: body, priority: 'medium', category: 'hr' })
+        // Late arrival / early departure → a real attendance excuse (إذن).
+        // The server takes the other end of the window from the shift, and
+        // once approved the late minutes it covers aren't deducted. (These
+        // used to be helpdesk tickets, so approving one changed nothing.)
+        if (!time) { setErr(type === 'late' ? tr('Please select the time you will arrive.', 'يرجى اختيار وقت الحضور.', 'اختار هتوصل الساعة كام.') : tr('Please select the time you will leave.', 'يرجى اختيار وقت الانصراف.', 'اختار هتمشي الساعة كام.')); setSaving(false); return }
+        await api.post('/attendance/excuses', {
+          date, kind: type === 'late' ? 'late_arrival' : 'early_departure', time, reason: reason || undefined,
+        })
       }
       onDone()
       Alert.alert(tr('Submitted', 'تم الإرسال', 'اتبعت'), tr('Your request has been sent for approval.', 'تم إرسال الطلب للموافقة.', 'طلبك اتبعت، ومستني رد.'))
@@ -380,6 +384,7 @@ export default function RequestsScreen() {
   const [loadError, setLoadError] = useState(false)
   const [view, setView] = useState('new')
   const [reports, setReports] = useState([])
+  const [excuseList, setExcuseList] = useState([])
   const isManager = ['manager', 'admin', 'hr_manager'].includes(user?.role)
 
   // Kept in sync with the auth context directly (see load()'s comment) —
@@ -400,12 +405,17 @@ export default function RequestsScreen() {
       // context is already the source of truth for this (used the same way
       // elsewhere in the app, e.g. team.jsx).
       const empQS = user?.employee_id ? `?employee_id=${user.employee_id}` : ''
-      const [tickRes, wfhRes, otRes, shiftRes] = await Promise.allSettled([
+      const [tickRes, wfhRes, otRes, shiftRes, excRes] = await Promise.allSettled([
         api.get('/helpdesk?limit=50&mine=1'),
         api.get(`/wfh${empQS}`),
         api.get(`/overtime${empQS}`),
         api.get('/employee-requests?type=shift_change'),
+        user?.employee_id ? api.get(`/attendance/excuses?employee_id=${user.employee_id}&limit=50`) : Promise.reject(new Error('no employee')),
       ])
+      if (excRes.status === 'fulfilled') {
+        const raw = excRes.value.data.data
+        setExcuseList(Array.isArray(raw) ? raw : (raw?.rows || []))
+      }
       if (tickRes.status === 'fulfilled') setTickets(tickRes.value.data.data || [])
       if (wfhRes.status  === 'fulfilled') setWfhList(wfhRes.value.data.data  || [])
       if (otRes.status   === 'fulfilled') setOtList(otRes.value.data.data    || [])
@@ -446,6 +456,7 @@ export default function RequestsScreen() {
     ...wfhList.map(x => ({ ...x, _type: 'wfh',      icon: '🏠', label: PERMS[0].label, gradient: 'mint' })),
     ...otList.map(x =>  ({ ...x, _type: 'overtime',  icon: '⏱️', label: PERMS[1].label, gradient: 'sunshine' })),
     ...shiftList.map(x => ({ ...x, date: x.payload?.effective_date, _type: 'shift', icon: '🔄', label: PERMS.find(p => p.key === 'shift')?.label, gradient: 'lavender' })),
+    ...excuseList.map(x => ({ ...x, _type: 'excuse', icon: '🕐', label: tr('Permission', 'إذن'), gradient: 'coral' })),
   ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 
 
@@ -511,11 +522,11 @@ export default function RequestsScreen() {
             <Text style={[s.sectionLabel, { color: colors.sub }]}>{tr('Permission History', 'سجل الأذونات', 'أذوناتك اللي فاتت')}</Text>
             {allPermissions.slice(0, 6).map(p => (
               <FeedItem
-                key={p.id}
+                key={`${p._type}-${p.id}`}
                 icon={p.icon}
                 gradient={p.gradient}
                 title={p.label}
-                subtitle={`${fmt(p.date)}${p._type === 'overtime' && p.minutes ? ` · ${Math.round(p.minutes / 60)}${tr('h', ' ساعة')}` : ''}`}
+                subtitle={`${fmt(p.date)}${p._type === 'overtime' && p.minutes ? ` · ${Math.round(p.minutes / 60)}${tr('h', ' ساعة')}` : ''}${p._type === 'excuse' && p.from_time ? ` · ${String(p.from_time).slice(0, 5)}–${String(p.to_time).slice(0, 5)}` : ''}`}
                 right={<StatusBadge status={p.status} />}
               />
             ))}
