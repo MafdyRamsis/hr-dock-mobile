@@ -127,7 +127,7 @@ export default function ProfileScreen() {
 
   const submitPassword = async () => {
     if (!pwForm.current || !pwForm.next || !pwForm.confirm) { setPwErr(t('fill_all')); return }
-    if (pwForm.next.length < 8) { setPwErr(t('pw_min')); return }
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,50}$/.test(pwForm.next)) { /* same rule as the server */ setPwErr(t('pw_min')); return }
     if (pwForm.next !== pwForm.confirm) { setPwErr(t('pw_mismatch')); return }
     setPwErr(''); setPwSaving(true)
     try {

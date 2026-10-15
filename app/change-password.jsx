@@ -23,7 +23,7 @@ export default function ChangePasswordRequired() {
 
   const submit = async () => {
     if (!current || !next || !confirm) { setError(t('fill_all')); return }
-    if (next.length < 8) { setError(t('pw_min')); return }
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,50}$/.test(next)) { /* same rule as the server */ setError(t('pw_min')); return }
     if (next !== confirm) { setError(t('pw_mismatch')); return }
     setError(''); setSaving(true)
     try {
