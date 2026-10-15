@@ -1,5 +1,6 @@
 import axios from 'axios'
 import * as SecureStore from 'expo-secure-store'
+import { I18nManager } from 'react-native'
 
 const DEFAULT_BASE_URL = 'https://api.hr-dock.com/api/v1'
 const BASE_URL = (process.env.EXPO_PUBLIC_API_URL || DEFAULT_BASE_URL).replace(/\/$/, '')
@@ -36,6 +37,14 @@ api.interceptors.response.use(
     }
     if (status === 403 && /password has expired/i.test(err.response?.data?.message || '')) {
       if (onPasswordExpired) onPasswordExpired()
+    }
+    // Arabic app: show the server's Arabic message when it sent one (screens
+    // display response.data.message). The app reloads on a language change, so
+    // the layout direction tells us the language. Done after the English checks.
+    const d = err.response?.data
+    if (d && d.message_ar && I18nManager.isRTL) {
+      d.message_en = d.message
+      d.message = d.message_ar
     }
     return Promise.reject(err)
   }
