@@ -30,7 +30,7 @@ const priorityLabel = (p, tr) => ({
 }[p] || p)
 
 export default function MoreScreen() {
-  const { user, logout } = useAuth()
+  const { user, logout, can } = useAuth()
   const router = useRouter()
   const { t, tr, lang, date, setLanguage, ar } = useLang()
   const [tickets,   setTickets]   = useState([])
@@ -186,6 +186,14 @@ export default function MoreScreen() {
         <View style={s.section}>
           <Text style={s.sectionTitle}>{tr('Self-Service', 'الخدمة الذاتية', 'خدماتك')}</Text>
           <Card style={{ padding: 0, overflow: 'hidden' }}>
+            <MenuItem icon="↗" label={tr('My goals', 'أهدافي')} onPress={() => router.push('/my-goals')} />
+            <MenuItem icon="⌂" label={tr('My Space', 'مساحتي الشخصية')} onPress={() => router.push('/my-space')} />
+            {can('leave') && <MenuItem icon="◷" label={tr('My Leave', 'إجازاتي')} onPress={() => router.push('/(tabs)/leave')} />}
+            {can('attendance') && <MenuItem icon="◴" label={tr('My Attendance', 'حضوري')} onPress={() => router.push('/(tabs)/attendance')} />}
+            {can('payslips') && <MenuItem icon="¤" label={tr('My Pay', 'راتبي')} onPress={() => router.push('/(tabs)/payslips')} />}
+            {can('requests') && <MenuItem icon="≡" label={tr('My Requests', 'طلباتي')} onPress={() => router.push('/(tabs)/requests')} />}
+            {can('ai_assistant') && can('pulse') && <MenuItem icon="✦" label={tr('Ask HR Dock', 'اسأل HR Dock')} onPress={() => router.push('/(tabs)/pulse')} />}
+            {can('pulse') && <MenuItem icon="♡" label={tr('Recognition & wellbeing', 'التقدير ورفاهية الفريق')} onPress={() => router.push('/recognition')} />}
             <MenuItem icon="🧾" label={tr('Expenses', 'مطالبات المصروفات', 'المصروفات')} onPress={() => router.push('/expenses')} />
             <View style={s.divider}/>
             <MenuItem icon="💳" label={tr('Loans', 'السُلف', 'السلف')} onPress={() => router.push('/loans')} />

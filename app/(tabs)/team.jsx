@@ -1,3 +1,4 @@
+import LeadershipView from '../../src/components/LeadershipView'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
@@ -37,7 +38,7 @@ const timeAgo = (iso, tr) => {
   return tr(`${Math.floor(mins / 1440)}d ago`, `منذ ${Math.floor(mins / 1440)} يوم`, `من ${Math.floor(mins / 1440)} يوم`)
 }
 
-export default function TeamScreen() {
+export function RecognitionScreen() {
   const { user } = useAuth()
   const { colors, isDark } = useTheme()
   const { tr, t } = useLang()
@@ -320,3 +321,5 @@ const s = StyleSheet.create({
   submitBtn: { borderRadius: 16, padding: 16, alignItems: 'center' },
   submitText: { color: 'white', fontSize: 15, fontWeight: '800' },
 })
+
+export default function TeamScreen() { return <LeadershipView mode="workforce" /> }

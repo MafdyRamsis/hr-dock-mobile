@@ -1,3 +1,4 @@
+import LeadershipView from '../../src/components/LeadershipView'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
@@ -146,7 +147,7 @@ const unreadOf = (res) => {
   return Number.isFinite(n) && n > 0 ? n : 0
 }
 
-export default function HomeScreen() {
+export function EmployeeHome() {
   const { user }  = useAuth()
   const { colors } = useTheme()
   const { tr, ar, date, monthYear, cur } = useLang()
@@ -609,3 +610,8 @@ const m = StyleSheet.create({
   btnDisabled:{ opacity: 0.6 },
   btnText:    { color: 'white', fontSize: 15, fontWeight: '800' },
 })
+
+export default function HomeScreen() {
+  const { user } = useAuth()
+  return ["manager", "ceo", "admin", "hr_manager"].includes(user?.role) ? <LeadershipView /> : <EmployeeHome />
+}

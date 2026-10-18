@@ -40,9 +40,10 @@ const Icon = ({ emoji, focused, color }) => (
 export default function TabLayout() {
   const { colors, isDark } = useTheme()
   const { t, tr } = useLang()
-  const { can = () => true, logout } = useAuth() || {}
+  const { can = () => false, logout, user } = useAuth() || {}
   // HR/Admin can switch mobile features off per role (Fawry 2.7.0 parity).
-  const hide = (...features) => (features.every(f => !can(f)) ? { href: null } : {})
+  const lead = ['manager', 'ceo', 'admin', 'hr_manager'].includes(user?.role)
+  const executive = user?.role === 'ceo'
 
   if (!can('app')) return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, backgroundColor: colors.bg }}>
@@ -95,14 +96,17 @@ export default function TabLayout() {
       ),
       tabBarItemStyle: { paddingTop: 6 },
     }}>
-      <Tabs.Screen name="index"      options={{ title: t('tab_home'),       tabBarIcon: ({ focused }) => <Icon emoji="🏠" focused={focused} color={TAB_COLORS.home} /> }} />
-      <Tabs.Screen name="attendance" options={{ ...hide('attendance'), title: t('tab_attendance'), tabBarIcon: ({ focused }) => <Icon emoji="🕐" focused={focused} color={TAB_COLORS.attendance} /> }} />
-      <Tabs.Screen name="leave"      options={{ ...hide('leave'), title: t('tab_leave'),      tabBarIcon: ({ focused }) => <Icon emoji="🏖" focused={focused} color={TAB_COLORS.leave} /> }} />
-      <Tabs.Screen name="pulse"      options={{ ...hide('pulse'), title: t('tab_pulse'),      tabBarIcon: ({ focused }) => <Icon emoji="✨" focused={focused} color={TAB_COLORS.pulse} /> }} />
-      <Tabs.Screen name="team"       options={{ ...hide('team_approvals', 'pulse'), title: t('tab_team'),       tabBarIcon: ({ focused }) => <Icon emoji="🤝" focused={focused} color={TAB_COLORS.team} /> }} />
-      <Tabs.Screen name="requests"   options={{ ...hide('requests'), title: t('tab_requests'),   tabBarIcon: ({ focused }) => <Icon emoji="📋" focused={focused} color={TAB_COLORS.requests} /> }} />
-      <Tabs.Screen name="payslips"   options={{ ...hide('payslips'), title: t('tab_payslips'),   tabBarIcon: ({ focused }) => <Icon emoji="💰" focused={focused} color={TAB_COLORS.payslips} /> }} />
-      <Tabs.Screen name="more"       options={{ href: null }} />
+      <Tabs.Screen name="index" options={{ title: lead ? tr('Overview', 'نظرة عامة') : t('tab_home'), tabBarIcon: ({ focused }) => <Icon emoji="⌂" focused={focused} color={TAB_COLORS.home} /> }} />
+      <Tabs.Screen name="attendance" options={{ href: !lead && can('attendance') ? undefined : null, title: t('tab_attendance'), tabBarIcon: ({ focused }) => <Icon emoji="◴" focused={focused} color={TAB_COLORS.attendance} /> }} />
+      <Tabs.Screen name="team" options={{ href: lead && can('workforce_overview') ? undefined : null, title: executive ? tr('Workforce', 'القوى العاملة') : tr('My Team', 'فريقي'), tabBarIcon: ({ focused }) => <Icon emoji="♙" focused={focused} color={TAB_COLORS.team} /> }} />
+      <Tabs.Screen name="approvals" options={{ href: lead && !executive && can('team_approvals') ? undefined : null, title: tr('Approvals', 'الموافقات'), tabBarIcon: ({ focused }) => <Icon emoji="✓" focused={focused} color={TAB_COLORS.requests} /> }} />
+      <Tabs.Screen name="forecast" options={{ href: executive && can('payroll_forecast') ? undefined : null, title: tr('Payroll', 'الرواتب'), tabBarIcon: ({ focused }) => <Icon emoji="¤" focused={focused} color={TAB_COLORS.payslips} /> }} />
+      <Tabs.Screen name="performance" options={{ href: lead && can('performance_overview') ? undefined : null, title: tr('Performance', 'الأداء'), tabBarIcon: ({ focused }) => <Icon emoji="↗" focused={focused} color={TAB_COLORS.pulse} /> }} />
+      <Tabs.Screen name="requests" options={{ href: !lead && can('requests') ? undefined : null, title: t('tab_requests'), tabBarIcon: ({ focused }) => <Icon emoji="≡" focused={focused} color={TAB_COLORS.requests} /> }} />
+      <Tabs.Screen name="payslips" options={{ href: !lead && can('payslips') ? undefined : null, title: tr('Pay', 'راتبي'), tabBarIcon: ({ focused }) => <Icon emoji="¤" focused={focused} color={TAB_COLORS.payslips} /> }} />
+      <Tabs.Screen name="more" options={{ title: tr('More', 'المزيد'), tabBarIcon: ({ focused }) => <Icon emoji="⋯" focused={focused} color={TAB_COLORS.leave} /> }} />
+      <Tabs.Screen name="leave" options={{ href: null }} />
+      <Tabs.Screen name="pulse" options={{ href: null }} />
     </Tabs>
   )
 }

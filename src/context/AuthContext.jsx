@@ -14,14 +14,16 @@ export function AuthProvider({ children }) {
   // Mobile permissions set by HR/Admin (Fawry 2.7.0 parity). null = not
   // loaded yet → everything visible; the server enforces the switches anyway.
   const [features,   setFeatures]   = useState(null)
+  const [cycleStartDay, setCycleStartDay] = useState(1)
 
   useEffect(() => {
-    if (!token) { setFeatures(null); return }
+    if (!token) { setFeatures(null); setCycleStartDay(1); return }
     let alive = true
     api.get('/mobile-access/me')
       .then(r => {
         const f = r.data?.data?.features || null
         if (alive) setFeatures(f)
+        if (alive) setCycleStartDay(r.data?.data?.cycle_start_day || 1)
         if (f) SecureStore.setItemAsync('mobile_features', JSON.stringify(f)).catch(() => {})
       })
       .catch(async () => {
@@ -31,7 +33,8 @@ export function AuthProvider({ children }) {
       })
     return () => { alive = false }
   }, [token])
-  const can = (feature) => !features || features[feature] !== false
+  const can = (feature) => ['workforce_overview','payroll_forecast','performance_overview'].includes(feature)
+    ? features?.[feature] === true : !features || features[feature] !== false
 
   // Keep UI state in step with what the API layer learns (expired session / expired password).
   useEffect(() => {
@@ -156,7 +159,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, pending2fa, login, verify2fa, cancel2fa, loginWithBiometric, logout, updateUser, features, can }}>
+    <AuthContext.Provider value={{ user, token, loading, pending2fa, login, verify2fa, cancel2fa, loginWithBiometric, logout, updateUser, features, can, cycleStartDay }}>
       {children}
     </AuthContext.Provider>
   )
