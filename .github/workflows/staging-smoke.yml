@@ -1,0 +1,25 @@
+name: Staging smoke
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [master]
+    paths:
+      - scripts/check-staging.mjs
+      - .github/workflows/staging-smoke.yml
+
+permissions:
+  contents: read
+
+jobs:
+  staging-smoke:
+    name: Staging health and authentication boundary
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Check deployed staging API
+        run: node scripts/check-staging.mjs
