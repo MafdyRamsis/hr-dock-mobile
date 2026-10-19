@@ -16,11 +16,13 @@ export default function LeadershipView({ mode = 'overview' }) {
   const { tr, cur, date } = useLang()
   const { colors } = useTheme()
   const router = useRouter()
+  const [currentDay, setCurrentDay] = useState(today)
   const [selectedPeriod, setPeriod] = useState(null)
-  const period = selectedPeriod || activePayrollMonth(today(),cycleStartDay)
-  const [day, setDay] = useState(today())
+  const period = selectedPeriod || activePayrollMonth(currentDay,cycleStartDay)
+  const [selectedDay, setDay] = useState(null)
+  const day = selectedDay || currentDay
   const [loaded, setData] = useState(null)
-  const viewKey = [user?.company_id,user?.id,user?.role,mode,period,day].join(':')
+  const viewKey = [user?.company_id,user?.id,user?.role,mode,period,day,currentDay].join(':')
   const data = loaded?.key === viewKey ? loaded.value : null
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -47,9 +49,14 @@ export default function LeadershipView({ mode = 'overview' }) {
   }, [mode,period,day,enabled,viewKey])
   useEffect(() => { load(); return () => { requestId.current++ } }, [load])
   useEffect(() => {
-    const subscription=AppState.addEventListener('change',state=>{if(state==='active')load()})
+    const subscription=AppState.addEventListener('change',state=>{
+      if(state!=='active') return
+      const nextDay=today()
+      if(nextDay!==currentDay) setCurrentDay(nextDay)
+      else load()
+    })
     return ()=>subscription.remove()
-  },[load])
+  },[load,currentDay])
   const label = key => ({
     present:tr('Present','حاضر'),late:tr('Late','متأخر'),absent:tr('Absent','غائب'),not_yet:tr('Not in yet','لم يحضر بعد'),
     on_leave:tr('On leave','إجازة'),weekend:tr('Day off','راحة'),holiday:tr('Holiday','عطلة'),mission:tr('Mission','مأمورية'),
