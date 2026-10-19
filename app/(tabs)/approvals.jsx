@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../../src/context/AuthContext'
@@ -13,24 +13,31 @@ export default function ApprovalsScreen() {
   const { can, user } = useAuth()
   const { colors } = useTheme()
   const { tr, date, cur } = useLang()
-  const [items,setItems] = useState([])
+  const [loaded,setItems] = useState(null)
   const [error,setError] = useState('')
   const [loading,setLoading] = useState(true)
   const [busy,setBusy] = useState(null)
   const [notes,setNotes] = useState({})
   const enabled = can('app') && can('team_approvals') && ['manager','hr_manager','admin','ceo'].includes(user?.role)
+  const viewKey=[user?.company_id,user?.id,user?.role,enabled].join(':')
+  const currentView=useRef(viewKey)
+  currentView.current=viewKey
+  const requestId=useRef(0)
+  const items=enabled && loaded?.key===viewKey ? loaded.items : []
   const load = useCallback(async () => {
-    if (!enabled) { setLoading(false); return }
-    setLoading(true); setError('')
-    try { const r=await api.get('/workflow/my-approvals'); setItems(r.data.data || []) }
-    catch(e) { setError(e.response?.data?.message || tr('Could not load approvals.','تعذر تحميل الموافقات.')) }
-    finally { setLoading(false) }
+    const current=++requestId.current
+    if (!enabled) { setItems(null); setLoading(false); return }
+    setLoading(true); setItems(null); setError('')
+    try { const r=await api.get('/workflow/my-approvals'); if(current===requestId.current && currentView.current===viewKey)setItems({key:viewKey,items:r.data.data || []}) }
+    catch(e) { if(current===requestId.current && currentView.current===viewKey)setError(e.response?.data?.message || tr('Could not load approvals.','تعذر تحميل الموافقات.')) }
+    finally { if(current===requestId.current && currentView.current===viewKey)setLoading(false) }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[enabled])
-  useEffect(() => { load() },[load])
+  },[enabled,viewKey])
+  useEffect(() => { setNotes({}); setBusy(null); load(); return()=>{requestId.current++} },[load])
   const decide = (item,decision) => Alert.alert(decision==='approve' ? tr('Approve request?','الموافقة على الطلب؟') : tr('Reject request?','رفض الطلب؟'),item.employee_name || '',[
     { text:tr('Cancel','إلغاء'),style:'cancel' },
     { text:tr('Confirm','تأكيد'),onPress:async () => {
+      if(currentView.current!==viewKey || !enabled)return
       setBusy(item.instance_id)
       try { await api.post(`/workflow/instances/${item.instance_id}/${decision}`,{ note:notes[item.instance_id] || undefined }); await load() }
       catch(e) { Alert.alert(tr('Unable to process request','تعذر تنفيذ القرار'),e.response?.data?.message || tr('Please retry.','يرجى المحاولة مرة أخرى.')); await load() }
