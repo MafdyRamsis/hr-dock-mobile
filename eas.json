@@ -37,6 +37,16 @@
       "android": {
         "buildType": "apk"
       }
+    },
+    "leadership-testing": {
+      "distribution": "internal",
+      "channel": "leadership-testing",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.hr-dock.com/api/v1"
+      },
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {
