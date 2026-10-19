@@ -1,9 +1,10 @@
 import { AppState } from 'react-native'
-import { fireEvent,render,screen } from '@testing-library/react-native'
+import { act,fireEvent,render,screen,waitFor } from '@testing-library/react-native'
 import LeadershipView from '../LeadershipView'
 import api from '../../services/api'
 
 let mockAuth
+afterEach(()=>{jest.useRealTimers();jest.restoreAllMocks()})
 jest.mock('../../context/AuthContext',()=>({useAuth:()=>mockAuth}))
 jest.mock('../../context/LanguageContext',()=>({useLang:()=>({tr:en=>en,cur:v=>`EGP ${v}`,date:v=>String(v)})}))
 jest.mock('../../context/ThemeContext',()=>({useTheme:()=>({colors:{bg:'#fff',text:'#111',sub:'#666',card:'#fff',border:'#ddd'}})}))
@@ -53,4 +54,30 @@ test('changing workspace never renders the previous roster as salary detail',asy
   view.rerender(<LeadershipView mode="forecast"/>);
   expect(screen.queryByText('Roster Employee')).toBeNull()
   expect(screen.queryByText('Projected cycle-end net payroll')).toBeNull()
+})
+
+test('foreground rollover advances the default payroll cycle and forecast cutoff',async()=>{
+  jest.useFakeTimers({doNotFake:['setTimeout','clearTimeout','setImmediate','clearImmediate']})
+  jest.setSystemTime(new Date('2026-10-20T12:00:00Z'))
+  render(<LeadershipView mode="forecast"/>)
+  await act(async()=>{})
+  expect(screen.getByText('EGP 25000')).toBeTruthy()
+  expect(api.get).toHaveBeenLastCalledWith('/leadership/forecast',expect.objectContaining({params:{month:10,year:2026,as_of:'2026-10-20'}}))
+  jest.setSystemTime(new Date('2026-10-21T12:00:00Z'))
+  const onActive=AppState.addEventListener.mock.calls.at(-1)[1]
+  act(()=>onActive('active'))
+  await waitFor(()=>expect(api.get).toHaveBeenLastCalledWith('/leadership/forecast',expect.objectContaining({params:{month:11,year:2026,as_of:'2026-10-21'}})))
+})
+
+test('foreground rollover preserves a deliberately selected historical workforce date',async()=>{
+  jest.useFakeTimers({doNotFake:['setTimeout','clearTimeout','setImmediate','clearImmediate']})
+  jest.setSystemTime(new Date('2026-10-20T12:00:00Z'))
+  render(<LeadershipView mode="workforce"/>);
+  await waitFor(()=>expect(api.get).toHaveBeenCalled())
+  fireEvent.press(screen.getByLabelText('Previous period'))
+  await waitFor(()=>expect(api.get).toHaveBeenLastCalledWith('/leadership/workforce',expect.objectContaining({params:{date:'2026-10-19'}})))
+  jest.setSystemTime(new Date('2026-10-21T12:00:00Z'))
+  const onActive=AppState.addEventListener.mock.calls.at(-1)[1]
+  act(()=>onActive('active'))
+  await waitFor(()=>expect(api.get).toHaveBeenLastCalledWith('/leadership/workforce',expect.objectContaining({params:{date:'2026-10-19'}})))
 })
