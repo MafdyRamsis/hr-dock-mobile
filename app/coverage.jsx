@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Text, ScrollView, View, TouchableOpacity, RefreshControl } from 'react-native'
+import { AppState, Text, ScrollView, View, TouchableOpacity, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useTheme } from '../src/context/ThemeContext'
 import { useLang } from '../src/context/LanguageContext'
@@ -11,11 +11,12 @@ const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'n
 export default function CoverageScreen(){
   const {colors}=useTheme();const {tr,date}=useLang();const {user,can,cycleStartDay}=useAuth()
   const [selectedMonth,setMonth]=useState(null)
-  const month=selectedMonth || activePayrollMonth(today(),cycleStartDay)
+  const [currentDay,setCurrentDay]=useState(today)
+  const month=selectedMonth || activePayrollMonth(currentDay,cycleStartDay)
   const [year,monthNumber]=month.split('-').map(Number)
   const [loaded,setData]=useState(null);const [error,setError]=useState('');const [loading,setLoading]=useState(false)
   const enabled=can('app') && can('team_approvals') && ['admin','hr_manager','manager','ceo'].includes(user?.role)
-  const viewKey=[user?.company_id,user?.id,user?.role,month,enabled].join(':')
+  const viewKey=[user?.company_id,user?.id,user?.role,month,enabled,currentDay].join(':')
   const data=enabled && loaded?.key===viewKey ? loaded.value : null
   const requestId=useRef(0)
   const load=useCallback(async()=>{
@@ -29,6 +30,15 @@ export default function CoverageScreen(){
     finally{if(current===requestId.current)setLoading(false)}
   },[enabled,monthNumber,year,viewKey])
   useEffect(()=>{load();return()=>{requestId.current++}},[load])
+  useEffect(()=>{
+    const subscription=AppState.addEventListener('change',state=>{
+      if(state!=='active')return
+      const nextDay=today()
+      if(nextDay!==currentDay)setCurrentDay(nextDay)
+      else load()
+    })
+    return()=>subscription.remove()
+  },[load,currentDay])
   const dates={};for(const r of data?.rows || []){const from=r.start_date>data.period.from?r.start_date:data.period.from;const to=r.end_date<data.period.to?r.end_date:data.period.to;for(const d=new Date(from+'T12:00:00Z');d<=new Date(to+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+1)){const key=d.toISOString().slice(0,10);dates[key] ||= [];dates[key].push(r)}}
   return <SafeAreaView style={{flex:1,backgroundColor:colors.bg}} edges={['top']}><ScrollView contentContainerStyle={{padding:20,paddingBottom:40}} refreshControl={<RefreshControl refreshing={loading} onRefresh={load}/>}>
     <Text style={{color:colors.text,fontSize:28,fontWeight:'900'}}>{tr('Team coverage','تغطية الفريق')}</Text>
