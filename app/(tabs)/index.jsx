@@ -24,6 +24,8 @@ import { ls, fwd } from '../../src/utils/rtl'
 import { useLang } from '../../src/context/LanguageContext'
 import { fmtTime as fmtHM } from '../../src/i18n/format'
 import { personName } from '../../src/i18n/format'
+import { closeLabel } from '../../src/utils/a11y'
+import { leaveTypeName } from '../../src/i18n/leaveTypes'
 
 const fmtNum   = n => n != null ? Number(n).toLocaleString('en-US') : '—'
 const fmtTime  = iso => (iso ? fmtHM(iso) : '--:--')
@@ -148,7 +150,7 @@ const unreadOf = (res) => {
 }
 
 export function EmployeeHome() {
-  const { user }  = useAuth()
+  const { user, can = () => true }  = useAuth()
   const { colors } = useTheme()
   const { tr, ar, date, monthYear, cur } = useLang()
   const router    = useRouter()
@@ -398,7 +400,7 @@ export function EmployeeHome() {
         <View style={s.statsRow}>
           <StatWidget icon="🏖️" value={`${totalLeft}${tr('d', ' يوم')}`} label={tr('Leave left', 'الإجازات المتبقية', 'إجازات فاضلة')} gradient="sunshine" onPress={() => router.push('/leave-balance')} />
           <StatWidget icon="📋" value={pending.length} label={tr('Pending', 'قيد الانتظار', 'مستني رد')} gradient="lavender" onPress={() => router.push('/(tabs)/leave')} />
-          <StatWidget icon="📣" value={announcements.length} label={tr('News', 'الأخبار', 'أخبار')} gradient="mint" onPress={() => router.push('/announcements')} />
+          {can('announcements') && <StatWidget icon="📣" value={announcements.length} label={tr('News', 'الأخبار', 'أخبار')} gradient="mint" onPress={() => router.push('/announcements')} />}
         </View>
 
         {/* Insights */}
@@ -435,7 +437,7 @@ export function EmployeeHome() {
             {balances.map((b, i) => (
               <TouchableOpacity key={i} style={[s.pill, { backgroundColor: colors.card, borderColor: colors.glassBorder }]} onPress={() => router.push('/leave-balance')} activeOpacity={0.8}>
                 <Text style={[s.pillNum, { color: colors.text }]}>{b.remaining}</Text>
-                <Text style={[s.pillName, { color: colors.sub }]} numberOfLines={2}>{b.name}</Text>
+                <Text style={[s.pillName, { color: colors.sub }]} numberOfLines={2}>{leaveTypeName(b, { ar, tr })}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -498,7 +500,7 @@ export function EmployeeHome() {
         <SafeAreaView style={m.safe}>
           <View style={m.header}>
             <Text style={m.title}>{tr('Request Attendance Correction', 'طلب تصحيح الحضور', 'اطلب تصحيح الحضور')}</Text>
-            <TouchableOpacity onPress={() => setShowCorrection(false)}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel={closeLabel} onPress={() => setShowCorrection(false)}>
               <Text style={m.close}>✕</Text>
             </TouchableOpacity>
           </View>

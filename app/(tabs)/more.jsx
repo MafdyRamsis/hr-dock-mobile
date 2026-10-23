@@ -4,6 +4,7 @@ import {
   RefreshControl, ActivityIndicator, Modal, TextInput, Alert
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { useAuth } from '../../src/context/AuthContext'
 import api from '../../src/services/api'
@@ -13,6 +14,7 @@ import StatusBadge from '../../src/components/StatusBadge'
 import { useLang } from '../../src/context/LanguageContext'
 import { ls, chevron } from '../../src/utils/rtl'
 import { personName } from '../../src/i18n/format'
+import { closeLabel } from '../../src/utils/a11y'
 
 const roleLabel = (role, tr) => ({
   employee:     tr('Employee', 'موظف'),
@@ -112,8 +114,8 @@ export default function MoreScreen() {
   }
 
   const MenuItem = ({ icon, label, onPress, danger }) => (
-    <TouchableOpacity style={s.menuItem} onPress={onPress} activeOpacity={0.7}>
-      <Text style={s.menuIcon}>{icon}</Text>
+    <TouchableOpacity style={s.menuItem} onPress={onPress} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={label}>
+      <View style={s.menuIcon}><Ionicons name={icon} size={20} color={danger ? '#DC2626' : '#4F46E5'} /></View>
       <Text style={[s.menuLabel, danger && s.menuDanger]}>{label}</Text>
       <Text style={s.menuArrow}>{chevron}</Text>
     </TouchableOpacity>
@@ -145,7 +147,7 @@ export default function MoreScreen() {
         {/* Language — near the top so employees find it easily */}
         <Card style={{ padding: 0, overflow: 'hidden', marginBottom: 20 }}>
           <TouchableOpacity style={s.menuItem} onPress={changeLanguage} activeOpacity={0.7}>
-            <Text style={s.menuIcon}>🌐</Text>
+            <View style={s.menuIcon}><Ionicons name="language-outline" size={20} color="#4F46E5" /></View>
             <View style={{ flex: 1 }}>
               <Text style={s.menuLabel}>{lang === 'ar' ? 'اللغة · Language' : 'Language · اللغة'}</Text>
               <Text style={s.menuSub}>{lang === 'ar' ? 'العربية' : 'English'}</Text>
@@ -186,27 +188,27 @@ export default function MoreScreen() {
         <View style={s.section}>
           <Text style={s.sectionTitle}>{tr('Self-Service', 'الخدمة الذاتية', 'خدماتك')}</Text>
           <Card style={{ padding: 0, overflow: 'hidden' }}>
-            <MenuItem icon="↗" label={tr('My goals', 'أهدافي')} onPress={() => router.push('/my-goals')} />
-            <MenuItem icon="⌂" label={tr('My Space', 'مساحتي الشخصية')} onPress={() => router.push('/my-space')} />
-            {can('leave') && <MenuItem icon="◷" label={tr('My Leave', 'إجازاتي')} onPress={() => router.push('/(tabs)/leave')} />}
-            {can('attendance') && <MenuItem icon="◴" label={tr('My Attendance', 'حضوري')} onPress={() => router.push('/(tabs)/attendance')} />}
-            {can('payslips') && <MenuItem icon="¤" label={tr('My Pay', 'راتبي')} onPress={() => router.push('/(tabs)/payslips')} />}
-            {can('requests') && <MenuItem icon="≡" label={tr('My Requests', 'طلباتي')} onPress={() => router.push('/(tabs)/requests')} />}
-            {can('ai_assistant') && can('pulse') && <MenuItem icon="✦" label={tr('Ask HR Dock', 'اسأل HR Dock')} onPress={() => router.push('/(tabs)/pulse')} />}
-            {can('pulse') && <MenuItem icon="♡" label={tr('Recognition & wellbeing', 'التقدير ورفاهية الفريق')} onPress={() => router.push('/recognition')} />}
-            <MenuItem icon="🧾" label={tr('Expenses', 'مطالبات المصروفات', 'المصروفات')} onPress={() => router.push('/expenses')} />
+            <MenuItem icon="trending-up-outline" label={tr('My goals', 'أهدافي')} onPress={() => router.push('/my-goals')} />
+            <MenuItem icon="person-circle-outline" label={tr('My Space', 'مساحتي الشخصية')} onPress={() => router.push('/my-space')} />
+            {can('leave') && <MenuItem icon="airplane-outline" label={tr('My Leave', 'إجازاتي')} onPress={() => router.push('/(tabs)/leave')} />}
+            {can('attendance') && <MenuItem icon="time-outline" label={tr('My Attendance', 'حضوري')} onPress={() => router.push('/(tabs)/attendance')} />}
+            {can('payslips') && <MenuItem icon="wallet-outline" label={tr('My Pay', 'راتبي')} onPress={() => router.push('/(tabs)/payslips')} />}
+            {can('requests') && <MenuItem icon="document-text-outline" label={tr('My Requests', 'طلباتي')} onPress={() => router.push('/(tabs)/requests')} />}
+            {can('ai_assistant') && can('pulse') && <MenuItem icon="sparkles-outline" label={tr('Ask HR Dock', 'اسأل HR Dock')} onPress={() => router.push('/(tabs)/pulse')} />}
+            {can('pulse') && <MenuItem icon="heart-outline" label={tr('Recognition & wellbeing', 'التقدير ورفاهية الفريق')} onPress={() => router.push('/recognition')} />}
+            {can('expenses') && <MenuItem icon="receipt-outline" label={tr('Expenses', 'مطالبات المصروفات', 'المصروفات')} onPress={() => router.push('/expenses')} />}
+            {can('expenses') && <View style={s.divider}/>}
+            {can('loans') && <MenuItem icon="card-outline" label={tr('Loans', 'السُلف', 'السلف')} onPress={() => router.push('/loans')} />}
+            {can('loans') && <View style={s.divider}/>}
+            <MenuItem icon="gift-outline" label={tr('Benefits', 'المزايا')} onPress={() => router.push('/benefits')} />
             <View style={s.divider}/>
-            <MenuItem icon="💳" label={tr('Loans', 'السُلف', 'السلف')} onPress={() => router.push('/loans')} />
+            <MenuItem icon="school-outline" label={tr('Training', 'التدريب')} onPress={() => router.push('/training')} />
             <View style={s.divider}/>
-            <MenuItem icon="🎁" label={tr('Benefits', 'المزايا')} onPress={() => router.push('/benefits')} />
+            <MenuItem icon="clipboard-outline" label={tr('Appraisals', 'تقييم الأداء', 'تقييمات الأداء')} onPress={() => router.push('/appraisals')} />
             <View style={s.divider}/>
-            <MenuItem icon="🎓" label={tr('Training', 'التدريب')} onPress={() => router.push('/training')} />
-            <View style={s.divider}/>
-            <MenuItem icon="📋" label={tr('Appraisals', 'تقييم الأداء', 'تقييمات الأداء')} onPress={() => router.push('/appraisals')} />
-            <View style={s.divider}/>
-            <MenuItem icon="📄" label={tr('Documents', 'المستندات', 'الورق والمستندات')} onPress={() => router.push('/documents')} />
-            <View style={s.divider}/>
-            <MenuItem icon="👥" label={tr('Employee Directory', 'دليل الموظفين', 'دليل الزملاء')} onPress={() => router.push('/directory')} />
+            {can('documents') && <MenuItem icon="folder-open-outline" label={tr('Documents', 'المستندات', 'الورق والمستندات')} onPress={() => router.push('/documents')} />}
+            {can('documents') && can('directory') && <View style={s.divider}/>}
+            {can('directory') && <MenuItem icon="people-outline" label={tr('Employee Directory', 'دليل الموظفين', 'دليل الزملاء')} onPress={() => router.push('/directory')} />}
           </Card>
         </View>
 
@@ -214,11 +216,11 @@ export default function MoreScreen() {
         <View style={s.section}>
           <Text style={s.sectionTitle}>{tr('Account', 'الحساب', 'حسابك')}</Text>
           <Card style={{ padding: 0, overflow: 'hidden' }}>
-            <MenuItem icon="🔔" label={t('announcements')}    onPress={() => router.push('/announcements')} />
+            {can('announcements') && <MenuItem icon="notifications-outline" label={t('announcements')}    onPress={() => router.push('/announcements')} />}
+            {can('announcements') && <View style={s.divider}/>}
+            <MenuItem icon="lock-closed-outline" label={t('change_password')}  onPress={() => setShowPassword(true)} />
             <View style={s.divider}/>
-            <MenuItem icon="🔒" label={t('change_password')}  onPress={() => setShowPassword(true)} />
-            <View style={s.divider}/>
-            <MenuItem icon="🚪" label={t('sign_out_title')} danger  onPress={confirmLogout} />
+            <MenuItem icon="log-out-outline" label={t('sign_out_title')} danger  onPress={confirmLogout} />
           </Card>
         </View>
 
@@ -230,7 +232,7 @@ export default function MoreScreen() {
         <SafeAreaView style={s.modal}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{t('change_password')}</Text>
-            <TouchableOpacity onPress={() => { setShowPassword(false); setPwErr(''); setPwForm({ current: '', next: '', confirm: '' }) }}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel={closeLabel} onPress={() => { setShowPassword(false); setPwErr(''); setPwForm({ current: '', next: '', confirm: '' }) }}>
               <Text style={s.modalClose}>✕</Text>
             </TouchableOpacity>
           </View>
@@ -267,7 +269,7 @@ export default function MoreScreen() {
         <SafeAreaView style={s.modal}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{tr('New HR Request', 'طلب موارد بشرية جديد', 'طلب HR جديد')}</Text>
-            <TouchableOpacity onPress={() => setShowTicket(false)}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel={closeLabel} onPress={() => setShowTicket(false)}>
               <Text style={s.modalClose}>✕</Text>
             </TouchableOpacity>
           </View>
@@ -341,7 +343,7 @@ const s = StyleSheet.create({
   priorityDot:     { width: 6, height: 6, borderRadius: 3 },
   ticketPriority:  { fontSize: 12, color: '#64748b', textTransform: 'capitalize' },
   menuItem:        { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14 },
-  menuIcon:        { fontSize: 18, width: 28, textAlign: 'center' },
+  menuIcon:        { width: 28, alignItems: 'center' },
   menuLabel:       { flex: 1, fontSize: 15, color: '#1e293b', fontWeight: '500' },
   menuSub:         { fontSize: 12, color: '#94a3b8', marginTop: 1 },
   menuDanger:      { color: '#dc2626' },

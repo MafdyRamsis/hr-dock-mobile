@@ -15,6 +15,7 @@ import MoodSlider from '../../src/components/MoodSlider'
 import { SkeletonCard } from '../../src/components/Skeleton'
 import { ls, fwd } from '../../src/utils/rtl'
 import { useLang } from '../../src/context/LanguageContext'
+import { closeLabel } from '../../src/utils/a11y'
 
 const categories = (tr) => [
   { v: 'teamwork',     emoji: '🤝', label: tr('Teamwork', 'روح الفريق') },
@@ -229,7 +230,7 @@ export function RecognitionScreen() {
         <SafeAreaView style={[s.modalSafe, { backgroundColor: colors.bg }]}>
           <View style={[s.modalHeader, { borderBottomColor: colors.border }]}>
             <Text style={[s.modalTitle, { color: colors.text }]}>{tr('Give Kudos', 'أرسل تقديرًا', 'اشكر زميل')}</Text>
-            <TouchableOpacity onPress={() => setShowGive(false)}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel={closeLabel} onPress={() => setShowGive(false)}>
               <Text style={{ fontSize: 22, color: colors.sub }}>✕</Text>
             </TouchableOpacity>
           </View>

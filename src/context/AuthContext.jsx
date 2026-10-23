@@ -1,7 +1,11 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import * as SecureStore from 'expo-secure-store'
 import * as LocalAuthentication from 'expo-local-authentication'
+import { I18nManager } from 'react-native'
 import api, { setAuthHandlers } from '../services/api'
+
+// The app reloads on a language change, so the layout direction tells us the language.
+const L = (en, ar) => (I18nManager.isRTL ? ar : en)
 
 const AuthContext = createContext(null)
 
@@ -99,14 +103,14 @@ export function AuthProvider({ children }) {
   }
 
   const verify2fa = async (code) => {
-    if (!pending2fa) throw new Error('No sign-in in progress.')
+    if (!pending2fa) throw new Error(L('No sign-in in progress.', 'لا توجد عملية تسجيل دخول جارية.'))
     const res = await api.post(
       '/auth/2fa/validate',
       { code },
       { headers: { Authorization: `Bearer ${pending2fa.token}` } },
     )
     const fullToken = res.data?.token
-    if (!fullToken) throw new Error('Verification failed. Please try again.')
+    if (!fullToken) throw new Error(L('Verification failed. Please try again.', 'فشل التحقق. يرجى المحاولة مرة أخرى.'))
     await finishLogin(fullToken, pending2fa.user)
   }
 
@@ -116,14 +120,14 @@ export function AuthProvider({ children }) {
   // Returns true on success, throws on failure.
   const loginWithBiometric = async () => {
     const result = await LocalAuthentication.authenticateAsync({
-      promptMessage:          'Sign in to HR Dock',
-      fallbackLabel:          'Use password',
+      promptMessage:          L('Sign in to HR Dock', 'تسجيل الدخول إلى HR Dock'),
+      fallbackLabel:          L('Use password', 'استخدم كلمة المرور'),
       disableDeviceFallback:  false,
     })
-    if (!result.success) throw new Error(result.error || 'Biometric authentication failed')
+    if (!result.success) throw new Error(L('Fingerprint / face check did not succeed. Try again or sign in with your password.', 'لم ينجح التحقق بالبصمة أو الوجه. حاول مرة أخرى أو سجّل الدخول بكلمة المرور.'))
     const t = await SecureStore.getItemAsync('token')
     const u = await SecureStore.getItemAsync('user')
-    if (!t || !u) throw new Error('No saved session. Please sign in with your password.')
+    if (!t || !u) throw new Error(L('No saved session. Please sign in with your password.', 'لا توجد جلسة محفوظة. يرجى تسجيل الدخول بكلمة المرور.'))
     // Make sure the saved session is still valid on the server (offline is allowed).
     try {
       await api.get('/auth/me', { headers: { Authorization: `Bearer ${t}` } })
@@ -131,7 +135,7 @@ export function AuthProvider({ children }) {
       if (err.response?.status === 401) {
         await SecureStore.deleteItemAsync('token')
         await SecureStore.deleteItemAsync('user')
-        throw new Error('Your session has expired. Please sign in with your password.')
+        throw new Error(L('Your session has expired. Please sign in with your password.', 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول بكلمة المرور.'))
       }
     }
     setToken(t)

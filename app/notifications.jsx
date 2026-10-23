@@ -25,16 +25,16 @@ const timeAgo = (iso, tr, date) => {
 }
 
 const TYPE_META = {
-  leave_reviewed:       { icon: '🏖️', color: '#8854D0', label: 'Leave' },
-  leave_decided:        { icon: '🏖️', color: '#8854D0', label: 'Leave' },
-  day_off_reviewed:     { icon: '🛏️', color: '#2BC4BE', label: 'Day Off' },
-  attendance_reviewed:  { icon: '🕐', color: '#3b82f6', label: 'Attendance' },
-  approval_required:    { icon: '📋', color: '#f59e0b', label: 'Approval' },
-  checkout_reminder:    { icon: '⏰', color: '#FF6B6B', label: 'Reminder' },
-  hr_reminder:          { icon: '🔔', color: '#2BC4BE', label: 'Reminder' },
+  leave_reviewed:       { icon: '🏖️', color: '#8854D0', label: 'Leave', labelAr: 'إجازة' },
+  leave_decided:        { icon: '🏖️', color: '#8854D0', label: 'Leave', labelAr: 'إجازة' },
+  day_off_reviewed:     { icon: '🛏️', color: '#2BC4BE', label: 'Day Off', labelAr: 'يوم راحة' },
+  attendance_reviewed:  { icon: '🕐', color: '#3b82f6', label: 'Attendance', labelAr: 'حضور' },
+  approval_required:    { icon: '📋', color: '#f59e0b', label: 'Approval', labelAr: 'موافقة' },
+  checkout_reminder:    { icon: '⏰', color: '#FF6B6B', label: 'Reminder', labelAr: 'تذكير' },
+  hr_reminder:          { icon: '🔔', color: '#2BC4BE', label: 'Reminder', labelAr: 'تذكير' },
 }
 
-const metaFor = type => TYPE_META[type] || { icon: '🔔', color: '#64748b', label: (type || 'Notification').replace(/_/g, ' ') }
+const metaFor = type => TYPE_META[type] || { icon: '🔔', color: '#64748b', label: 'Notification', labelAr: 'إشعار' }
 
 // Calendar date (YYYY-MM-DD) of a server value on this phone. A plain date
 // passes through; a timestamp is read in local time — slicing the ISO string
@@ -147,7 +147,7 @@ function NotifCard({ item, onPress, colors }) {
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <View style={s.cardTop}>
-          <Text style={s.typeTag}>{meta.label}</Text>
+          <Text style={s.typeTag}>{tr(meta.label, meta.labelAr)}</Text>
           <Text style={s.time}>{timeAgo(item.created_at, tr, date)}</Text>
         </View>
         <Text style={[s.title, { color: colors.text }]} numberOfLines={1}>{title}</Text>

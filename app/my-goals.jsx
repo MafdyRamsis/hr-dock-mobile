@@ -10,7 +10,7 @@ import GoalProgressEditor from '../src/components/GoalProgressEditor'
 export default function MyGoals(){
   const {user}=useAuth();const {colors}=useTheme();const {tr}=useLang()
   const [goals,setGoals]=useState([]);const [loading,setLoading]=useState(false);const [error,setError]=useState('')
-  const load=useCallback(async()=>{if(!user?.employee_id)return;setLoading(true);setError('');try{const r=await api.get('/performance/goals',{params:{employee_id:user.employee_id}});setGoals(r.data.data || [])}catch(e){setError(e.response?.data?.message || 'Could not load goals')}finally{setLoading(false)}},[user?.employee_id])
+  const load=useCallback(async()=>{if(!user?.employee_id)return;setLoading(true);setError('');try{const r=await api.get('/performance/goals',{params:{employee_id:user.employee_id}});setGoals(r.data.data || [])}catch(e){setError(e.response?.data?.message || tr('Could not load goals.','تعذر تحميل الأهداف.'))}finally{setLoading(false)}},[user?.employee_id])
   useEffect(()=>{load()},[load])
   return <SafeAreaView style={{flex:1,backgroundColor:colors.bg}} edges={['top']}><ScrollView contentContainerStyle={{padding:20,paddingBottom:40}} refreshControl={<RefreshControl refreshing={loading} onRefresh={load}/>}>
     <Text style={{color:colors.text,fontSize:28,fontWeight:'900',marginBottom:20}}>{tr('My goals','أهدافي')}</Text>

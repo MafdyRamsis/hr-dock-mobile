@@ -4,7 +4,7 @@ import CoverageScreen from '../../../app/coverage'
 import api from '../../services/api'
 let mockAuth
 jest.mock('../../context/AuthContext',()=>({useAuth:()=>mockAuth}))
-jest.mock('../../context/LanguageContext',()=>({useLang:()=>({tr:en=>en,date:v=>v})}))
+jest.mock('../../context/LanguageContext',()=>({useLang:()=>({tr:en=>en,date:v=>v,monthYear:(m,y)=>`${m+1}/${y}`})}))
 jest.mock('../../context/ThemeContext',()=>({useTheme:()=>({colors:{bg:'#fff',text:'#111',sub:'#666'}})}))
 jest.mock('../../services/api',()=>({get:jest.fn()}))
 beforeEach(()=>{

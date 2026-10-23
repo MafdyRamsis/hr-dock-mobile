@@ -1,6 +1,8 @@
 import { Tabs } from 'expo-router'
 import { View, Text } from 'react-native'
 import { BlurView } from 'expo-blur'
+import { Ionicons } from '@expo/vector-icons'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BRAND, useTheme } from '../../src/context/ThemeContext'
 import { useLang } from '../../src/context/LanguageContext'
 import { useAuth } from '../../src/context/AuthContext'
@@ -17,28 +19,26 @@ const TAB_COLORS = {
   payslips:   '#15803D',       // money green
 }
 
-const Icon = ({ emoji, focused, color }) => (
+// Outline icons from @expo/vector-icons (bundled with Expo). The previous
+// text glyphs (⌂ ◴ ♙ ¤ ≡ ⋯) rendered inconsistently on Android fonts.
+const Icon = ({ name, focused, color }) => (
   <View
     style={{
-      width: 38,
-      height: 38,
-      borderRadius: 11,
+      width: 34,
+      height: 30,
+      borderRadius: 10,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: focused ? color : `${color}22`,
-      shadowColor: color,
-      shadowOffset: { width: 0, height: 3 },
-      shadowOpacity: focused ? 0.3 : 0,
-      shadowRadius: 6,
-      elevation: focused ? 2 : 0,
+      backgroundColor: focused ? color : 'transparent',
     }}
   >
-    <Text style={{ fontSize: 16 }}>{emoji}</Text>
+    <Ionicons name={focused ? name : `${name}-outline`} size={19} color={focused ? '#FFFFFF' : color} />
   </View>
 )
 
 export default function TabLayout() {
   const { colors, isDark } = useTheme()
+  const insets = useSafeAreaInsets()
   const { t, tr } = useLang()
   const { can = () => false, logout, user } = useAuth() || {}
   // HR/Admin can switch mobile features off per role (Fawry 2.7.0 parity).
@@ -64,13 +64,22 @@ export default function TabLayout() {
       tabBarShowLabel: true,
       tabBarActiveTintColor: colors.text,
       tabBarInactiveTintColor: colors.sub,
-      tabBarLabelStyle: { fontSize: 9.5, fontWeight: '700', marginTop: 2 },
+      // Labels must fit inside the bar at any system text size.
+      tabBarAllowFontScaling: false,
+      tabBarLabelPosition: 'below-icon',
+      tabBarLabelStyle: { fontSize: 10.5, fontWeight: '700', marginTop: 1 },
+      // The bar floats above the phone's own navigation/home area. The tab bar
+      // used to keep a fixed 70pt height and *also* add that area as bottom
+      // padding inside it, which squeezed the labels out on Android
+      // (edge-to-edge) and on iPhones with a home indicator.
       tabBarStyle: {
         position: 'absolute',
         left: 10,
         right: 10,
-        bottom: 22,
-        height: 70,
+        bottom: 10 + insets.bottom,
+        height: 64,
+        paddingTop: 6,
+        paddingBottom: 8,
         borderRadius: 24,
         borderTopWidth: 0,
         backgroundColor: 'transparent',
@@ -94,17 +103,17 @@ export default function TabLayout() {
           }}
         />
       ),
-      tabBarItemStyle: { paddingTop: 6 },
+      tabBarItemStyle: { paddingTop: 0 },
     }}>
-      <Tabs.Screen name="index" options={{ title: lead ? tr('Overview', 'نظرة عامة') : t('tab_home'), tabBarIcon: ({ focused }) => <Icon emoji="⌂" focused={focused} color={TAB_COLORS.home} /> }} />
-      <Tabs.Screen name="attendance" options={{ href: !lead && can('attendance') ? undefined : null, title: t('tab_attendance'), tabBarIcon: ({ focused }) => <Icon emoji="◴" focused={focused} color={TAB_COLORS.attendance} /> }} />
-      <Tabs.Screen name="team" options={{ href: lead && can('workforce_overview') ? undefined : null, title: executive ? tr('Workforce', 'القوى العاملة') : tr('My Team', 'فريقي'), tabBarIcon: ({ focused }) => <Icon emoji="♙" focused={focused} color={TAB_COLORS.team} /> }} />
-      <Tabs.Screen name="approvals" options={{ href: lead && !executive && can('team_approvals') ? undefined : null, title: tr('Approvals', 'الموافقات'), tabBarIcon: ({ focused }) => <Icon emoji="✓" focused={focused} color={TAB_COLORS.requests} /> }} />
-      <Tabs.Screen name="forecast" options={{ href: executive && can('payroll_forecast') ? undefined : null, title: tr('Payroll', 'الرواتب'), tabBarIcon: ({ focused }) => <Icon emoji="¤" focused={focused} color={TAB_COLORS.payslips} /> }} />
-      <Tabs.Screen name="performance" options={{ href: lead && can('performance_overview') ? undefined : null, title: tr('Performance', 'الأداء'), tabBarIcon: ({ focused }) => <Icon emoji="↗" focused={focused} color={TAB_COLORS.pulse} /> }} />
-      <Tabs.Screen name="requests" options={{ href: !lead && can('requests') ? undefined : null, title: t('tab_requests'), tabBarIcon: ({ focused }) => <Icon emoji="≡" focused={focused} color={TAB_COLORS.requests} /> }} />
-      <Tabs.Screen name="payslips" options={{ href: !lead && can('payslips') ? undefined : null, title: tr('Pay', 'راتبي'), tabBarIcon: ({ focused }) => <Icon emoji="¤" focused={focused} color={TAB_COLORS.payslips} /> }} />
-      <Tabs.Screen name="more" options={{ title: tr('More', 'المزيد'), tabBarIcon: ({ focused }) => <Icon emoji="⋯" focused={focused} color={TAB_COLORS.leave} /> }} />
+      <Tabs.Screen name="index" options={{ title: lead ? tr('Overview', 'نظرة عامة') : t('tab_home'), tabBarIcon: ({ focused }) => <Icon name="home" focused={focused} color={TAB_COLORS.home} /> }} />
+      <Tabs.Screen name="attendance" options={{ href: !lead && can('attendance') ? undefined : null, title: t('tab_attendance'), tabBarIcon: ({ focused }) => <Icon name="time" focused={focused} color={TAB_COLORS.attendance} /> }} />
+      <Tabs.Screen name="team" options={{ href: lead && can('workforce_overview') ? undefined : null, title: executive ? tr('Workforce', 'القوى العاملة') : tr('My Team', 'فريقي'), tabBarIcon: ({ focused }) => <Icon name="people" focused={focused} color={TAB_COLORS.team} /> }} />
+      <Tabs.Screen name="approvals" options={{ href: lead && !executive && can('team_approvals') ? undefined : null, title: tr('Approvals', 'الموافقات'), tabBarIcon: ({ focused }) => <Icon name="checkmark-done-circle" focused={focused} color={TAB_COLORS.requests} /> }} />
+      <Tabs.Screen name="forecast" options={{ href: executive && can('payroll_forecast') ? undefined : null, title: tr('Payroll', 'الرواتب'), tabBarIcon: ({ focused }) => <Icon name="cash" focused={focused} color={TAB_COLORS.payslips} /> }} />
+      <Tabs.Screen name="performance" options={{ href: lead && can('performance_overview') ? undefined : null, title: tr('Performance', 'الأداء'), tabBarIcon: ({ focused }) => <Icon name="trending-up" focused={focused} color={TAB_COLORS.pulse} /> }} />
+      <Tabs.Screen name="requests" options={{ href: !lead && can('requests') ? undefined : null, title: t('tab_requests'), tabBarIcon: ({ focused }) => <Icon name="document-text" focused={focused} color={TAB_COLORS.requests} /> }} />
+      <Tabs.Screen name="payslips" options={{ href: !lead && can('payslips') ? undefined : null, title: tr('Pay', 'راتبي'), tabBarIcon: ({ focused }) => <Icon name="wallet" focused={focused} color={TAB_COLORS.payslips} /> }} />
+      <Tabs.Screen name="more" options={{ title: tr('More', 'المزيد'), tabBarIcon: ({ focused }) => <Icon name="ellipsis-horizontal-circle" focused={focused} color={TAB_COLORS.leave} /> }} />
       <Tabs.Screen name="leave" options={{ href: null }} />
       <Tabs.Screen name="pulse" options={{ href: null }} />
     </Tabs>

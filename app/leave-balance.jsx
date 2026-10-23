@@ -8,6 +8,7 @@ import api from '../src/services/api'
 import { useLang } from '../src/context/LanguageContext'
 import { ls, fwd, back } from '../src/utils/rtl'
 import { localDateOf } from '../src/i18n/format'
+import { leaveTypeName } from '../src/i18n/leaveTypes'
 
 const TYPE_ICONS = {
   annual:   '🏖️',
@@ -43,7 +44,7 @@ export default function LeaveBalanceScreen() {
   const router  = useRouter()
   const { user } = useAuth()
   const { colors } = useTheme()
-  const { tr, date } = useLang()
+  const { tr, date, ar } = useLang()
   const [balances,   setBalances]   = useState([])
   const [requests,   setRequests]   = useState([])
   const [loading,    setLoading]    = useState(true)
@@ -68,7 +69,8 @@ export default function LeaveBalanceScreen() {
   useEffect(() => { load() }, [])
 
   const totalRemaining = balances.reduce((sum, b) => sum + (Number(b.remaining) || 0), 0)
-  const totalAllocated = balances.reduce((sum, b) => sum + (Number(b.allocated) || 0), 0)
+  // Days available this year = this year's allocation + days carried from last year.
+  const totalAllocated = balances.reduce((sum, b) => sum + (Number(b.allocated) || 0) + (Number(b.carried_over) || 0), 0)
 
   const STATUS = {
     approved:  tr('Approved', 'موافق عليه', 'اتوافق عليه'),
@@ -127,13 +129,14 @@ export default function LeaveBalanceScreen() {
           ) : balances.map((b, i) => {
             const color = getColor(b.name)
             const icon  = getIcon(b.name)
-            const pct   = b.allocated ? Math.min(100, (b.used / b.allocated) * 100) : 0
+            const total = (Number(b.allocated) || 0) + (Number(b.carried_over) || 0)
+            const pct   = total ? Math.min(100, (b.used / total) * 100) : 0
             return (
               <View key={i} style={[s.typeCard, { backgroundColor: color.bg }]}>
                 <View style={s.typeHeader}>
                   <View style={s.typeLeft}>
                     <Text style={s.typeIcon}>{icon}</Text>
-                    <Text style={[s.typeName, { color: colors.text }]} numberOfLines={2}>{b.name}</Text>
+                    <Text style={[s.typeName, { color: colors.text }]} numberOfLines={2}>{leaveTypeName(b, { ar, tr })}</Text>
                   </View>
                   <View style={s.typeRight}>
                     <Text style={[s.typeRemain, { color: color.primary }]}>{b.remaining}</Text>
@@ -147,8 +150,8 @@ export default function LeaveBalanceScreen() {
 
                 <View style={s.typeStats}>
                   <View style={s.typeStat}>
-                    <Text style={[s.typeStatNum, { color: colors.text }]}>{b.allocated}</Text>
-                    <Text style={s.typeStatLabel}>{tr('Allocated', 'المخصص', 'ليك')}</Text>
+                    <Text style={[s.typeStatNum, { color: colors.text }]}>{Number(b.carried_over) > 0 ? `${Number(b.allocated)} + ${Number(b.carried_over)}` : b.allocated}</Text>
+                    <Text style={s.typeStatLabel}>{Number(b.carried_over) > 0 ? tr('Allocated + carried', 'المخصص + المُرحّل', 'ليك + مترحّل') : tr('Allocated', 'المخصص', 'ليك')}</Text>
                   </View>
                   <View style={s.typeStatDivider} />
                   <View style={s.typeStat}>
@@ -175,7 +178,7 @@ export default function LeaveBalanceScreen() {
                   <View key={i} style={[s.reqRow, { backgroundColor: colors.card }]}>
                     <View style={[s.reqDot, { backgroundColor: color.primary }]} />
                     <View style={{ flex: 1 }}>
-                      <Text style={[s.reqType, { color: colors.text2 }]}>{r.leave_type_name || r.leave_type}</Text>
+                      <Text style={[s.reqType, { color: colors.text2 }]}>{leaveTypeName(r, { ar, tr })}</Text>
                       <Text style={s.reqDates}>
                         {dShort(r.start_date)} {fwd} {dShort(r.end_date)} · {r.days_requested} {tr('d', 'يوم')}
                       </Text>
