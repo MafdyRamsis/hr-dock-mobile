@@ -17,6 +17,8 @@ import FeedItem from '../../src/components/FeedItem'
 import { useLang } from '../../src/context/LanguageContext'
 import { ls, fwd } from '../../src/utils/rtl'
 import { localDateOf } from '../../src/i18n/format'
+import { closeLabel } from '../../src/utils/a11y'
+import { leaveTypeName } from '../../src/i18n/leaveTypes'
 
 const toISO  = localDateOf
 
@@ -24,7 +26,7 @@ export default function LeaveScreen() {
   const { user } = useAuth()
   const { colors } = useTheme()
   const router = useRouter()
-  const { tr, date } = useLang()
+  const { tr, date, ar } = useLang()
   const fmt = d => (d ? date(localDateOf(d)) : '—')
   const [balances,   setBalances]   = useState([])
   const [requests,   setRequests]   = useState([])
@@ -133,14 +135,14 @@ export default function LeaveScreen() {
             {balances.map((b, i) => (
               <Card key={i} style={s.balCard}>
                 <View style={s.balRow}>
-                  <Text style={[s.balName, { color: colors.text2 }]}>{b.name}</Text>
+                  <Text style={[s.balName, { color: colors.text2 }]}>{leaveTypeName(b, { ar, tr })}</Text>
                   <View style={s.balNums}>
                     <Text style={[s.balRemain, { color: colors.text }]}>{b.remaining}</Text>
-                    <Text style={[s.balTotal, { color: colors.muted }]}> / {b.allocated} {tr('days', 'يوم')}</Text>
+                    <Text style={[s.balTotal, { color: colors.muted }]}> / {(Number(b.allocated) || 0) + (Number(b.carried_over) || 0)} {tr('days', 'يوم')}</Text>
                   </View>
                 </View>
                 <View style={[s.balBar, { backgroundColor: colors.cardAlt }]}>
-                  <LinearGradient colors={GRADIENTS.sunshine} style={[s.balFill, { width: `${b.allocated ? Math.min(100, (b.used / b.allocated) * 100) : 0}%` }]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
+                  <LinearGradient colors={GRADIENTS.sunshine} style={[s.balFill, { width: `${(Number(b.allocated) + Number(b.carried_over || 0)) ? Math.min(100, (b.used / (Number(b.allocated) + Number(b.carried_over || 0))) * 100) : 0}%` }]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
                 </View>
                 <Text style={[s.balUsed, { color: colors.muted }]}>{tr(`${b.used} used · ${b.remaining} remaining`, `${b.used} مستخدم · ${b.remaining} متبقٍ`, `${b.used} اتاخد · ${b.remaining} فاضل`)}</Text>
               </Card>
@@ -157,7 +159,7 @@ export default function LeaveScreen() {
               key={i}
               icon="🏖️"
               gradient="lavender"
-              title={r.leave_type_name || r.leave_type}
+              title={leaveTypeName(r, { ar, tr })}
               subtitle={`${fmt(r.start_date)} ${fwd} ${fmt(r.end_date)} · ${r.days_requested} ${tr(r.days_requested !== 1 ? 'days' : 'day', 'يوم')}`}
               right={<StatusBadge status={r.status} />}
             />
@@ -170,7 +172,7 @@ export default function LeaveScreen() {
         <SafeAreaView style={s.modal}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{tr('New Leave Request', 'طلب إجازة جديد', 'اطلب إجازة')}</Text>
-            <TouchableOpacity onPress={() => setShowForm(false)}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel={closeLabel} onPress={() => setShowForm(false)}>
               <Text style={s.modalClose}>✕</Text>
             </TouchableOpacity>
           </View>
@@ -185,11 +187,11 @@ export default function LeaveScreen() {
                     <TouchableOpacity key={t.id} onPress={() => setForm(f => ({ ...f, leave_type_id: t.id }))} activeOpacity={0.85}>
                       {active ? (
                         <LinearGradient colors={GRADIENTS.sunshine} style={s.pickerItem} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-                          <Text style={s.pickerItemTextActive}>{t.name}</Text>
+                          <Text style={s.pickerItemTextActive}>{leaveTypeName(t, { ar, tr })}</Text>
                         </LinearGradient>
                       ) : (
                         <View style={[s.pickerItem, s.pickerItemInactive]}>
-                          <Text style={s.pickerItemText}>{t.name}</Text>
+                          <Text style={s.pickerItemText}>{leaveTypeName(t, { ar, tr })}</Text>
                         </View>
                       )}
                     </TouchableOpacity>

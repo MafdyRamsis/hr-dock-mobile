@@ -18,6 +18,7 @@ import Skeleton, { SkeletonCard, SkeletonRow } from '../../src/components/Skelet
 import { ls } from '../../src/utils/rtl'
 import { useLang } from '../../src/context/LanguageContext'
 import { fmtTime, localDateOf } from '../../src/i18n/format'
+import { closeLabel } from '../../src/utils/a11y'
 
 const toISO  = localDateOf
 
@@ -187,7 +188,7 @@ function PermissionModal({ type, employeeId, reports = [], isManager = false, on
             <Text style={pf.title}>{perm.label}</Text>
             <Text style={pf.desc}>{perm.desc}</Text>
           </View>
-          <TouchableOpacity onPress={onClose}><Text style={pf.close}>✕</Text></TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel={closeLabel} onPress={onClose}><Text style={pf.close}>✕</Text></TouchableOpacity>
         </View>
 
         <ScrollView style={pf.scroll} keyboardShouldPersistTaps="handled">
@@ -603,7 +604,7 @@ export default function RequestsScreen() {
         <SafeAreaView style={m.safe}>
           <View style={m.header}>
             <Text style={m.title}>{tr('New HR Request', 'طلب جديد للموارد البشرية', 'طلب جديد للـ HR')}</Text>
-            <TouchableOpacity onPress={() => setShowForm(false)}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel={closeLabel} onPress={() => setShowForm(false)}>
               <Text style={m.close}>✕</Text>
             </TouchableOpacity>
           </View>

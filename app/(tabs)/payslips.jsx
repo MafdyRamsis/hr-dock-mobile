@@ -12,6 +12,7 @@ import { useTheme, GRADIENTS } from '../../src/context/ThemeContext'
 import { useLang } from '../../src/context/LanguageContext'
 import { fmtMonthYear, monthName, fmtDate } from '../../src/i18n/format'
 import { ls, fwd } from '../../src/utils/rtl'
+import { closeLabel } from '../../src/utils/a11y'
 
 const fmtNum     = n => n != null ? Number(n).toLocaleString('en-US') : '—'
 const runKey        = r => r ? `${r.year}-${String(r.month).padStart(2, '0')}` : ''
@@ -398,7 +399,7 @@ export default function PayslipsScreen() {
                   </TouchableOpacity>
                 </>
               )}
-              <TouchableOpacity onPress={() => { setSelected(null); setSlip(null) }}>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel={closeLabel} onPress={() => { setSelected(null); setSlip(null) }}>
                 <Text style={s.modalClose}>✕</Text>
               </TouchableOpacity>
             </View>

@@ -1,3 +1,4 @@
+import { payrollCycle, activePayrollMonth } from '../../src/utils/payrollCycle'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl, Alert, ActivityIndicator, AppState } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -63,7 +64,7 @@ const dayStatus = (l) => {
 const pad2 = n => String(n).padStart(2, '0')
 const phoneToday = () => { const d = new Date(); return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}` }
 
-function MonthCalendar({ logs, month, year, colors, selected, onSelect }) {
+function MonthCalendar({ logs, month, year, colors, selected, onSelect, period }) {
   const { tr, ar, day: dayName } = useLang()
   const logMap = useMemo(() => {
     const m = {}
@@ -75,8 +76,10 @@ function MonthCalendar({ logs, month, year, colors, selected, onSelect }) {
   }, [logs])
 
   const today = new Date()
-  const firstDay = new Date(year, month, 1).getDay()
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const first = period?.from || `${year}-${String(month+1).padStart(2,'0')}-01`
+  const end = period?.to || new Date(Date.UTC(year,month+1,0)).toISOString().slice(0,10)
+  const firstDay = new Date(first+'T12:00:00Z').getUTCDay()
+  const daysInMonth = Math.round((new Date(end+'T12:00:00Z')-new Date(first+'T12:00:00Z'))/86400000)+1
   const cells = []
 
   for (let i = 0; i < firstDay; i++) cells.push(null)
@@ -93,9 +96,11 @@ function MonthCalendar({ logs, month, year, colors, selected, onSelect }) {
       <View style={cal.grid}>
         {cells.map((day, i) => {
           if (!day) return <View key={`e${i}`} style={cal.cell} />
-          const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+          const cellDate = new Date(first+'T12:00:00Z'); cellDate.setUTCDate(cellDate.getUTCDate()+day-1)
+          const iso = cellDate.toISOString().slice(0,10)
+          const dayNumber = cellDate.getUTCDate()
           const status = logMap[iso]
-          const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day
+          const isToday = iso === phoneToday()
           const isFuture = new Date(iso) > today
           const isWeekend = [0, 6].includes(new Date(iso).getDay())
           const dotColor = status ? STATUS_COLOR[status] : null
@@ -106,14 +111,14 @@ function MonthCalendar({ logs, month, year, colors, selected, onSelect }) {
               accessibilityRole="button" accessibilityState={{ selected: isSel }}>
               {isToday ? (
                 <LinearGradient colors={GRADIENTS.coral} style={cal.dayCircle} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-                  <Text style={[cal.dayNum, cal.todayNum]}>{day}</Text>
+                  <Text style={[cal.dayNum, cal.todayNum]}>{dayNumber}</Text>
                 </LinearGradient>
               ) : (
                 <View style={[cal.dayCircle, isSel && { borderWidth: 2, borderColor: GRADIENTS.coral[0] }]}>
                   <Text style={[
                     cal.dayNum, { color: colors.text2 },
                     (isFuture || isWeekend) && { color: colors.muted },
-                  ]}>{day}</Text>
+                  ]}>{dayNumber}</Text>
                 </View>
               )}
               {dotColor && !isFuture ? (
@@ -141,7 +146,7 @@ function MonthCalendar({ logs, month, year, colors, selected, onSelect }) {
 export default function AttendanceScreen() {
   const { colors } = useTheme()
   const { tr, date, monthYear } = useLang()
-  const { user } = useAuth()
+  const { user, cycleStartDay = 1 } = useAuth()
   const [today,      setToday]      = useState(null)
   const [employeeId, setEmployeeId] = useState(null)
   const [logs,       setLogs]       = useState([])
@@ -150,8 +155,9 @@ export default function AttendanceScreen() {
   const [refreshing, setRefreshing] = useState(false)
 
   const now = new Date()
-  const [viewMonth, setViewMonth] = useState(now.getMonth())
-  const [viewYear,  setViewYear]  = useState(now.getFullYear())
+  const [activeYear,activeMonth] = activePayrollMonth(phoneToday(),cycleStartDay).split("-").map(Number)
+  const [viewMonth, setViewMonth] = useState(activeMonth-1)
+  const [viewYear,  setViewYear]  = useState(activeYear)
   // Days of the month being viewed (from /attendance/calendar), and the day
   // the employee tapped to see its check-in / check-out.
   const [monthDays,   setMonthDays]   = useState(null)
@@ -188,11 +194,12 @@ export default function AttendanceScreen() {
 
   // Load every day of the viewed month — the list of recent punches only
   // covered ~60 rows, so earlier months showed an empty calendar.
+  const cycle = payrollCycle(viewMonth,viewYear,cycleStartDay)
   const meId = user?.employee_id || employeeId
   const loadMonth = useCallback(async () => {
     if (!meId) return
-    const from = `${viewYear}-${pad2(viewMonth + 1)}-01`
-    const last = `${viewYear}-${pad2(viewMonth + 1)}-${pad2(new Date(viewYear, viewMonth + 1, 0).getDate())}`
+    const from = cycle.from
+    const last = cycle.to
     const t = phoneToday()
     const to = last < t ? last : t
     if (to < from) { setMonthDays([]); return }
@@ -207,7 +214,7 @@ export default function AttendanceScreen() {
         setMonthDays(Array.isArray(raw) ? raw : (raw?.rows || []))
       } catch { setMonthDays(null) }
     }
-  }, [meId, viewMonth, viewYear])
+  }, [meId, viewMonth, viewYear, cycleStartDay])
   useEffect(() => { loadMonth() }, [loadMonth])
 
   const prevMonth = () => {
@@ -216,8 +223,7 @@ export default function AttendanceScreen() {
     else setViewMonth(m => m - 1)
   }
   const nextMonth = () => {
-    const n = new Date()
-    if (viewYear > n.getFullYear() || (viewYear === n.getFullYear() && viewMonth >= n.getMonth())) return
+    if (viewYear > activeYear || (viewYear === activeYear && viewMonth >= activeMonth-1)) return
     setSelectedDay(null)
     if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1) }
     else setViewMonth(m => m + 1)
@@ -411,7 +417,8 @@ export default function AttendanceScreen() {
               <Text style={[s.navArrow, { color: colors.sub }]}>{chevron}</Text>
             </TouchableOpacity>
           </View>
-          <MonthCalendar logs={monthDays || logs} month={viewMonth} year={viewYear} colors={colors}
+          <Text style={{ color:colors.sub,marginBottom:10 }}>{tr('Payroll cycle','دورة الراتب')}: {cycle.from} → {cycle.to}</Text>
+          <MonthCalendar period={cycle} logs={monthDays || logs} month={viewMonth} year={viewYear} colors={colors}
             selected={selectedDay} onSelect={setSelectedDay} />
           {selectedDay ? (() => {
             const rec = (monthDays || logs).find(l => toDateStr(l.date || l.created_at) === selectedDay)

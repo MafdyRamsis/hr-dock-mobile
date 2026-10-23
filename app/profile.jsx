@@ -15,6 +15,7 @@ import Avatar from '../src/components/Avatar'
 import api from '../src/services/api'
 import { ls, back, chevron } from '../src/utils/rtl'
 import { personName, localDateOf } from '../src/i18n/format'
+import { closeLabel } from '../src/utils/a11y'
 
 const roleLabel = (role, tr) => ({
   employee:     tr('Employee', 'موظف'),
@@ -271,7 +272,7 @@ export default function ProfileScreen() {
         <SafeAreaView style={pw.safe}>
           <View style={pw.header}>
             <Text style={pw.title}>{t('change_password')}</Text>
-            <TouchableOpacity onPress={() => { setShowPassword(false); setPwErr(''); setPwForm({ current: '', next: '', confirm: '' }) }}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel={closeLabel} onPress={() => { setShowPassword(false); setPwErr(''); setPwForm({ current: '', next: '', confirm: '' }) }}>
               <Text style={pw.close}>✕</Text>
             </TouchableOpacity>
           </View>

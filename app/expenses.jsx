@@ -12,6 +12,7 @@ import api from '../src/services/api'
 import { useLang } from '../src/context/LanguageContext'
 import { ls, back } from '../src/utils/rtl'
 import { localDateOf } from '../src/i18n/format'
+import { closeLabel } from '../src/utils/a11y'
 
 const toISO  = localDateOf
 const fmtNum = n => n != null ? Number(n).toLocaleString('en-US', { minimumFractionDigits: 2 }) : '—'
@@ -203,7 +204,7 @@ export default function ExpensesScreen() {
         <SafeAreaView style={s.modal}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>{tr('New Expense Claim', 'مطالبة مصروفات جديدة')}</Text>
-            <TouchableOpacity onPress={() => setShowForm(false)}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel={closeLabel} onPress={() => setShowForm(false)}>
               <Text style={s.modalClose}>✕</Text>
             </TouchableOpacity>
           </View>

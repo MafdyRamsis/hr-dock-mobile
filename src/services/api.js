@@ -25,8 +25,17 @@ api.interceptors.request.use(async (config) => {
   return config
 })
 
+// Arabic app: the server sends message_ar with its confirmations too
+// ("Sent for review", "Request submitted"…); show that instead of English.
+const arabicMessage = d => {
+  if (d && typeof d === 'object' && d.message_ar && I18nManager.isRTL) {
+    d.message_en = d.message
+    d.message = d.message_ar
+  }
+}
+
 api.interceptors.response.use(
-  r => r,
+  r => { arabicMessage(r?.data); return r },
   async (err) => {
     const status = err.response?.status
     const url = err.config?.url || ''

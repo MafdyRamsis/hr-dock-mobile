@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import {
+import { I18nManager,
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
   RefreshControl, ActivityIndicator, Alert, TextInput, Modal,
 } from 'react-native'
@@ -188,7 +188,7 @@ export default function LeaveApprovalsScreen() {
 
                 {/* Details */}
                 <View style={[s.details, { borderTopColor: colors.border }]}>
-                  <Row label={tr('Type', 'النوع')}    value={leaveTypeLabel(r.leave_type_name || r.leave_type, tr) || '—'} colors={colors} />
+                  <Row label={tr('Type', 'النوع')}    value={((I18nManager.isRTL && r.leave_type_name_ar) || leaveTypeLabel(r.leave_type_name || r.leave_type, tr)) || '—'} colors={colors} />
                   <Row label={tr('From', 'من')}      value={fmt(r.start_date)}  colors={colors} />
                   <Row label={tr('To', 'إلى', 'لحد')} value={fmt(r.end_date)}    colors={colors} />
                   <Row label={tr('Days', 'عدد الأيام', 'الأيام')} value={daysText(r.days_requested ?? r.days, tr)} colors={colors} />

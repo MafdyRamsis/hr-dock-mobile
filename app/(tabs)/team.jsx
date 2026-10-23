@@ -1,3 +1,4 @@
+import LeadershipView from '../../src/components/LeadershipView'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
@@ -14,6 +15,7 @@ import MoodSlider from '../../src/components/MoodSlider'
 import { SkeletonCard } from '../../src/components/Skeleton'
 import { ls, fwd } from '../../src/utils/rtl'
 import { useLang } from '../../src/context/LanguageContext'
+import { closeLabel } from '../../src/utils/a11y'
 
 const categories = (tr) => [
   { v: 'teamwork',     emoji: '🤝', label: tr('Teamwork', 'روح الفريق') },
@@ -37,7 +39,7 @@ const timeAgo = (iso, tr) => {
   return tr(`${Math.floor(mins / 1440)}d ago`, `منذ ${Math.floor(mins / 1440)} يوم`, `من ${Math.floor(mins / 1440)} يوم`)
 }
 
-export default function TeamScreen() {
+export function RecognitionScreen() {
   const { user } = useAuth()
   const { colors, isDark } = useTheme()
   const { tr, t } = useLang()
@@ -228,7 +230,7 @@ export default function TeamScreen() {
         <SafeAreaView style={[s.modalSafe, { backgroundColor: colors.bg }]}>
           <View style={[s.modalHeader, { borderBottomColor: colors.border }]}>
             <Text style={[s.modalTitle, { color: colors.text }]}>{tr('Give Kudos', 'أرسل تقديرًا', 'اشكر زميل')}</Text>
-            <TouchableOpacity onPress={() => setShowGive(false)}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel={closeLabel} onPress={() => setShowGive(false)}>
               <Text style={{ fontSize: 22, color: colors.sub }}>✕</Text>
             </TouchableOpacity>
           </View>
@@ -320,3 +322,5 @@ const s = StyleSheet.create({
   submitBtn: { borderRadius: 16, padding: 16, alignItems: 'center' },
   submitText: { color: 'white', fontSize: 15, fontWeight: '800' },
 })
+
+export default function TeamScreen() { return <LeadershipView mode="workforce" /> }

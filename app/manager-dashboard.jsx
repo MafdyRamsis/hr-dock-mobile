@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import {
+import { I18nManager,
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
   RefreshControl, ActivityIndicator,
 } from 'react-native'
@@ -205,7 +205,7 @@ export default function ManagerDashboard() {
                     {p.employee_name || `${p.first_name} ${p.last_name}`}
                   </Text>
                   <Text style={[s.leaveMeta, { color: colors.sub }]}>
-                    {leaveTypeLabel(p.leave_type_name || p.leave_type, tr)} · {daysText(p.days_requested ?? p.days, tr)}
+                    {((I18nManager.isRTL && p.leave_type_name_ar) || leaveTypeLabel(p.leave_type_name || p.leave_type, tr))} · {daysText(p.days_requested ?? p.days, tr)}
                   </Text>
                 </View>
                 <View style={s.pendingBadge}>
