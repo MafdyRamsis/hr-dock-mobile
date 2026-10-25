@@ -158,7 +158,7 @@ const s = StyleSheet.create({
   name:        { fontSize: 15, fontWeight: '700' },
   role:        { fontSize: 12, marginTop: 2 },
   actions:     { flexDirection: 'row', gap: 8, marginTop: 10, paddingTop: 10, borderTopWidth: 1 },
-  actionBtn:   { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#f8fafc', borderRadius: 8, padding: 8 },
+  actionBtn:   { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F5F4F0', borderRadius: 8, padding: 8 },
   callBtn:     { backgroundColor: '#f0fdf4' },
   actionIcon:  { fontSize: 14 },
   actionLabel: { fontSize: 12, flex: 1 },

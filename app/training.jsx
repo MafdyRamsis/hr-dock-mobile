@@ -12,7 +12,7 @@ import { useLang } from '../src/context/LanguageContext'
 import { back } from '../src/utils/rtl'
 
 const STATUS_STYLE = {
-  planned:    { bg: '#f1f5f9', color: '#475569', icon: '📅' },
+  planned:    { bg: '#EFEDE7', color: '#3D4D61', icon: '📅' },
   in_progress:{ bg: '#dbeafe', color: '#1e40af', icon: '▶️' },
   completed:  { bg: '#dcfce7', color: '#166534', icon: '✅' },
   cancelled:  { bg: '#fee2e2', color: '#991b1b', icon: '❌' },
@@ -195,9 +195,9 @@ const s = StyleSheet.create({
   statVal:     { fontSize: 26, fontWeight: '900' },
   statLabel:   { fontSize: 11, marginTop: 2 },
   chips:       { flexDirection: 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' },
-  chip:        { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: '#e2e8f0' },
+  chip:        { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: '#E3E1DA' },
   chipActive:  { backgroundColor: '#1e3a8a' },
-  chipText:    { fontSize: 12, fontWeight: '600', color: '#475569' },
+  chipText:    { fontSize: 12, fontWeight: '600', color: '#3D4D61' },
   chipTextActive: { color: 'white' },
   empty:       { alignItems: 'center', paddingVertical: 60 },
   emptyIcon:   { fontSize: 48, marginBottom: 12 },

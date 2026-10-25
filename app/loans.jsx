@@ -16,7 +16,7 @@ const fmtNum = n => n != null ? Number(n).toLocaleString('en-US', { minimumFract
 const STATUS_STYLE = {
   active:    { bg: '#dbeafe', color: '#1e40af' },
   completed: { bg: '#dcfce7', color: '#166534' },
-  cancelled: { bg: '#f1f5f9', color: '#475569' },
+  cancelled: { bg: '#EFEDE7', color: '#3D4D61' },
   pending:   { bg: '#fef9c3', color: '#854d0e' },
 }
 
@@ -158,7 +158,7 @@ const s = StyleSheet.create({
   navTitle:       { fontSize: 17, fontWeight: '700' },
   center:         { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll:         { padding: 16, paddingBottom: 40, gap: 12 },
-  summaryCard:    { backgroundColor: '#0F1829', borderRadius: 18, padding: 20, marginBottom: 4 },
+  summaryCard:    { backgroundColor: '#132940', borderRadius: 18, padding: 20, marginBottom: 4 },
   summaryRow:     { flexDirection: 'row', alignItems: 'center' },
   summaryItem:    { flex: 1, alignItems: 'center' },
   summaryDivider: { width: 1, height: 40, backgroundColor: 'rgba(255,255,255,0.15)' },
@@ -177,7 +177,7 @@ const s = StyleSheet.create({
   amtItem:        { flex: 1, alignItems: 'center' },
   amtLabel:       { fontSize: 11, marginBottom: 3 },
   amtVal:         { fontSize: 13, fontWeight: '700' },
-  progressBg:     { height: 6, backgroundColor: '#e2e8f0', borderRadius: 3, marginBottom: 6, overflow: 'hidden' },
-  progressFill:   { height: 6, backgroundColor: '#2BC4BE', borderRadius: 3 },
+  progressBg:     { height: 6, backgroundColor: '#E3E1DA', borderRadius: 3, marginBottom: 6, overflow: 'hidden' },
+  progressFill:   { height: 6, backgroundColor: '#0E7C83', borderRadius: 3 },
   progressLabel:  { fontSize: 11, textAlign: 'center' },
 })

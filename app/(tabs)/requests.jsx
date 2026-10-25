@@ -1,795 +1,175 @@
-import { useState, useEffect, useCallback } from 'react'
-import {
-  View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  RefreshControl, ActivityIndicator, Modal, TextInput, Alert, Platform,
-} from 'react-native'
-import DateTimePicker from '@react-native-community/datetimepicker'
+// Requests: one list of everything this person has asked for — leave,
+// missions, permissions, overtime, expenses, HR tickets… — newest first, with
+// All / Pending / Approved / Rejected filters. "New" opens every request type.
+// Each kind of request still lives in its own table on the server; the
+// sources and how their rows are shown are in src/requests/catalog.js.
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useRouter, useLocalSearchParams } from 'expo-router'
-import { LinearGradient } from 'expo-linear-gradient'
+import { Ionicons } from '@expo/vector-icons'
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router'
 import { useAuth } from '../../src/context/AuthContext'
-import { useTheme, GRADIENTS } from '../../src/context/ThemeContext'
-import api from '../../src/services/api'
-import StatusBadge from '../../src/components/StatusBadge'
-import PillTag from '../../src/components/PillTag'
-import GradientIconBubble from '../../src/components/GradientIconBubble'
-import FeedItem from '../../src/components/FeedItem'
-import Skeleton, { SkeletonCard, SkeletonRow } from '../../src/components/Skeleton'
-import { ls } from '../../src/utils/rtl'
+import { useTheme } from '../../src/context/ThemeContext'
 import { useLang } from '../../src/context/LanguageContext'
-import { fmtTime, localDateOf } from '../../src/i18n/format'
-import { closeLabel } from '../../src/utils/a11y'
+import api from '../../src/services/api'
+import { listSources, toItems, sortItems, FILTERS, matchesFilter, STATUS_LABEL, resolveType, ALIASES } from '../../src/requests/catalog'
 
-const toISO  = localDateOf
-
-/* ── Permission types ── */
-const PERMISSIONS = tr => [
-  { key: 'wfh',       icon: '🏠', label: tr('Work From Home', 'العمل من المنزل', 'شغل من البيت'),   gradient: 'mint',     desc: tr('Request to work remotely', 'طلب العمل عن بُعد', 'اطلب تشتغل من البيت') },
-  { key: 'overtime',  icon: '⏱️', label: tr('Overtime', 'العمل الإضافي', 'أوفر تايم'),          gradient: 'sunshine', desc: tr('Log extra hours worked', 'تسجيل ساعات العمل الإضافية', 'سجّل الساعات الزيادة') },
-  { key: 'late',      icon: '🕐', label: tr('Late Arrival', 'إذن تأخير'),      gradient: 'coral',    desc: tr('Permission to arrive late', 'إذن بالحضور متأخرًا', 'هتيجي متأخر شوية') },
-  { key: 'early',     icon: '🚪', label: tr('Early Departure', 'إذن انصراف مبكر', 'إذن خروج بدري'),   gradient: 'lavender', desc: tr('Permission to leave early', 'إذن بالانصراف مبكرًا', 'هتمشي بدري شوية') },
-  { key: 'dayoff',    icon: '🛌', label: tr('Day Off', 'يوم راحة'),             gradient: 'mint',     desc: tr('Pick your rest day (weekend by request)', 'اختر يوم راحتك (العطلة بالطلب)', 'اختار يوم راحتك') },
-  { key: 'missed',    icon: '🛠️', label: tr('Missed Punch', 'بصمة منسية', 'نسيت أبصم'), gradient: 'sunshine', desc: tr('Forgot to check in or out', 'نسيت تسجيل الحضور أو الانصراف', 'نسيت تبصم دخول أو خروج') },
-  { key: 'shift',     icon: '🔄', label: tr('Change Shift', 'تغيير الوردية', 'غيّر الوردية'), gradient: 'lavender', desc: tr('Request a different work shift', 'طلب تغيير وردية العمل', 'اطلب وردية مختلفة') },
-]
-
-const SOLID = { mint: '#2ED573', sunshine: '#FFA801', coral: '#FF6B6B', lavender: '#8854D0' }
-
-/* ── Helpdesk categories ── */
-const CATEGORIES = tr => [
-  { key: 'hr',      icon: '👤', label: tr('HR', 'الموارد البشرية', 'الـ HR'),         desc: tr('Policies, queries, general HR', 'السياسات والاستفسارات وشؤون الموظفين', 'اللوايح والاستفسارات وأي حاجة HR'), gradient: 'mint' },
-  { key: 'it',      icon: '🖥️', label: tr('IT Support', 'الدعم الفني', 'الـ IT'), desc: tr('Equipment, access, software', 'الأجهزة والصلاحيات والبرامج'),   gradient: 'lavender' },
-  { key: 'finance', icon: '💰', label: tr('Finance', 'المالية', 'الحسابات'),     desc: tr('Reimbursement, advances', 'استرداد المصروفات والسُّلف', 'المصروفات والسلف'),       gradient: 'sunshine' },
-  { key: 'admin',   icon: '🏢', label: tr('Admin', 'الشؤون الإدارية'),       desc: tr('Office, facilities, supplies', 'المكتب والمرافق والمستلزمات'),  gradient: 'coral' },
-  { key: 'doc',     icon: '📄', label: tr('Documents', 'المستندات', 'الورق'),   desc: tr('Certificates, salary letters', 'الشهادات وخطابات الراتب', 'الشهادات وخطابات المرتب'),  gradient: 'lavender' },
-  { key: 'other',   icon: '📋', label: tr('Other', 'أخرى', 'حاجة تانية'),       desc: tr('Anything else', 'أي طلب آخر', 'أي حاجة تانية'),                 gradient: 'mint' },
-]
-
-const CAT_COLORS = { hr:'#2ED573', it:'#3b82f6', finance:'#FFA801', admin:'#FF6B6B', doc:'#8854D0', other:'#8A8DA3' }
-const CAT_GRADIENT = { hr:'mint', it:'lavender', finance:'sunshine', admin:'coral', doc:'lavender', other:'mint' }
-
-const PRIORITIES = tr => [
-  { key: 'low', label: tr('Low', 'منخفضة', 'عادي'), color: '#2ED573' },
-  { key: 'medium', label: tr('Medium', 'متوسطة', 'مهم'), color: '#FFA801' },
-  { key: 'high', label: tr('High', 'عالية', 'مستعجل'), color: '#FF6B6B' },
-]
-
-// Subjects prefill the (editable) request subject, so they use the formal wording.
-const QUICK = tr => [
-  { category: 'doc', subject: tr('Employment Certificate', 'شهادة عمل'), icon: '📃' },
-  { category: 'doc', subject: tr('Salary Certificate', 'مفردات مرتب'),     icon: '💵' },
-  { category: 'doc', subject: tr('Experience Letter', 'شهادة خبرة'),      icon: '🏅' },
-  { category: 'finance', subject: tr('Expense Reimbursement', 'مطالبة مصروفات'), icon: '🧾' },
-  { category: 'hr',  subject: tr('Policy Clarification', 'استفسار عن سياسة'),   icon: '📘' },
-  { category: 'it',  subject: tr('Equipment Request', 'طلب أجهزة'),      icon: '💻' },
-]
-
-/* ─────────────────── Permission Form ─────────────────── */
-function PermissionModal({ type, employeeId, reports = [], isManager = false, onClose, onDone }) {
-  const { tr, date: fmtDay } = useLang()
-  const perm  = PERMISSIONS(tr).find(p => p.key === type)
-  const solid = SOLID[perm.gradient]
-  const selectDate = tr('Select date', 'اختر التاريخ', 'اختار التاريخ')
-  const doneLabel  = tr('Done', 'تم', 'تمام')
-  const [date,    setDate]    = useState('')
-  const [endDate, setEndDate] = useState('')
-  const [hours,   setHours]   = useState('')
-  const [time,    setTime]    = useState('')
-  const [reason,  setReason]  = useState('')
-  const [punchKind, setPunchKind] = useState('missing_check_in')
-  const [otType,  setOtType]  = useState('weekday')
-  const [otComp,  setOtComp]  = useState('payment')
-  const [otPolicy, setOtPolicy] = useState(null)
-  const [err,     setErr]     = useState('')
-  const [saving,  setSaving]  = useState(false)
-  const [shifts, setShifts] = useState([])
-  const [shiftId, setShiftId] = useState('')
-  const [targetEmployeeId, setTargetEmployeeId] = useState(employeeId)
-
-  // date picker
-  const [pickerTarget,   setPickerTarget]   = useState(null)
-  const [pickerDate,     setPickerDate]     = useState(new Date())
-  const [showPicker,     setShowPicker]     = useState(false)
-  // time picker
-  const [showTimePicker, setShowTimePicker] = useState(false)
-  const [pickerTime,     setPickerTime]     = useState(new Date())
-
-  useEffect(() => {
-    if (type !== 'overtime') return
-    let active = true
-    api.get('/settings/overtime-rates')
-      .then(r => { if (active) setOtPolicy(r.data.data || null) })
-      .catch(() => {})
-    return () => { active = false }
-  }, [type])
-
-  useEffect(() => {
-    if (type !== 'shift') return
-    api.get('/attendance/shifts').then(r => setShifts(r.data.data || [])).catch(() => setShifts([]))
-  }, [type])
-
-  const openPicker = (target) => {
-    const cur = target === 'end' ? endDate : date
-    setPickerDate(cur ? new Date(cur) : new Date())
-    setPickerTarget(target)
-    setShowPicker(true)
-  }
-  const onDateChange = (e, sel) => {
-    if (Platform.OS === 'android') setShowPicker(false)
-    if (e.type === 'dismissed' || !sel) return
-    const iso = toISO(sel)
-    if (pickerTarget === 'end') setEndDate(iso); else setDate(iso)
-  }
-  const onTimeChange = (e, sel) => {
-    if (Platform.OS === 'android') setShowTimePicker(false)
-    if (e.type === 'dismissed' || !sel) return
-    setPickerTime(sel)
-    setTime(fmtTime(sel))
-  }
-
-  const submit = async () => {
-    if (!date) { setErr(tr('Please select a date.', 'يرجى اختيار التاريخ.', 'اختار التاريخ الأول.')); return }
-    setErr(''); setSaving(true)
-    try {
-      if (type === 'wfh') {
-        await api.post('/wfh', { employee_id: employeeId, date, end_date: endDate || undefined, reason })
-      } else if (type === 'overtime') {
-        if (!hours || isNaN(hours) || Number(hours) <= 0) { setErr(tr('Please enter valid hours.', 'يرجى إدخال عدد ساعات صحيح.', 'اكتب عدد ساعات صحيح.')); setSaving(false); return }
-        await api.post('/overtime', { employee_id: employeeId, date, hours: Number(hours), reason, overtime_type: otType, compensation_type: otComp })
-      } else if (type === 'dayoff') {
-        await api.post('/day-offs', { date, reason: reason || undefined })
-      } else if (type === 'missed') {
-        if (!time) { setErr(tr('Please select the time you actually came / left.', 'يرجى اختيار الوقت الفعلي للحضور / الانصراف.', 'اختار الوقت اللي جيت أو مشيت فيه.')); setSaving(false); return }
-        if (!reason || reason.trim().length < 3) { setErr(tr('Please write a short reason.', 'يرجى كتابة سبب مختصر.', 'اكتب سبب صغير.')); setSaving(false); return }
-        const [y, m, d] = date.split('-').map(Number)
-        const at = new Date(y, m - 1, d, pickerTime.getHours(), pickerTime.getMinutes()).toISOString()
-        await api.post('/attendance/corrections', {
-          date, correction_type: punchKind, reason,
-          ...(punchKind === 'missing_check_in' ? { requested_check_in: at } : { requested_check_out: at }),
-        })
-      } else if (type === 'shift') {
-        if (!shiftId) { setErr(tr('Please select a shift.', 'يرجى اختيار الوردية.', 'اختار الوردية.')); setSaving(false); return }
-        await api.post('/employee-requests/shift_change', {
-          employee_id: targetEmployeeId,
-          payload: { shift_id: shiftId, effective_date: date, reason: reason || undefined },
-        })
-      } else {
-        // Late arrival / early departure → a real attendance excuse (إذن).
-        // The server takes the other end of the window from the shift, and
-        // once approved the late minutes it covers aren't deducted. (These
-        // used to be helpdesk tickets, so approving one changed nothing.)
-        if (!time) { setErr(type === 'late' ? tr('Please select the time you will arrive.', 'يرجى اختيار وقت الحضور.', 'اختار هتوصل الساعة كام.') : tr('Please select the time you will leave.', 'يرجى اختيار وقت الانصراف.', 'اختار هتمشي الساعة كام.')); setSaving(false); return }
-        await api.post('/attendance/excuses', {
-          date, kind: type === 'late' ? 'late_arrival' : 'early_departure', time, reason: reason || undefined,
-        })
-      }
-      onDone()
-      Alert.alert(tr('Submitted', 'تم الإرسال', 'اتبعت'), tr('Your request has been sent for approval.', 'تم إرسال الطلب للموافقة.', 'طلبك اتبعت، ومستني رد.'))
-    } catch (e) {
-      setErr(e.response?.data?.message || tr('Submission failed. Please try again.', 'تعذّر إرسال الطلب. حاول مرة أخرى.', 'معرفناش نبعت الطلب. يلا نجرّب تاني.'))
-    } finally { setSaving(false) }
-  }
-
-  const DateBtn = ({ target, value, label }) => (
-    <TouchableOpacity style={pf.dateBtn} onPress={() => openPicker(target)}>
-      <Text style={pf.dateBtnLabel}>{label}</Text>
-      <Text style={[pf.dateBtnVal, !value && pf.datePlaceholder]}>
-        {value ? fmtDay(value) : selectDate} 📅
-      </Text>
-    </TouchableOpacity>
-  )
-
-  return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <SafeAreaView style={pf.safe}>
-        <View style={pf.header}>
-          <GradientIconBubble icon={perm.icon} gradient={perm.gradient} size={48} radius={16} />
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={pf.title}>{perm.label}</Text>
-            <Text style={pf.desc}>{perm.desc}</Text>
-          </View>
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel={closeLabel} onPress={onClose}><Text style={pf.close}>✕</Text></TouchableOpacity>
-        </View>
-
-        <ScrollView style={pf.scroll} keyboardShouldPersistTaps="handled">
-          {/* Date */}
-          <DateBtn target="start" value={date} label={tr('Date', 'التاريخ')} />
-
-          {/* WFH: optional end date */}
-          {type === 'wfh' && (
-            <DateBtn target="end" value={endDate} label={tr('End Date (optional – for multi-day)', 'تاريخ النهاية (اختياري – لأكثر من يوم)', 'تاريخ النهاية (لو أكتر من يوم)')} />
-          )}
-
-          {type === 'shift' && isManager && reports.length > 0 && (
-            <View style={pf.field}>
-              <Text style={pf.label}>{tr('Employee', 'الموظف')}</Text>
-              <View style={{ gap: 7 }}>
-                {[{ id: employeeId, first_name: tr('Myself', 'نفسي') }, ...reports].map(emp => (
-                  <TouchableOpacity key={emp.id} onPress={() => setTargetEmployeeId(emp.id)} style={[pf.dateBtn, { borderWidth: 1.5, borderColor: targetEmployeeId === emp.id ? solid : '#E6E8F0' }]}>
-                    <Text style={[pf.dateBtnVal, { color: targetEmployeeId === emp.id ? solid : '#0F1829' }]}>{emp.first_name} {emp.last_name || ''}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {type === 'shift' && (
-            <View style={pf.field}>
-              <Text style={pf.label}>{tr('Requested Shift', 'الوردية المطلوبة', 'الوردية الجديدة')}</Text>
-              <View style={{ gap: 7 }}>
-                {shifts.map(shift => (
-                  <TouchableOpacity key={shift.id} onPress={() => setShiftId(shift.id)} style={[pf.dateBtn, { borderWidth: 1.5, borderColor: shiftId === shift.id ? solid : '#E6E8F0' }]}>
-                    <Text style={[pf.dateBtnVal, { color: shiftId === shift.id ? solid : '#0F1829' }]}>{shift.name} · {String(shift.start_time || '').slice(0,5)}–{String(shift.end_time || '').slice(0,5)}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {/* iOS picker */}
-          {showPicker && Platform.OS === 'ios' && (
-            <View style={pf.iosPicker}>
-              <View style={pf.iosPickerHeader}>
-                <Text style={pf.iosPickerLabel}>{pickerTarget === 'end' ? tr('End Date', 'تاريخ النهاية') : tr('Date', 'التاريخ')}</Text>
-                <TouchableOpacity onPress={() => setShowPicker(false)}>
-                  <Text style={pf.iosPickerDone}>{doneLabel}</Text>
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker value={pickerDate} mode="date" display="spinner" onChange={onDateChange} textColor="#000000" themeVariant="light" />
-            </View>
-          )}
-          {showPicker && Platform.OS === 'android' && (
-            <DateTimePicker value={pickerDate} mode="date" display="default" onChange={onDateChange} />
-          )}
-
-          {/* Overtime: hours */}
-          {type === 'overtime' && (
-            <View style={pf.field}>
-              <Text style={pf.label}>{tr('Hours of Overtime', 'ساعات العمل الإضافي', 'ساعات الأوفر تايم')}</Text>
-              <TextInput
-                style={pf.input}
-                placeholder={tr('e.g. 2', 'مثال: 2', 'مثلًا 2')}
-                placeholderTextColor="#B0B3C6"
-                value={hours}
-                onChangeText={setHours}
-                keyboardType="numeric"
-              />
-            </View>
-          )}
-
-          {/* Late / Early: expected time */}
-          {type === 'missed' && (
-            <View style={[pf.field, { flexDirection: 'row', gap: 8 }]}>
-              {[['missing_check_in', tr('Check-in', 'حضور', 'دخول')], ['missing_check_out', tr('Check-out', 'انصراف', 'خروج')]].map(([k, l]) => (
-                <TouchableOpacity key={k} onPress={() => setPunchKind(k)} style={[pf.dateBtn, { flex: 1, borderColor: punchKind === k ? solid : '#E6E8F0', borderWidth: 1.5 }]}>
-                  <Text style={[pf.dateBtnVal, { color: punchKind === k ? solid : '#8A8DA3', textAlign: 'center' }]}>{l}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-          {type === 'overtime' && (
-            <View style={pf.field}>
-              <Text style={pf.label}>{tr('Overtime type', 'نوع العمل الإضافي', 'نوع الأوفر تايم')}</Text>
-              <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
-                {[['weekday', tr('Workday', 'يوم عمل')], ['weekend', tr('Weekend', 'عطلة أسبوعية', 'الويك إند')], ['holiday', tr('Holiday', 'عطلة رسمية')]].map(([k, l]) => (
-                  <TouchableOpacity key={k} onPress={() => { setOtType(k); if (k === 'weekday') setOtComp('payment') }} style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1.5, borderColor: otType === k ? solid : '#E6E8F0' }}>
-                    <Text style={{ color: otType === k ? solid : '#8A8DA3', fontWeight: '700' }}>{l}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              {otType !== 'weekday' && (
-                <View style={{ flexDirection: 'row', gap: 6, marginTop: 10 }}>
-                  {[['payment', tr('Get paid', 'مقابل مادي', 'فلوس')], ['time_off', tr('Day off instead', 'يوم راحة بدلًا منه', 'يوم راحة بداله')]].map(([k, l]) => (
-                    <TouchableOpacity key={k} onPress={() => setOtComp(k)} style={{ flex: 1, paddingVertical: 10, borderRadius: 12, borderWidth: 1.5, borderColor: otComp === k ? solid : '#E6E8F0', alignItems: 'center' }}>
-                      <Text style={{ color: otComp === k ? solid : '#8A8DA3', fontWeight: '700' }}>{l}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-            </View>
-          )}
-          {(type === 'late' || type === 'early' || type === 'missed') && (
-            <View style={pf.field}>
-              <Text style={pf.label}>{type === 'missed' ? tr('The time you actually came / left', 'الوقت الفعلي للحضور / الانصراف', 'الوقت اللي جيت أو مشيت فيه') : type === 'late' ? tr('Expected Arrival Time', 'وقت الحضور المتوقع', 'هتوصل إمتى؟') : tr('Expected Departure Time', 'وقت الانصراف المتوقع', 'هتمشي إمتى؟')}</Text>
-              <TouchableOpacity style={pf.dateBtn} onPress={() => { setPickerTime(new Date()); setShowTimePicker(true) }}>
-                <Text style={pf.dateBtnLabel}>{type === 'late' ? tr('Arrival Time', 'وقت الحضور', 'وقت الوصول') : tr('Departure Time', 'وقت الانصراف', 'وقت الخروج')}</Text>
-                <Text style={[pf.dateBtnVal, !time && pf.datePlaceholder]}>
-                  {time || tr('Select time', 'اختر الوقت', 'اختار الوقت')} 🕐
-                </Text>
-              </TouchableOpacity>
-              {showTimePicker && Platform.OS === 'ios' && (
-                <View style={pf.iosPicker}>
-                  <View style={pf.iosPickerHeader}>
-                    <Text style={pf.iosPickerLabel}>{tr('Select Time', 'اختر الوقت', 'اختار الوقت')}</Text>
-                    <TouchableOpacity onPress={() => setShowTimePicker(false)}>
-                      <Text style={pf.iosPickerDone}>{doneLabel}</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <DateTimePicker value={pickerTime} mode="time" display="spinner" onChange={onTimeChange} textColor="#000000" themeVariant="light" />
-                </View>
-              )}
-              {showTimePicker && Platform.OS === 'android' && (
-                <DateTimePicker value={pickerTime} mode="time" display="default" onChange={onTimeChange} />
-              )}
-            </View>
-          )}
-
-          {/* Reason */}
-          <View style={pf.field}>
-            <Text style={pf.label}>{tr('Reason', 'السبب')}</Text>
-            <TextInput
-              style={[pf.input, pf.textarea]}
-              placeholder={tr('Please explain your request…', 'يرجى توضيح طلبك…', 'اكتب تفاصيل طلبك…')}
-              placeholderTextColor="#B0B3C6"
-              value={reason}
-              onChangeText={setReason}
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-            />
-          </View>
-
-          {type === 'overtime' && otPolicy && (
-            <View style={[pf.errBox, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}>
-              <Text style={[pf.errText, { color: '#9A3412' }]}>{otPolicy.enforce_overtime_limits === false
-                ? tr('Your company currently allows overtime requests without an automatic hour cap.', 'تسمح سياسة الشركة حاليًا بطلبات العمل الإضافي دون حد تلقائي للساعات.', 'الشركة سامحة حاليًا بطلبات أوفر تايم من غير حد ساعات تلقائي.')
-                : otType === 'weekday'
-                  ? tr(`Company policy: up to ${otPolicy.weekday_daily_cap_hours} hours per day and ${otPolicy.weekday_monthly_cap_hours} hours per month.`, `سياسة الشركة: بحد أقصى ${otPolicy.weekday_daily_cap_hours} ساعة يوميًا و${otPolicy.weekday_monthly_cap_hours} ساعة شهريًا.`, `سياسة الشركة: لحد ${otPolicy.weekday_daily_cap_hours} ساعة في اليوم و${otPolicy.weekday_monthly_cap_hours} ساعة في الشهر.`)
-                  : tr(`Company policy: up to ${otPolicy.rest_day_daily_cap_hours} hours on a rest day or holiday.`, `سياسة الشركة: بحد أقصى ${otPolicy.rest_day_daily_cap_hours} ساعة في يوم الراحة أو الإجازة الرسمية.`, `سياسة الشركة: لحد ${otPolicy.rest_day_daily_cap_hours} ساعة في يوم الراحة أو الإجازة.`)
-              }</Text>
-            </View>
-          )}
-
-          {!!err && <View style={pf.errBox}><Text style={pf.errText}>{err}</Text></View>}
-
-          <TouchableOpacity onPress={submit} disabled={saving} activeOpacity={0.85}>
-            <LinearGradient colors={GRADIENTS[perm.gradient]} style={[pf.btn, saving && pf.btnDis]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-              {saving ? <ActivityIndicator color="white" /> : <Text style={pf.btnText}>{tr('Submit Request', 'إرسال الطلب', 'ابعت الطلب')}</Text>}
-            </LinearGradient>
-          </TouchableOpacity>
-        </ScrollView>
-      </SafeAreaView>
-    </Modal>
-  )
+const PILL = {
+  pending:   ['#FFF4DE', '#8A5A00'],
+  approved:  ['#E6F6F7', '#0E6A70'],
+  rejected:  ['#FFEDEA', '#9E3322'],
+  cancelled: ['#EFEDE7', '#56657A'],
+  draft:     ['#EFEDE7', '#56657A'],
 }
 
-/* ─────────────────── Main Screen ─────────────────── */
-export default function RequestsScreen() {
-  const { user } = useAuth()
+export default function Requests() {
   const router = useRouter()
+  const params = useLocalSearchParams()
   const { colors } = useTheme()
-  const { tr, date } = useLang()
-  const fmt = d => (d ? date(d) : '')
-  const PERMS = PERMISSIONS(tr)
-  const CATS  = CATEGORIES(tr)
-  const PRIOS = PRIORITIES(tr)
-  const [tickets,    setTickets]    = useState([])
-  const [wfhList,    setWfhList]    = useState([])
-  const [otList,     setOtList]     = useState([])
-  const [shiftList,  setShiftList]  = useState([])
-  const [loading,    setLoading]    = useState(true)
+  const { tr, ar, date } = useLang()
+  const { user, can = () => true } = useAuth() || {}
+  const T = l => (l ? (ar ? l[1] : l[0]) : '')
+  const [items, setItems] = useState([])
+  const [failed, setFailed] = useState(0)
+  const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  const [employeeId, setEmployeeId] = useState(user?.employee_id || null)
+  const [filter, setFilter] = useState(FILTERS.some(f => f.key === params.filter) ? params.filter : 'all')
+  const [open, setOpen] = useState(null)
+  const seq = useRef(0)
 
-  const [activePerm, setActivePerm] = useState(null) // wfh | overtime | late | early
-  // Home's "Incorrect record? Request a correction" opens a form here directly.
-  const { open: openParam } = useLocalSearchParams()
+  // Old links (Home → "request a correction") open a form straight away.
   useEffect(() => {
-    if (openParam === 'missed') setActivePerm('missed')
-  }, [openParam])
-  const [showForm,   setShowForm]   = useState(false)
-  const [saving,     setSaving]     = useState(false)
-  const [form,       setForm]       = useState({ category: 'hr', subject: '', description: '', priority: 'medium' })
-  const [formErr,    setFormErr]    = useState('')
-
-  const [loadError, setLoadError] = useState(false)
-  const [view, setView] = useState('new')
-  const [reports, setReports] = useState([])
-  const [excuseList, setExcuseList] = useState([])
-  const isManager = ['manager', 'admin', 'hr_manager'].includes(user?.role)
-
-  // Kept in sync with the auth context directly (see load()'s comment) —
-  // no more resolving it from an unscoped /employees list fetch.
-  useEffect(() => { setEmployeeId(user?.employee_id || null) }, [user])
+    const k = params.open && (ALIASES[params.open] || params.open)
+    if (k && resolveType(k)) router.push({ pathname: '/request-form', params: { type: k } })
+  }, [params.open])
+  useEffect(() => { if (params.filter && FILTERS.some(f => f.key === params.filter)) setFilter(params.filter) }, [params.filter, params.sent])
 
   const load = useCallback(async () => {
-    setLoadError(false)
-    try {
-      // Self-scope every source: without this, an admin/hr_manager/manager
-      // account saw every helpdesk ticket and every WFH/overtime request in
-      // the whole company on this "My Requests" screen (confirmed live
-      // against production). The old "resolve my employee_id by matching
-      // /employees against my email, else emps[0]" logic is also gone —
-      // it silently fell back to a random, unrelated employee whenever the
-      // email match failed, which then got submitted as the employee_id on
-      // new WFH/overtime requests below. user.employee_id from the auth
-      // context is already the source of truth for this (used the same way
-      // elsewhere in the app, e.g. team.jsx).
-      const empQS = user?.employee_id ? `?employee_id=${user.employee_id}` : ''
-      const [tickRes, wfhRes, otRes, shiftRes, excRes] = await Promise.allSettled([
-        api.get('/helpdesk?limit=50&mine=1'),
-        api.get(`/wfh${empQS}`),
-        api.get(`/overtime${empQS}`),
-        api.get('/employee-requests?type=shift_change'),
-        user?.employee_id ? api.get(`/attendance/excuses?employee_id=${user.employee_id}&limit=50`) : Promise.reject(new Error('no employee')),
-      ])
-      if (excRes.status === 'fulfilled') {
-        const raw = excRes.value.data.data
-        setExcuseList(Array.isArray(raw) ? raw : (raw?.rows || []))
-      }
-      if (tickRes.status === 'fulfilled') setTickets(tickRes.value.data.data || [])
-      if (wfhRes.status  === 'fulfilled') setWfhList(wfhRes.value.data.data  || [])
-      if (otRes.status   === 'fulfilled') setOtList(otRes.value.data.data    || [])
-      if (shiftRes.status === 'fulfilled') {
-        setShiftList((shiftRes.value.data.data || []).filter(r => r.employee_id === user?.employee_id || r.requested_by === user?.id))
-      }
-      if (isManager && user?.employee_id) {
-        const empRes = await api.get('/employees?limit=10000&status=active')
-        setReports((empRes.data.data || []).filter(e => e.manager_id === user.employee_id))
-      }
-    } catch { setLoadError(true) }
-    finally { setLoading(false); setRefreshing(false) }
-  }, [user, isManager])
+    const mySeq = ++seq.current
+    const sources = listSources({ employeeId: user?.employee_id, userId: user?.id, can, role: user?.role })
+    const res = await Promise.allSettled(sources.map(s => api.get(s.path)))
+    if (mySeq !== seq.current) return
+    const all = []
+    let bad = 0
+    res.forEach((r, i) => {
+      if (r.status === 'fulfilled') all.push(...toItems(sources[i], r.value?.data?.data))
+      else if (r.reason?.response?.status !== 403) bad++   // 403 = switched off for this company/role
+    })
+    setItems(sortItems(all))
+    setFailed(bad)
+    setLoading(false); setRefreshing(false)
+  }, [user?.employee_id, user?.id, user?.role])
 
-  useEffect(() => { load() }, [])
+  // Reload whenever the tab is shown, so a request sent a moment ago is there.
+  useFocusEffect(useCallback(() => { load() }, [load]))
 
-  const openForm = (preset = {}) => {
-    setForm({ category: 'hr', subject: '', description: '', priority: 'medium', ...preset })
-    setFormErr('')
-    setShowForm(true)
+  const shown = items.filter(i => matchesFilter(i, filter))
+  const count = k => items.filter(i => matchesFilter(i, k)).length
+
+  const titleOf = i => i.title ? T(i.title) : T(resolveType(i.type)?.label) || i.type
+  const whenOf = i => {
+    if (!i.from) return ''
+    const a = date(i.from, { weekday: 'short', year: false })
+    return i.to && i.to !== i.from ? `${a} – ${date(i.to, { year: false })}` : a
   }
-
-  const submit = async () => {
-    if (!form.subject.trim())     { setFormErr(tr('Please enter a subject.', 'يرجى إدخال عنوان الطلب.', 'اكتب عنوان الطلب.')); return }
-    if (!form.description.trim()) { setFormErr(tr('Please describe your request.', 'يرجى وصف طلبك.', 'اكتب تفاصيل طلبك.')); return }
-    setFormErr(''); setSaving(true)
-    try {
-      await api.post('/helpdesk', { subject: form.subject.trim(), description: form.description.trim(), priority: form.priority, category: form.category })
-      setShowForm(false)
-      await load()
-      Alert.alert(tr('Submitted', 'تم الإرسال', 'اتبعت'), tr('Your request has been sent to HR.', 'تم إرسال طلبك إلى الموارد البشرية.', 'طلبك وصل للـ HR، ومستني رد.'))
-    } catch (e) {
-      setFormErr(e.response?.data?.message || tr('Failed to submit.', 'تعذّر إرسال الطلب. حاول مرة أخرى.', 'معرفناش نبعت الطلب. يلا نجرّب تاني.'))
-    } finally { setSaving(false) }
-  }
-
-  const allPermissions = [
-    ...wfhList.map(x => ({ ...x, _type: 'wfh',      icon: '🏠', label: PERMS[0].label, gradient: 'mint' })),
-    ...otList.map(x =>  ({ ...x, _type: 'overtime',  icon: '⏱️', label: PERMS[1].label, gradient: 'sunshine' })),
-    ...shiftList.map(x => ({ ...x, date: x.payload?.effective_date, _type: 'shift', icon: '🔄', label: PERMS.find(p => p.key === 'shift')?.label, gradient: 'lavender' })),
-    ...excuseList.map(x => ({ ...x, _type: 'excuse', icon: '🕐', label: tr('Permission', 'إذن'), gradient: 'coral' })),
-  ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-
+  const statusText = i => (i.type === 'helpdesk' && i.status === 'approved' ? tr('Done', 'تم') : T(STATUS_LABEL[i.status]))
 
   return (
-    <SafeAreaView style={[s.safe, { backgroundColor: colors.bg }]} edges={['top']}>
-      <ScrollView
-        contentContainerStyle={s.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor="#8854D0" />}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={[s.pageTitle, { color: colors.text }]}>{tr('Requests', 'الطلبات', 'طلباتك')}</Text>
-
-        {loadError && (
-          <View style={s.errorBanner}>
-            <Text style={s.errorText}>⚠️  {tr('Could not load requests — pull down to retry', 'تعذّر تحميل الطلبات — اسحب للأسفل لإعادة المحاولة', 'معرفناش نحمّل الطلبات — اسحب لتحت ونجرّب تاني')}</Text>
-          </View>
-        )}
-
-        <View style={s.viewTabs}>
-          {[
-            ['new', tr('New Request', 'طلب جديد', 'طلب جديد')],
-            ['history', tr('My History', 'سجل طلباتي', 'طلباتي القديمة')],
-            ...(isManager ? [['manager', tr('Manager', 'المدير', 'إدارة الفريق')]] : []),
-          ].map(([key, label]) => (
-            <TouchableOpacity key={key} onPress={() => setView(key)} style={[s.viewTab, view === key && s.viewTabActive]}>
-              <Text style={[s.viewTabText, view === key && s.viewTabTextActive]}>{label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {view === 'manager' && (
-          <View style={s.section}>
-            <TouchableOpacity style={[s.managerAction, { backgroundColor: colors.card }]} onPress={() => router.push('/manager-dashboard')}>
-              <Text style={s.managerIcon}>📊</Text><View style={{flex:1}}><Text style={[s.managerTitle,{color:colors.text}]}>{tr('Manager Dashboard','لوحة المدير')}</Text><Text style={{color:colors.muted}}>{tr('Attendance and team overview','الحضور ونظرة عامة على الفريق')}</Text></View>
-            </TouchableOpacity>
-            <TouchableOpacity style={[s.managerAction, { backgroundColor: colors.card }]} onPress={() => router.push('/leave-approvals')}>
-              <Text style={s.managerIcon}>✅</Text><View style={{flex:1}}><Text style={[s.managerTitle,{color:colors.text}]}>{tr('Pending Approvals','الموافقات المعلقة')}</Text><Text style={{color:colors.muted}}>{tr('Review team leave requests','مراجعة إجازات الفريق')}</Text></View>
-            </TouchableOpacity>
-            <TouchableOpacity style={[s.managerAction, { backgroundColor: colors.card }]} onPress={() => setActivePerm('shift')}>
-              <Text style={s.managerIcon}>🔄</Text><View style={{flex:1}}><Text style={[s.managerTitle,{color:colors.text}]}>{tr('Request Team Shift Change','طلب تغيير وردية للفريق')}</Text><Text style={{color:colors.muted}}>{tr('Choose a direct report and a new shift','اختر موظفًا مباشرًا والوردية الجديدة')}</Text></View>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* ── Permission Requests ── */}
-        {view === 'new' && <>
-        <Text style={[s.sectionLabel, { color: colors.sub }]}>{tr('Permission Requests', 'طلبات الأذونات', 'الأذونات')}</Text>
-        <View style={s.permGrid}>
-          {PERMS.map(p => (
-            <TouchableOpacity key={p.key} style={[s.permCard, { backgroundColor: colors.card, borderColor: colors.glassBorder }]} onPress={() => setActivePerm(p.key)} activeOpacity={0.85}>
-              <GradientIconBubble icon={p.icon} gradient={p.gradient} size={40} radius={13} />
-              <Text style={[s.permLabel, { color: SOLID[p.gradient] }]}>{p.label}</Text>
-              <Text style={[s.permDesc, { color: colors.muted }]} numberOfLines={2}>{p.desc}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        </>}
-
-        {/* Recent permissions list */}
-        {view === 'history' && allPermissions.length > 0 && (
-          <View style={s.section}>
-            <Text style={[s.sectionLabel, { color: colors.sub }]}>{tr('Permission History', 'سجل الأذونات', 'أذوناتك اللي فاتت')}</Text>
-            {allPermissions.slice(0, 6).map(p => (
-              <FeedItem
-                key={`${p._type}-${p.id}`}
-                icon={p.icon}
-                gradient={p.gradient}
-                title={p.label}
-                subtitle={`${fmt(p.date)}${p._type === 'overtime' && p.minutes ? ` · ${Math.round(p.minutes / 60)}${tr('h', ' ساعة')}` : ''}${p._type === 'excuse' && p.from_time ? ` · ${String(p.from_time).slice(0, 5)}–${String(p.to_time).slice(0, 5)}` : ''}`}
-                right={<StatusBadge status={p.status} />}
-              />
-            ))}
-          </View>
-        )}
-
-        {/* ── HR / General Requests ── */}
-        {view === 'new' && <>
-        <View style={s.sectionRow}>
-          <Text style={[s.sectionLabel, { color: colors.sub }]}>{tr('HR Requests', 'طلبات الموارد البشرية', 'طلبات الـ HR')}</Text>
-          <TouchableOpacity onPress={() => openForm()} activeOpacity={0.85}>
-            <LinearGradient colors={GRADIENTS.lavender} style={s.newBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-              <Text style={s.newBtnText}>+ {tr('New', 'جديد', 'اطلب')}</Text>
-            </LinearGradient>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
+      <View style={st.head}>
+        <Text accessibilityRole="header" style={[st.title, { color: colors.text }]}>
+          {['manager', 'admin', 'hr_manager', 'ceo'].includes(user?.role) ? tr('My requests', 'طلباتي') : tr('Requests', 'الطلبات')}
+        </Text>
+        {can('requests') && (
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel={tr('New request', 'طلب جديد')} onPress={() => router.push('/new-request')}
+            style={[st.newBtn, { backgroundColor: colors.isDark ? colors.primary : colors.text }]}>
+            <Ionicons name="add" size={18} color="#FFFFFF" />
+            <Text style={st.newText}>{tr('New', 'جديد')}</Text>
           </TouchableOpacity>
-        </View>
+        )}
+      </View>
 
-        </>}
-
-        {/* Quick chips */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.quickScroll} contentContainerStyle={s.quickContent}>
-          {QUICK(tr).map((q, i) => (
-            <TouchableOpacity key={i} style={[s.quickChip, { backgroundColor: colors.card, borderColor: colors.glassBorder }]} onPress={() => openForm({ category: q.category, subject: q.subject })} activeOpacity={0.85}>
-              <Text style={s.quickIcon}>{q.icon}</Text>
-              <Text style={[s.quickLabel, { color: colors.sub }]}>{q.subject}</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={st.chips}>
+        {FILTERS.map(f => {
+          const on = filter === f.key
+          const n = f.key === 'all' ? null : count(f.key)
+          return (
+            <TouchableOpacity key={f.key} accessibilityRole="tab" accessibilityState={{ selected: on }} onPress={() => setFilter(f.key)}
+              style={[st.chip, { backgroundColor: on ? colors.text : colors.card, borderColor: on ? colors.text : colors.border }]}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: on ? colors.card : colors.sub }}>{T(f.label)}{n ? ` · ${n}` : ''}</Text>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Category grid */}
-        <View style={s.catGrid}>
-          {CATS.map(c => (
-            <TouchableOpacity key={c.key} style={[s.catCard, { backgroundColor: colors.card, borderColor: colors.glassBorder }]} onPress={() => openForm({ category: c.key })} activeOpacity={0.85}>
-              <GradientIconBubble icon={c.icon} gradient={CAT_GRADIENT[c.key]} size={36} radius={11} />
-              <Text style={[s.catLabel, { color: colors.text }]}>{c.label}</Text>
-              <Text style={[s.catDesc, { color: colors.muted }]} numberOfLines={2}>{c.desc}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Helpdesk list */}
-        {view === 'history' && (loading ? (
-          <View style={{ marginTop: 8 }}>
-            <SkeletonRow /><SkeletonRow /><SkeletonRow />
-          </View>
-        ) : tickets.length === 0 ? (
-          <View style={s.emptyBox}>
-            <Text style={s.emptyIcon}>📭</Text>
-            <Text style={[s.emptyTitle, { color: colors.text2 }]}>{tr('No requests yet', 'لا توجد طلبات بعد', 'لسه مفيش طلبات')}</Text>
-            <Text style={[s.emptySub, { color: colors.muted }]}>{tr('Use the categories above to submit your first request to HR.', 'اختر أحد الأقسام أعلاه لإرسال أول طلب إلى الموارد البشرية.', 'اختار من الأقسام اللي فوق وابعت أول طلب للـ HR.')}</Text>
-          </View>
-        ) : (
-          <View style={s.section}>
-            <Text style={[s.sectionLabel, { color: colors.sub }]}>{tr('All HR Requests', 'كل طلبات الموارد البشرية', 'كل طلباتك للـ HR')}</Text>
-            {tickets.map(t => <TicketCard key={t.id} ticket={t} colors={colors} />)}
-          </View>
-        ))}
+          )
+        })}
       </ScrollView>
 
-      {/* Permission Modal */}
-      {activePerm && (
-        <PermissionModal
-          type={activePerm}
-          employeeId={employeeId}
-          reports={reports}
-          isManager={isManager}
-          onClose={() => setActivePerm(null)}
-          onDone={() => { setActivePerm(null); load() }}
-        />
-      )}
-
-      {/* HR Request Modal */}
-      <Modal visible={showForm} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowForm(false)}>
-        <SafeAreaView style={m.safe}>
-          <View style={m.header}>
-            <Text style={m.title}>{tr('New HR Request', 'طلب جديد للموارد البشرية', 'طلب جديد للـ HR')}</Text>
-            <TouchableOpacity accessibilityRole="button" accessibilityLabel={closeLabel} onPress={() => setShowForm(false)}>
-              <Text style={m.close}>✕</Text>
-            </TouchableOpacity>
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor={colors.primary} />}
+      >
+        {failed > 0 && !loading && (
+          <View style={st.warn}><Text style={{ color: '#8A5A00', fontSize: 13 }}>
+            {tr('Some requests could not be loaded. Pull down to try again.', 'تعذّر تحميل بعض الطلبات. اسحب للأسفل لإعادة المحاولة.')}
+          </Text></View>
+        )}
+        {loading ? <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} /> : !shown.length ? (
+          <View style={[st.empty, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Ionicons name="document-text-outline" size={28} color={colors.muted} />
+            <Text style={{ color: colors.text, fontSize: 15, fontWeight: '700', marginTop: 8 }}>
+              {filter === 'all' ? tr('No requests yet', 'لا توجد طلبات بعد') : tr('Nothing here', 'لا يوجد شيء هنا')}
+            </Text>
+            {filter === 'all' && can('requests') && (
+              <Text style={{ color: colors.sub, fontSize: 13, marginTop: 4, textAlign: 'center' }}>
+                {tr('Tap New to ask for leave, a mission, overtime, a letter and more.', 'اضغط جديد لطلب إجازة أو مأمورية أو ساعات إضافية أو خطاب وغيرها.')}
+              </Text>
+            )}
           </View>
-          <ScrollView style={m.scroll} keyboardShouldPersistTaps="handled">
-            <Text style={m.label}>{tr('Category', 'التصنيف', 'النوع')}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 18 }}>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                {CATS.map(c => {
-                  const active = form.category === c.key
-                  return (
-                    <TouchableOpacity key={c.key} onPress={() => setForm(f => ({ ...f, category: c.key }))} activeOpacity={0.85}>
-                      {active ? (
-                        <LinearGradient colors={GRADIENTS[CAT_GRADIENT[c.key]]} style={m.catChip} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-                          <Text style={m.catChipIcon}>{c.icon}</Text>
-                          <Text style={m.catChipActive}>{c.label}</Text>
-                        </LinearGradient>
-                      ) : (
-                        <View style={[m.catChip, m.catChipInactive]}>
-                          <Text style={m.catChipIcon}>{c.icon}</Text>
-                          <Text style={m.catChipText}>{c.label}</Text>
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  )
-                })}
-              </View>
-            </ScrollView>
-
-            <Text style={m.label}>{tr('Priority', 'الأولوية')}</Text>
-            <View style={m.prioRow}>
-              {PRIOS.map(p => (
-                <TouchableOpacity
-                  key={p.key}
-                  style={[m.prioBtn, form.priority === p.key && { backgroundColor: p.color, borderColor: p.color }]}
-                  onPress={() => setForm(f => ({ ...f, priority: p.key }))}
-                >
-                  <Text style={[m.prioBtnText, form.priority === p.key && m.prioBtnActive]}>{p.label}</Text>
+        ) : (
+          <View style={[st.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            {shown.map((i, n) => {
+              const [bg, fg] = PILL[i.status] || PILL.pending
+              const expanded = open === i.id
+              return (
+                <TouchableOpacity key={i.id} activeOpacity={0.7} accessibilityRole="button"
+                  accessibilityLabel={`${titleOf(i)}, ${whenOf(i)}, ${statusText(i)}`}
+                  onPress={() => setOpen(expanded ? null : i.id)}
+                  style={[st.row, n > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }} numberOfLines={1}>{titleOf(i)}</Text>
+                      <Text style={{ fontSize: 12, color: colors.sub, marginTop: 2 }} numberOfLines={1}>
+                        {[whenOf(i), T(i.detail)].filter(Boolean).join(' · ')}
+                      </Text>
+                    </View>
+                    <View style={{ backgroundColor: colors.isDark ? colors.cardAlt : bg, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: colors.isDark ? colors.text : fg }}>{statusText(i)}</Text>
+                    </View>
+                  </View>
+                  {expanded && (
+                    <View style={{ marginTop: 8 }}>
+                      {!!i.created_at && <Text style={{ fontSize: 12, color: colors.sub }}>{tr('Sent', 'أُرسل')} {date(i.created_at)}</Text>}
+                      {!!i.note && <Text style={{ fontSize: 13, color: colors.text, marginTop: 4 }}>{i.status === 'rejected' ? tr('Reason: ', 'السبب: ') : ''}{i.note}</Text>}
+                      {i.status === 'draft' && <Text style={{ fontSize: 12, color: colors.sub, marginTop: 4 }}>{tr('Not sent yet — open Expenses to send it.', 'لم يُرسل بعد — افتح المصروفات لإرساله.')}</Text>}
+                    </View>
+                  )}
                 </TouchableOpacity>
-              ))}
-            </View>
-            <Text style={m.label}>{tr('Subject', 'العنوان')}</Text>
-            <TextInput style={m.input} placeholder={tr('What do you need?', 'ما الذي تحتاجه؟', 'محتاج إيه؟')} placeholderTextColor="#B0B3C6" value={form.subject} onChangeText={v => setForm(f => ({ ...f, subject: v }))} />
-            <Text style={m.label}>{tr('Details', 'التفاصيل')}</Text>
-            <TextInput style={[m.input, m.textarea]} placeholder={tr('Please provide details…', 'يرجى كتابة التفاصيل…', 'اكتب التفاصيل…')} placeholderTextColor="#B0B3C6" value={form.description} onChangeText={v => setForm(f => ({ ...f, description: v }))} multiline numberOfLines={5} textAlignVertical="top" />
-            {!!formErr && <View style={m.errBox}><Text style={m.errText}>{formErr}</Text></View>}
-            <TouchableOpacity onPress={submit} disabled={saving} activeOpacity={0.85}>
-              <LinearGradient colors={GRADIENTS.lavender} style={[m.submitBtn, saving && m.submitDis]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-                {saving ? <ActivityIndicator color="white" /> : <Text style={m.submitText}>{tr('Submit Request', 'إرسال الطلب', 'ابعت الطلب')}</Text>}
-              </LinearGradient>
-            </TouchableOpacity>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
+              )
+            })}
+          </View>
+        )}
+      </ScrollView>
     </SafeAreaView>
   )
 }
 
-function TicketCard({ ticket: t, colors }) {
-  const { tr, date } = useLang()
-  const fmt = d => (d ? date(d) : '')
-  const CATS = CATEGORIES(tr)
-  const cat = CATS.find(c => c.key === t.category) || CATS[5]
-  const color = CAT_COLORS[t.category] || '#8A8DA3'
-  const prio = PRIORITIES(tr).find(p => p.key === t.priority)
-  return (
-    <View style={[tc.card, { backgroundColor: colors.card, borderColor: colors.glassBorder }]}>
-      <View style={tc.top}>
-        <GradientIconBubble icon={cat.icon} gradient={CAT_GRADIENT[t.category] || 'mint'} size={38} radius={12} />
-        <View style={{ flex: 1, minWidth: 0, marginLeft: 10 }}>
-          <Text style={[tc.subject, { color: colors.text }]} numberOfLines={1}>{t.subject}</Text>
-          <Text style={[tc.meta, { color: colors.muted }]}>{cat.label} · {fmt(t.created_at)}</Text>
-        </View>
-        <StatusBadge status={t.status} />
-      </View>
-      {t.description ? <Text style={[tc.desc, { color: colors.sub }]} numberOfLines={2}>{t.description}</Text> : null}
-      {prio && (
-        <View style={[tc.prioBadge, { backgroundColor: `${prio.color}18` }]}>
-          <View style={[tc.prioDot, { backgroundColor: prio.color }]} />
-          <Text style={[tc.prioText, { color: prio.color }]}>{prio.label}</Text>
-        </View>
-      )}
-    </View>
-  )
-}
-
-const s = StyleSheet.create({
-  safe:         { flex: 1 },
-  scroll:       { padding: 14, paddingBottom: 130 },
-  pageTitle:    { fontSize: 26, fontWeight: '900', marginBottom: 18 },
-  sectionLabel: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: ls(0.5), marginBottom: 10 },
-  sectionRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  section:      { marginBottom: 8 },
-  viewTabs:     { flexDirection:'row', backgroundColor:'#E8EDF5', borderRadius:14, padding:4, marginBottom:18, gap:4 },
-  viewTab:      { flex:1, paddingVertical:9, alignItems:'center', borderRadius:10 },
-  viewTabActive:{ backgroundColor:'white' },
-  viewTabText:  { fontSize:12, fontWeight:'700', color:'#64748b' },
-  viewTabTextActive:{ color:'#1e3a8a' },
-  managerAction:{ flexDirection:'row', alignItems:'center', gap:12, padding:15, borderRadius:14, marginBottom:10 },
-  managerIcon:  { fontSize:25 },
-  managerTitle: { fontSize:14, fontWeight:'800', marginBottom:3 },
-  newBtn:       { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8 },
-  newBtnText:   { color: 'white', fontWeight: '800', fontSize: 12 },
-
-  permGrid:     { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
-  permCard:     { width: '47%', borderRadius: 18, padding: 14, borderWidth: 1, shadowColor: '#8890B5', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 1 },
-  permLabel:    { fontSize: 13, fontWeight: '800', marginTop: 10, marginBottom: 3 },
-  permDesc:     { fontSize: 11, lineHeight: 15 },
-
-  quickScroll:  { marginBottom: 14, marginHorizontal: -4 },
-  quickContent: { paddingHorizontal: 4, gap: 8 },
-  quickChip:    { borderRadius: 14, paddingHorizontal: 12, paddingVertical: 10, alignItems: 'center', minWidth: 84, borderWidth: 1, shadowColor: '#8890B5', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 1 },
-  quickIcon:    { fontSize: 16, marginBottom: 4 },
-  quickLabel:   { fontSize: 10, fontWeight: '700', textAlign: 'center', maxWidth: 76 },
-
-  catGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
-  catCard:      { width: '47%', borderRadius: 18, padding: 14, borderWidth: 1, shadowColor: '#8890B5', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 1 },
-  catLabel:     { fontSize: 12, fontWeight: '800', marginTop: 8, marginBottom: 2 },
-  catDesc:      { fontSize: 10, lineHeight: 14 },
-
-  errorBanner:  { backgroundColor: '#FFF6DD', borderRadius: 14, padding: 12, marginBottom: 14, borderWidth: 1, borderColor: '#FFE9AE' },
-  errorText:    { fontSize: 12, color: '#92400e', fontWeight: '600', textAlign: 'center' },
-  emptyBox:     { alignItems: 'center', paddingVertical: 30 },
-  emptyIcon:    { fontSize: 40, marginBottom: 10 },
-  emptyTitle:   { fontSize: 15, fontWeight: '800', marginBottom: 6 },
-  emptySub:     { fontSize: 13, textAlign: 'center', maxWidth: 240, lineHeight: 18 },
-})
-
-const tc = StyleSheet.create({
-  card:      { borderRadius: 18, padding: 14, marginBottom: 8, borderWidth: 1, shadowColor: '#8890B5', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 1 },
-  top:       { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  subject:   { fontSize: 13, fontWeight: '700', marginBottom: 1 },
-  meta:      { fontSize: 11 },
-  desc:      { fontSize: 12, lineHeight: 16, marginBottom: 6 },
-  prioBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' },
-  prioDot:   { width: 5, height: 5, borderRadius: 3 },
-  prioText:  { fontSize: 10, fontWeight: '700', textTransform: 'capitalize' },
-})
-
-const pf = StyleSheet.create({
-  safe:           { flex: 1, backgroundColor: 'white' },
-  header:         { flexDirection: 'row', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#EEF0F8' },
-  title:          { fontSize: 16, fontWeight: '800', color: '#1A1B2E' },
-  desc:           { fontSize: 12, color: '#8A8DA3' },
-  close:          { fontSize: 22, color: '#8A8DA3' },
-  scroll:         { padding: 20 },
-  field:          { marginBottom: 16 },
-  label:          { fontSize: 11, fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: ls(0.4), marginBottom: 8 },
-  input:          { borderWidth: 1.5, borderColor: '#E3E6F3', borderRadius: 16, padding: 14, fontSize: 14, color: '#1A1B2E', backgroundColor: '#F5F6FC', marginBottom: 16 },
-  textarea:       { minHeight: 90, textAlignVertical: 'top' },
-  dateBtn:        { borderWidth: 1.5, borderColor: '#E3E6F3', borderRadius: 16, padding: 14, backgroundColor: '#F5F6FC', marginBottom: 16 },
-  dateBtnLabel:   { fontSize: 10, fontWeight: '700', color: '#8A8DA3', textTransform: 'uppercase', letterSpacing: ls(0.4), marginBottom: 4 },
-  dateBtnVal:     { fontSize: 14, fontWeight: '600', color: '#1A1B2E' },
-  datePlaceholder:{ color: '#B0B3C6', fontWeight: '400' },
-  iosPicker:      { backgroundColor: '#ffffff', borderRadius: 16, marginBottom: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#E3E6F3' },
-  iosPickerHeader:{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#E3E6F3', backgroundColor: '#ffffff' },
-  iosPickerLabel: { fontSize: 13, fontWeight: '600', color: '#374151' },
-  iosPickerDone:  { fontSize: 14, fontWeight: '700', color: '#8854D0' },
-  errBox:         { backgroundColor: '#FFE9E6', borderWidth: 1, borderColor: '#FFCFC9', borderRadius: 14, padding: 12, marginBottom: 14 },
-  errText:        { color: '#E14F4A', fontSize: 13, fontWeight: '600' },
-  btn:            { borderRadius: 16, padding: 16, alignItems: 'center', marginTop: 4, marginBottom: 40 },
-  btnDis:         { opacity: 0.6 },
-  btnText:        { color: 'white', fontSize: 15, fontWeight: '800' },
-})
-
-const m = StyleSheet.create({
-  safe:       { flex: 1, backgroundColor: 'white' },
-  header:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#EEF0F8' },
-  title:      { fontSize: 18, fontWeight: '800', color: '#1A1B2E' },
-  close:      { fontSize: 22, color: '#8A8DA3' },
-  scroll:     { padding: 20 },
-  label:      { fontSize: 11, fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: ls(0.4), marginBottom: 8 },
-  catChip:    { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },
-  catChipInactive: { borderWidth: 1.5, borderColor: '#E3E6F3', backgroundColor: '#F5F6FC' },
-  catChipIcon:{ fontSize: 13 },
-  catChipText:{ fontSize: 12, fontWeight: '700', color: '#475569' },
-  catChipActive:{ color: 'white', fontSize: 12, fontWeight: '800' },
-  prioRow:    { flexDirection: 'row', gap: 8, marginBottom: 18 },
-  prioBtn:    { flex: 1, borderWidth: 1.5, borderColor: '#E3E6F3', borderRadius: 12, paddingVertical: 9, alignItems: 'center', backgroundColor: '#F5F6FC' },
-  prioBtnText:{ fontSize: 12, fontWeight: '600', color: '#475569' },
-  prioBtnActive:{ color: 'white', fontWeight: '700' },
-  input:      { borderWidth: 1.5, borderColor: '#E3E6F3', borderRadius: 16, padding: 14, fontSize: 14, color: '#1A1B2E', backgroundColor: '#F5F6FC', marginBottom: 18 },
-  textarea:   { minHeight: 110, textAlignVertical: 'top' },
-  errBox:     { backgroundColor: '#FFE9E6', borderWidth: 1, borderColor: '#FFCFC9', borderRadius: 14, padding: 12, marginBottom: 14 },
-  errText:    { color: '#E14F4A', fontSize: 13, fontWeight: '600' },
-  submitBtn:  { borderRadius: 16, padding: 16, alignItems: 'center', marginTop: 4, marginBottom: 40 },
-  submitDis:  { opacity: 0.6 },
-  submitText: { color: 'white', fontSize: 15, fontWeight: '800' },
+const st = StyleSheet.create({
+  head: { paddingHorizontal: 20, paddingTop: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  title: { fontSize: 24, fontWeight: '700' },
+  newBtn: { height: 40, paddingHorizontal: 14, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  newText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
+  chips: { paddingHorizontal: 20, paddingVertical: 14, gap: 8 },
+  chip: { height: 36, paddingHorizontal: 14, borderRadius: 999, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  card: { borderRadius: 14, borderWidth: 1, overflow: 'hidden' },
+  row: { paddingHorizontal: 14, paddingVertical: 12, minHeight: 56, justifyContent: 'center' },
+  empty: { borderRadius: 14, borderWidth: 1, padding: 24, alignItems: 'center' },
+  warn: { backgroundColor: '#FFF4DE', borderRadius: 12, padding: 12, marginBottom: 12 },
 })

@@ -80,7 +80,7 @@ export default function ChangePasswordRequired() {
             </TouchableOpacity>
 
             <TouchableOpacity onPress={logout} style={{ marginTop: 16, alignItems: 'center' }}>
-              <Text style={{ color: '#64748b', fontSize: 13 }}>{t('sign_out')}</Text>
+              <Text style={{ color: '#56657A', fontSize: 13 }}>{t('sign_out')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -90,19 +90,19 @@ export default function ChangePasswordRequired() {
 }
 
 const s = StyleSheet.create({
-  safe:        { flex: 1, backgroundColor: '#0F1829' },
+  safe:        { flex: 1, backgroundColor: '#132940' },
   scroll:      { flexGrow: 1, justifyContent: 'center', padding: 24 },
   card:        { backgroundColor: 'white', borderRadius: 24, padding: 28, elevation: 10 },
-  title:       { fontSize: 22, fontWeight: '800', color: '#0F1829', marginBottom: 4 },
-  subtitle:    { fontSize: 14, color: '#64748b', marginBottom: 24 },
+  title:       { fontSize: 22, fontWeight: '800', color: '#132940', marginBottom: 4 },
+  subtitle:    { fontSize: 14, color: '#56657A', marginBottom: 24 },
   field:       { marginBottom: 16 },
   label:       { fontSize: 12, fontWeight: '600', color: '#374151', marginBottom: 6, textTransform: 'uppercase', letterSpacing: ls(0.4) },
-  input:       { borderWidth: 1.5, borderColor: '#e2e8f0', borderRadius: 12, padding: 14, fontSize: 15, color: '#1e293b', backgroundColor: '#fafafa' },
+  input:       { borderWidth: 1.5, borderColor: '#E3E1DA', borderRadius: 12, padding: 14, fontSize: 15, color: '#1F3550', backgroundColor: '#fafafa' },
   showRow:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  showText:    { fontSize: 13, color: '#64748b' },
+  showText:    { fontSize: 13, color: '#56657A' },
   errorBox:    { backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fecaca', borderRadius: 10, padding: 12, marginVertical: 12 },
   errorText:   { color: '#dc2626', fontSize: 13 },
-  btn:         { backgroundColor: '#0F1829', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 8 },
+  btn:         { backgroundColor: '#132940', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 8 },
   btnDisabled: { opacity: 0.6 },
   btnText:     { color: 'white', fontSize: 16, fontWeight: '700' },
 })

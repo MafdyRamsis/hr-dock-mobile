@@ -13,13 +13,13 @@ const prevChevron = IS_RTL ? '›' : '‹'
 
 const TYPE_CONFIG = {
   public:    { label: tr => tr('Public Holiday', 'إجازة رسمية'),                 color: '#E8583C', bg: '#fef2f2' },
-  company:   { label: tr => tr('Company Event',  'مناسبة الشركة', 'مناسبة للشركة'), color: '#2BC4BE', bg: '#f0fdfc' },
-  national:  { label: tr => tr('National Day',   'عيد قومي'),                    color: '#3b82f6', bg: '#eff6ff' },
+  company:   { label: tr => tr('Company Event',  'مناسبة الشركة', 'مناسبة للشركة'), color: '#0E7C83', bg: '#f0fdfc' },
+  national:  { label: tr => tr('National Day',   'عيد قومي'),                    color: '#16A8B0', bg: '#eff6ff' },
   religious: { label: tr => tr('Religious',      'مناسبة دينية'),                color: '#f59e0b', bg: '#fffbeb' },
 }
 const getType = (t, tr) => {
   const c = TYPE_CONFIG[t]
-  return c ? { ...c, label: c.label(tr) } : { label: t || tr('Holiday', 'إجازة رسمية'), color: '#64748b', bg: '#f1f5f9' }
+  return c ? { ...c, label: c.label(tr) } : { label: t || tr('Holiday', 'إجازة رسمية'), color: '#56657A', bg: '#EFEDE7' }
 }
 
 // Arabic counted nouns: 1 / 2 / 3–10 / 11+
@@ -118,11 +118,11 @@ export default function HolidaysScreen() {
       </View>
 
       {loading ? (
-        <View style={s.center}><ActivityIndicator color="#2BC4BE" size="large" /></View>
+        <View style={s.center}><ActivityIndicator color="#0E7C83" size="large" /></View>
       ) : (
         <ScrollView
           contentContainerStyle={s.scroll}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(year) }} tintColor="#2BC4BE" />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(year) }} tintColor="#0E7C83" />}
           showsVerticalScrollIndicator={false}
         >
           {loadError && (
@@ -329,7 +329,7 @@ const s = StyleSheet.create({
   errorText:      { color: '#991B1B', fontSize: 13, fontWeight: '700', textAlign: 'center' },
 
   // Hero
-  hero:           { backgroundColor: '#0F1829', borderRadius: 20, padding: 20, marginBottom: 14 },
+  hero:           { backgroundColor: '#132940', borderRadius: 20, padding: 20, marginBottom: 14 },
   yearNav:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   yearBtn:        { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   yearArrow:      { fontSize: 28, color: 'rgba(255,255,255,0.6)', fontWeight: '300' },
@@ -359,12 +359,12 @@ const s = StyleSheet.create({
   monthNavArrow:  { fontSize: 24, fontWeight: '300' },
   monthTitle:     { fontSize: 16, fontWeight: '800' },
   dayHeaders:     { flexDirection: 'row', marginBottom: 6 },
-  dayLabel:       { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '700', color: '#94a3b8' },
+  dayLabel:       { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '700', color: '#8494A6' },
   dayLabelAr:     { fontSize: 9, fontWeight: '600' },
   grid:           { flexDirection: 'row', flexWrap: 'wrap' },
   cell:           { width: '14.28%', alignItems: 'center', marginBottom: 6 },
   dayCircle:      { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
-  todayCircle:    { backgroundColor: '#0F1829' },
+  todayCircle:    { backgroundColor: '#132940' },
   dayNum:         { fontSize: 13, fontWeight: '600' },
   todayNum:       { color: 'white', fontWeight: '800' },
   dot:            { width: 5, height: 5, borderRadius: 3, marginTop: 1 },

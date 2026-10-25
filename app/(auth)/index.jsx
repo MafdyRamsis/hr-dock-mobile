@@ -255,7 +255,7 @@ const s = StyleSheet.create({
   input:       { borderWidth: 1.5, borderRadius: 12, padding: 14, fontSize: 15 },
   errorBox:    { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', borderRadius: 12, padding: 12, marginBottom: 16 },
   errorText:   { color: '#DC2626', fontSize: 13, fontWeight: '600' },
-  btnWrap:     { borderRadius: 14, marginTop: 6, shadowColor: '#4F46E5', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 5 },
+  btnWrap:     { borderRadius: 14, marginTop: 6, shadowColor: '#0E7C83', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 5 },
   btn:         { borderRadius: 14, padding: 16, alignItems: 'center' },
   btnDisabled: { opacity: 0.65 },
   btnText:     { color: 'white', fontSize: 16, fontWeight: '800' },

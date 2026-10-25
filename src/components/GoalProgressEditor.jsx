@@ -21,7 +21,7 @@ export default function GoalProgressEditor({ goal, onSaved }) {
   return <View style={{marginTop:12}}>
     <TextInput accessibilityLabel={tr('Progress percentage','نسبة التقدم')} keyboardType="number-pad" value={progress} onChangeText={setProgress} style={{color:colors.text,borderWidth:1,borderColor:colors.border,padding:10,borderRadius:10}} />
     <TextInput accessibilityLabel={tr('Progress note','ملاحظة التقدم')} value={note} onChangeText={setNote} placeholder={tr('Update / corrective action (optional)','تحديث أو إجراء تصحيحي (اختياري)')} placeholderTextColor={colors.sub} style={{color:colors.text,padding:10}} />
-    <TouchableOpacity onPress={save} disabled={saving} style={{backgroundColor:'#4338ca',padding:12,borderRadius:10}}><Text style={{color:'#fff',textAlign:'center'}}>{saving ? '…' : tr('Save progress','حفظ التقدم')}</Text></TouchableOpacity>
+    <TouchableOpacity onPress={save} disabled={saving} style={{backgroundColor:'#0E6A70',padding:12,borderRadius:10}}><Text style={{color:'#fff',textAlign:'center'}}>{saving ? '…' : tr('Save progress','حفظ التقدم')}</Text></TouchableOpacity>
     {!!error && <Text accessibilityRole="alert" style={{color:'#dc2626',marginTop:8}}>{error}</Text>}
   </View>
 }

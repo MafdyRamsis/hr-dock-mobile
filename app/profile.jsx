@@ -228,7 +228,7 @@ export default function ProfileScreen() {
             <Switch
               value={isDark}
               onValueChange={toggleTheme}
-              trackColor={{ false: '#e2e8f0', true: '#2BC4BE' }}
+              trackColor={{ false: '#E3E1DA', true: '#0E7C83' }}
               thumbColor="white"
             />
           </View>
@@ -243,7 +243,7 @@ export default function ProfileScreen() {
                 <Switch
                   value={bioEnabled}
                   onValueChange={toggleBiometric}
-                  trackColor={{ false: '#e2e8f0', true: '#2BC4BE' }}
+                  trackColor={{ false: '#E3E1DA', true: '#0E7C83' }}
                   thumbColor="white"
                 />
               </View>
@@ -287,7 +287,7 @@ export default function ProfileScreen() {
                 <TextInput
                   style={pw.input}
                   placeholder={ph}
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor="#8494A6"
                   value={pwForm[key]}
                   onChangeText={v => setPwForm(f => ({ ...f, [key]: v }))}
                   secureTextEntry
@@ -306,35 +306,35 @@ export default function ProfileScreen() {
 }
 
 const s = StyleSheet.create({
-  safe:        { flex: 1, backgroundColor: '#F0F4FA' },
-  navBar:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  safe:        { flex: 1, backgroundColor: '#F5F4F0' },
+  navBar:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#EFEDE7' },
   backBtn:     { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  backArrow:   { fontSize: 20, color: '#0F1829' },
-  backText:    { fontSize: 15, color: '#0F1829', fontWeight: '600' },
-  navTitle:    { fontSize: 16, fontWeight: '800', color: '#0F1829' },
+  backArrow:   { fontSize: 20, color: '#132940' },
+  backText:    { fontSize: 15, color: '#132940', fontWeight: '600' },
+  navTitle:    { fontSize: 16, fontWeight: '800', color: '#132940' },
   scroll:      { padding: 16, paddingBottom: 40 },
   avatarBox:   { alignItems: 'center', marginBottom: 24 },
   avatar:      { width: 80, height: 80, borderRadius: 40, backgroundColor: '#E8583C', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
   avatarText:  { color: 'white', fontWeight: '800', fontSize: 28 },
-  name:        { fontSize: 20, fontWeight: '800', color: '#0F1829', marginBottom: 4 },
-  email:       { fontSize: 13, color: '#64748b', marginBottom: 8 },
+  name:        { fontSize: 20, fontWeight: '800', color: '#132940', marginBottom: 4 },
+  email:       { fontSize: 13, color: '#56657A', marginBottom: 8 },
   roleBadge:   { backgroundColor: '#eff6ff', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 4, marginBottom: 4 },
   roleText:    { fontSize: 12, fontWeight: '700', color: '#1e3a8a', textTransform: 'capitalize' },
-  company:     { fontSize: 12, color: '#94a3b8' },
+  company:     { fontSize: 12, color: '#8494A6' },
   infoCard:    { backgroundColor: 'white', borderRadius: 14, padding: 16, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
-  infoRow:     { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f8fafc' },
-  infoLabel:   { fontSize: 13, color: '#64748b' },
-  infoValue:   { fontSize: 13, fontWeight: '600', color: '#0F1829', textTransform: 'capitalize' },
-  sectionTitle:{ fontSize: 11, fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: ls(0.5), marginBottom: 8 },
+  infoRow:     { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F5F4F0' },
+  infoLabel:   { fontSize: 13, color: '#56657A' },
+  infoValue:   { fontSize: 13, fontWeight: '600', color: '#132940', textTransform: 'capitalize' },
+  sectionTitle:{ fontSize: 11, fontWeight: '700', color: '#56657A', textTransform: 'uppercase', letterSpacing: ls(0.5), marginBottom: 8 },
   menuCard:    { backgroundColor: 'white', borderRadius: 14, overflow: 'hidden', marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
   menuItem:    { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14 },
   menuIcon:    { fontSize: 18, width: 26, textAlign: 'center' },
-  menuLabel:   { flex: 1, fontSize: 15, color: '#1e293b', fontWeight: '500' },
-  menuSub:     { fontSize: 12, color: '#94a3b8', marginTop: 1 },
+  menuLabel:   { flex: 1, fontSize: 15, color: '#1F3550', fontWeight: '500' },
+  menuSub:     { fontSize: 12, color: '#8494A6', marginTop: 1 },
   menuDanger:  { color: '#dc2626' },
-  menuArrow:   { fontSize: 20, color: '#94a3b8' },
-  divider:     { height: 1, backgroundColor: '#f1f5f9', marginLeft: 56 },
-  version:     { textAlign: 'center', color: '#94a3b8', fontSize: 12 },
+  menuArrow:   { fontSize: 20, color: '#8494A6' },
+  divider:     { height: 1, backgroundColor: '#EFEDE7', marginLeft: 56 },
+  version:     { textAlign: 'center', color: '#8494A6', fontSize: 12 },
 })
 
 const er = StyleSheet.create({
@@ -346,16 +346,16 @@ const er = StyleSheet.create({
 
 const pw = StyleSheet.create({
   safe:    { flex: 1, backgroundColor: 'white' },
-  header:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  title:   { fontSize: 18, fontWeight: '800', color: '#0F1829' },
-  close:   { fontSize: 22, color: '#64748b' },
+  header:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#EFEDE7' },
+  title:   { fontSize: 18, fontWeight: '800', color: '#132940' },
+  close:   { fontSize: 22, color: '#56657A' },
   scroll:  { padding: 20 },
   field:   { marginBottom: 16 },
   label:   { fontSize: 11, fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: ls(0.4), marginBottom: 8 },
-  input:   { borderWidth: 1.5, borderColor: '#e2e8f0', borderRadius: 12, padding: 14, fontSize: 15, color: '#1e293b', backgroundColor: '#fafafa' },
+  input:   { borderWidth: 1.5, borderColor: '#E3E1DA', borderRadius: 12, padding: 14, fontSize: 15, color: '#1F3550', backgroundColor: '#fafafa' },
   errBox:  { backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fecaca', borderRadius: 10, padding: 12, marginBottom: 16 },
   errText: { color: '#dc2626', fontSize: 13 },
-  btn:     { backgroundColor: '#0F1829', borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 8, marginBottom: 40 },
+  btn:     { backgroundColor: '#132940', borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 8, marginBottom: 40 },
   btnDis:  { opacity: 0.6 },
   btnText: { color: 'white', fontSize: 16, fontWeight: '700' },
 })

@@ -25,16 +25,16 @@ const timeAgo = (iso, tr, date) => {
 }
 
 const TYPE_META = {
-  leave_reviewed:       { icon: '🏖️', color: '#8854D0', label: 'Leave', labelAr: 'إجازة' },
-  leave_decided:        { icon: '🏖️', color: '#8854D0', label: 'Leave', labelAr: 'إجازة' },
-  day_off_reviewed:     { icon: '🛏️', color: '#2BC4BE', label: 'Day Off', labelAr: 'يوم راحة' },
-  attendance_reviewed:  { icon: '🕐', color: '#3b82f6', label: 'Attendance', labelAr: 'حضور' },
+  leave_reviewed:       { icon: '🏖️', color: '#3E5E80', label: 'Leave', labelAr: 'إجازة' },
+  leave_decided:        { icon: '🏖️', color: '#3E5E80', label: 'Leave', labelAr: 'إجازة' },
+  day_off_reviewed:     { icon: '🛏️', color: '#0E7C83', label: 'Day Off', labelAr: 'يوم راحة' },
+  attendance_reviewed:  { icon: '🕐', color: '#16A8B0', label: 'Attendance', labelAr: 'حضور' },
   approval_required:    { icon: '📋', color: '#f59e0b', label: 'Approval', labelAr: 'موافقة' },
   checkout_reminder:    { icon: '⏰', color: '#FF6B6B', label: 'Reminder', labelAr: 'تذكير' },
-  hr_reminder:          { icon: '🔔', color: '#2BC4BE', label: 'Reminder', labelAr: 'تذكير' },
+  hr_reminder:          { icon: '🔔', color: '#0E7C83', label: 'Reminder', labelAr: 'تذكير' },
 }
 
-const metaFor = type => TYPE_META[type] || { icon: '🔔', color: '#64748b', label: 'Notification', labelAr: 'إشعار' }
+const metaFor = type => TYPE_META[type] || { icon: '🔔', color: '#56657A', label: 'Notification', labelAr: 'إشعار' }
 
 // Calendar date (YYYY-MM-DD) of a server value on this phone. A plain date
 // passes through; a timestamp is read in local time — slicing the ISO string
@@ -100,11 +100,11 @@ export default function NotificationsScreen() {
       </View>
 
       {loading ? (
-        <View style={s.center}><ActivityIndicator color="#2BC4BE" size="large" /></View>
+        <View style={s.center}><ActivityIndicator color="#0E7C83" size="large" /></View>
       ) : (
         <ScrollView
           contentContainerStyle={s.scroll}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor="#2BC4BE" />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor="#0E7C83" />}
           showsVerticalScrollIndicator={false}
         >
           {items.length === 0 ? (
@@ -159,26 +159,26 @@ function NotifCard({ item, onPress, colors }) {
 }
 
 const s = StyleSheet.create({
-  safe:       { flex: 1, backgroundColor: '#F0F4FA' },
-  navBar:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  safe:       { flex: 1, backgroundColor: '#F5F4F0' },
+  navBar:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#EFEDE7' },
   backBtn:    { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  backArrow:  { fontSize: 20, color: '#0F1829' },
-  backText:   { fontSize: 15, color: '#0F1829', fontWeight: '600' },
-  navTitle:   { fontSize: 16, fontWeight: '800', color: '#0F1829' },
+  backArrow:  { fontSize: 20, color: '#132940' },
+  backText:   { fontSize: 15, color: '#132940', fontWeight: '600' },
+  navTitle:   { fontSize: 16, fontWeight: '800', color: '#132940' },
   center:     { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll:     { padding: 14, paddingBottom: 40 },
-  groupLabel: { fontSize: 11, fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: ls(0.5), marginTop: 8, marginBottom: 8, marginLeft: 2 },
+  groupLabel: { fontSize: 11, fontWeight: '700', color: '#8494A6', textTransform: 'uppercase', letterSpacing: ls(0.5), marginTop: 8, marginBottom: 8, marginLeft: 2 },
   card:       { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: 'white', borderRadius: 14, padding: 14, marginBottom: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 1 },
   iconBox:    { width: 46, height: 46, borderRadius: 13, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   icon:       { fontSize: 22 },
   cardTop:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 },
-  typeTag:    { fontSize: 10, fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: ls(0.4) },
+  typeTag:    { fontSize: 10, fontWeight: '700', color: '#8494A6', textTransform: 'uppercase', letterSpacing: ls(0.4) },
   time:       { fontSize: 10, color: '#cbd5e1' },
-  title:      { fontSize: 13, fontWeight: '700', color: '#0F1829', marginBottom: 2 },
-  sub:        { fontSize: 11, color: '#64748b', textTransform: 'capitalize' },
+  title:      { fontSize: 13, fontWeight: '700', color: '#132940', marginBottom: 2 },
+  sub:        { fontSize: 11, color: '#56657A', textTransform: 'capitalize' },
   dot:        { width: 8, height: 8, borderRadius: 4, flexShrink: 0 },
   emptyBox:   { alignItems: 'center', paddingTop: 80 },
   emptyIcon:  { fontSize: 48, marginBottom: 12 },
-  emptyTitle: { fontSize: 18, fontWeight: '800', color: '#0F1829', marginBottom: 6 },
-  emptyText:  { fontSize: 14, color: '#94a3b8' },
+  emptyTitle: { fontSize: 18, fontWeight: '800', color: '#132940', marginBottom: 6 },
+  emptyText:  { fontSize: 14, color: '#8494A6' },
 })

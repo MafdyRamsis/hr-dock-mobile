@@ -45,7 +45,7 @@ const STATUS_COLOR = {
   present: '#2ED573',
   late:    '#FFA801',
   absent:  '#FF6B6B',
-  leave:   '#8854D0',
+  leave:   '#3E5E80',
 }
 const STATUS_ICON = { present: '✅', late: '⏱️', absent: '❌', leave: '🏖️' }
 

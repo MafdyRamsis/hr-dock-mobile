@@ -12,13 +12,13 @@ const CATEGORY_COLORS = {
   event:      { bg: '#eff6ff', text: '#1d4ed8' },
   policy:     { bg: '#fef3c7', text: '#92400e' },
   hr:         { bg: '#f0fdf4', text: '#166534' },
-  general:    { bg: '#f1f5f9', text: '#475569' },
+  general:    { bg: '#EFEDE7', text: '#3D4D61' },
 }
 
 const PRIORITY_COLORS = {
   high:   '#ef4444',
   medium: '#f59e0b',
-  low:    '#94a3b8',
+  low:    '#8494A6',
 }
 
 const categoryLabel = (c, tr) => ({
@@ -59,11 +59,11 @@ export default function AnnouncementsScreen() {
       </View>
 
       {loading ? (
-        <View style={s.center}><ActivityIndicator color="#2BC4BE" size="large" /></View>
+        <View style={s.center}><ActivityIndicator color="#0E7C83" size="large" /></View>
       ) : (
         <ScrollView
           contentContainerStyle={s.scroll}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor="#2BC4BE" />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor="#0E7C83" />}
         >
           {items.length === 0 ? (
             <View style={s.emptyBox}>
@@ -102,17 +102,17 @@ export default function AnnouncementsScreen() {
 }
 
 const s = StyleSheet.create({
-  safe:         { flex: 1, backgroundColor: '#F0F4FA' },
-  navBar:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  safe:         { flex: 1, backgroundColor: '#F5F4F0' },
+  navBar:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#EFEDE7' },
   backBtn:      { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  backArrow:    { fontSize: 20, color: '#0F1829' },
-  backText:     { fontSize: 15, color: '#0F1829', fontWeight: '600' },
-  navTitle:     { fontSize: 16, fontWeight: '800', color: '#0F1829' },
+  backArrow:    { fontSize: 20, color: '#132940' },
+  backText:     { fontSize: 15, color: '#132940', fontWeight: '600' },
+  navTitle:     { fontSize: 16, fontWeight: '800', color: '#132940' },
   center:       { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll:       { padding: 16, paddingBottom: 32 },
   emptyBox:     { alignItems: 'center', paddingVertical: 60 },
   emptyIcon:    { fontSize: 40, marginBottom: 12 },
-  emptyText:    { fontSize: 15, color: '#94a3b8' },
+  emptyText:    { fontSize: 15, color: '#8494A6' },
   card:         { backgroundColor: 'white', borderRadius: 16, padding: 18, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
   pinnedBadge:  { backgroundColor: '#fef3c7', borderRadius: 8, alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, marginBottom: 10 },
   pinnedText:   { fontSize: 11, fontWeight: '700', color: '#92400e' },
@@ -120,9 +120,9 @@ const s = StyleSheet.create({
   catBadge:     { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   catText:      { fontSize: 11, fontWeight: '700', textTransform: 'capitalize' },
   dot:          { width: 8, height: 8, borderRadius: 4 },
-  title:        { fontSize: 16, fontWeight: '800', color: '#0F1829', marginBottom: 8 },
-  body:         { fontSize: 14, color: '#475569', lineHeight: 21, marginBottom: 14 },
+  title:        { fontSize: 16, fontWeight: '800', color: '#132940', marginBottom: 8 },
+  body:         { fontSize: 14, color: '#3D4D61', lineHeight: 21, marginBottom: 14 },
   cardFooter:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  by:           { fontSize: 12, color: '#94a3b8', fontWeight: '500' },
-  date:         { fontSize: 12, color: '#94a3b8' },
+  by:           { fontSize: 12, color: '#8494A6', fontWeight: '500' },
+  date:         { fontSize: 12, color: '#8494A6' },
 })

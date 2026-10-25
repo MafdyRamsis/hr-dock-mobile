@@ -2,73 +2,85 @@ import { createContext, useContext, useState, useEffect, useMemo } from 'react'
 import { useColorScheme } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
 
-/* ── HR Dock brand system — matched to the real web app (app.hr-dock.com) ──
-   Crisp white / light-slate surfaces, bold near-black headlines, and the
-   web app's signature indigo → blue → cyan gradient reserved for primary
-   actions only (the Sign In button, active tab, key highlights) — never
-   smeared across the whole screen. Same keys as before
-   (coral/mint/sunshine/lavender/navy) so every screen that already
-   references GRADIENTS.<key> or BRAND.<key> re-themes automatically. */
+/* ── HR Dock brand system — the same tokens as the web app (index.css) ──
+   Navy #132940 for headlines and hero cards, teal #16A8B0 / #0E7C83 for
+   primary actions and the active tab, coral #FF6955 as a rare accent, on a
+   warm sand #F5F4F0 page. Fonts on the web are IBM Plex Sans Arabic and
+   Readex Pro; the app uses the system font so it stays fast offline.
+   Same keys as before (coral/mint/sunshine/lavender/navy) so every screen
+   that references GRADIENTS.<key> or BRAND.<key> re-themes automatically:
+   "coral" is the primary action colour (now teal), not the coral accent. */
 export const GRADIENTS = {
-  coral:    ['#4F46E5', '#3B82F6', '#06B6D4'],  // indigo → blue → cyan — PRIMARY (exact web app CTA gradient)
-  mint:     ['#34D399', '#059669'],             // emerald — positive / success
-  sunshine: ['#FBBF24', '#D97706'],             // amber — attention / streaks
-  lavender: ['#818CF8', '#6366F1'],             // lighter indigo tint — tertiary
-  navy:     ['#1E293B', '#0F172A'],             // slate — hero card backdrops
+  coral:    ['#16A8B0', '#0E7C83'],             // teal — PRIMARY actions
+  mint:     ['#2BB673', '#0E8A55'],             // green — positive / success
+  sunshine: ['#F2B441', '#C98A12'],             // amber — attention
+  lavender: ['#3E5E80', '#132940'],             // navy tint — tertiary
+  navy:     ['#1B3653', '#132940'],             // navy — hero cards
 }
 
 export const BRAND = {
-  coral:    '#4F46E5',   // indigo-600 — matches the web app's accent-pill text color exactly
-  mint:     '#059669',
-  sunshine: '#D97706',
-  lavender: '#6366F1',
+  coral:    '#0E7C83',   // teal-deep — primary text/icon accent
+  mint:     '#0E8A55',
+  sunshine: '#C98A12',
+  lavender: '#3E5E80',
+}
+
+// Web tokens by their own names, for new screens.
+export const WEB = {
+  navy: '#132940', teal: '#16A8B0', tealDeep: '#0E7C83', tealSoft: '#E6F6F7',
+  coral: '#FF6955', sand: '#F5F4F0', line: '#E3E1DA', muted: '#56657A', dockMuted: '#9FB0C0',
 }
 
 // Kept for compatibility with anything that still imports it.
 export const GLOW = {
-  violet:  '#4F46E5',
-  cyan:    '#06B6D4',
-  amber:   '#D97706',
-  magenta: '#6366F1',
+  violet:  '#0E7C83',
+  cyan:    '#16A8B0',
+  amber:   '#C98A12',
+  magenta: '#3E5E80',
 }
 
 export const RADIUS = { sm: 12, md: 16, lg: 22, xl: 28, pill: 999 }
 
 export const LIGHT = {
-  bg:       '#F5F7FB',
+  bg:       '#F5F4F0',
   card:     '#FFFFFF',
-  cardAlt:  '#EEF0F7',
-  text:     '#0F1829',
-  text2:    '#1E293B',
-  sub:      '#64748B',
-  muted:    '#94A3B8',
-  border:   '#E2E8F0',
-  border2:  '#DBE3EF',
+  cardAlt:  '#EFEDE7',
+  text:     '#132940',
+  text2:    '#1F3550',
+  sub:      '#56657A',
+  muted:    '#8494A6',
+  border:   '#E3E1DA',
+  border2:  '#D8D5CC',
   input:    '#FFFFFF',
   tabBar:   '#FFFFFF',
-  glass:       'rgba(255,255,255,0.85)',
-  glassBorder: 'rgba(15,24,41,0.08)',
+  primary:  '#0E7C83',
+  primarySoft: '#E6F6F7',
+  glass:       'rgba(255,255,255,0.92)',
+  glassBorder: '#E3E1DA',
   glassTint:   'light',
   ...BRAND,
   isDark:   false,
 }
 
 export const DARK = {
-  bg:       '#0B1120',
-  card:     '#0F172A',
-  cardAlt:  '#1E293B',
-  text:     '#F1F5F9',
-  text2:    '#E2E8F0',
-  sub:      '#94A3B8',
-  muted:    '#64748B',
-  border:   '#1E293B',
-  border2:  '#334155',
-  input:    '#111827',
-  tabBar:   '#0F172A',
-  glass:       'rgba(15,23,42,0.85)',
-  glassBorder: 'rgba(99,102,241,0.16)',
+  bg:       '#0C1A2A',
+  card:     '#132940',
+  cardAlt:  '#1B3653',
+  text:     '#F2F5F8',
+  text2:    '#DCE4EC',
+  sub:      '#9FB0C0',
+  muted:    '#71859A',
+  border:   '#22405F',
+  border2:  '#2C4C6E',
+  input:    '#0F2236',
+  tabBar:   '#132940',
+  primary:  '#16A8B0',
+  primarySoft: 'rgba(22,168,176,0.16)',
+  glass:       'rgba(19,41,64,0.92)',
+  glassBorder: '#22405F',
   glassTint:   'dark',
   ...BRAND,
+  coral:    '#16A8B0',
   isDark:   true,
 }
 

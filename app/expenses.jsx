@@ -37,7 +37,7 @@ const statusLabel = (st, tr) => ({
 }[st] || st?.replace('_', ' '))
 
 const STATUS_STYLE = {
-  draft:            { bg: '#f1f5f9', color: '#475569' },
+  draft:            { bg: '#EFEDE7', color: '#3D4D61' },
   submitted:        { bg: '#fef9c3', color: '#854d0e' },
   manager_approved: { bg: '#dbeafe', color: '#1e40af' },
   approved:         { bg: '#dcfce7', color: '#166534' },
@@ -240,7 +240,7 @@ export default function ExpensesScreen() {
             <TextInput
               style={s.input}
               placeholder="0.00"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor="#8494A6"
               keyboardType="decimal-pad"
               value={form.amount}
               onChangeText={v => setForm(f => ({ ...f, amount: v }))}
@@ -251,7 +251,7 @@ export default function ExpensesScreen() {
             <TextInput
               style={[s.input, s.textarea]}
               placeholder={tr('What was this expense for?', 'ما الغرض من هذا المصروف؟', 'المصروف ده كان على إيه؟')}
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor="#8494A6"
               value={form.description}
               onChangeText={v => setForm(f => ({ ...f, description: v }))}
               multiline
@@ -264,7 +264,7 @@ export default function ExpensesScreen() {
             <TextInput
               style={s.input}
               placeholder={tr('e.g. INV-2024-001', 'مثال: INV-2024-001')}
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor="#8494A6"
               value={form.receipt_number}
               onChangeText={v => setForm(f => ({ ...f, receipt_number: v }))}
             />
@@ -295,7 +295,7 @@ const s = StyleSheet.create({
   back:         { width: 40 },
   backText:     { fontSize: 28, lineHeight: 32 },
   navTitle:     { fontSize: 17, fontWeight: '700' },
-  addBtn:       { backgroundColor: '#0F1829', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
+  addBtn:       { backgroundColor: '#132940', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
   addBtnText:   { color: 'white', fontWeight: '700', fontSize: 13 },
   center:       { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll:       { padding: 16, paddingBottom: 40, gap: 10 },
@@ -305,7 +305,7 @@ const s = StyleSheet.create({
   empty:        { alignItems: 'center', paddingVertical: 60 },
   emptyIcon:    { fontSize: 48, marginBottom: 12 },
   emptyText:    { fontSize: 14, marginBottom: 20 },
-  emptyBtn:     { backgroundColor: '#0F1829', borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
+  emptyBtn:     { backgroundColor: '#132940', borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
   emptyBtnText: { color: 'white', fontWeight: '700' },
   card:         { borderRadius: 14, padding: 14 },
   cardTop:      { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -319,23 +319,23 @@ const s = StyleSheet.create({
   statusText:   { fontSize: 10, fontWeight: '600', textTransform: 'capitalize' },
   receipt:      { fontSize: 11, marginTop: 8, marginLeft: 38 },
   modal:        { flex: 1, backgroundColor: 'white' },
-  modalHeader:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  modalTitle:   { fontSize: 18, fontWeight: '800', color: '#0F1829' },
-  modalClose:   { fontSize: 22, color: '#64748b' },
+  modalHeader:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#EFEDE7' },
+  modalTitle:   { fontSize: 18, fontWeight: '800', color: '#132940' },
+  modalClose:   { fontSize: 22, color: '#56657A' },
   modalScroll:  { padding: 20 },
   label:        { fontSize: 12, fontWeight: '600', color: '#374151', textTransform: 'uppercase', letterSpacing: ls(0.4), marginBottom: 8 },
-  dateBtn:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1.5, borderColor: '#e2e8f0', borderRadius: 12, padding: 13, marginBottom: 4 },
-  dateBtnText:  { fontSize: 15, color: '#1e293b', fontWeight: '500' },
+  dateBtn:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1.5, borderColor: '#E3E1DA', borderRadius: 12, padding: 13, marginBottom: 4 },
+  dateBtnText:  { fontSize: 15, color: '#1F3550', fontWeight: '500' },
   catGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  catChip:      { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1.5, borderColor: '#e2e8f0', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7, backgroundColor: '#fafafa' },
-  catChipActive:{ borderColor: '#0F1829', backgroundColor: '#0F1829' },
+  catChip:      { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1.5, borderColor: '#E3E1DA', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7, backgroundColor: '#fafafa' },
+  catChipActive:{ borderColor: '#132940', backgroundColor: '#132940' },
   catChipIcon:  { fontSize: 15 },
-  catChipLabel: { fontSize: 12, color: '#475569', fontWeight: '500' },
+  catChipLabel: { fontSize: 12, color: '#3D4D61', fontWeight: '500' },
   catChipLabelActive: { color: 'white', fontWeight: '700' },
-  input:        { borderWidth: 1.5, borderColor: '#e2e8f0', borderRadius: 12, padding: 13, fontSize: 15, color: '#1e293b', backgroundColor: '#fafafa', marginBottom: 4 },
+  input:        { borderWidth: 1.5, borderColor: '#E3E1DA', borderRadius: 12, padding: 13, fontSize: 15, color: '#1F3550', backgroundColor: '#fafafa', marginBottom: 4 },
   textarea:     { minHeight: 80, textAlignVertical: 'top' },
   errBox:       { backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fecaca', borderRadius: 10, padding: 12, marginTop: 10 },
   errText:      { color: '#dc2626', fontSize: 13 },
-  submitBtn:    { backgroundColor: '#0F1829', borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 20, marginBottom: 40 },
+  submitBtn:    { backgroundColor: '#132940', borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 20, marginBottom: 40 },
   submitText:   { color: 'white', fontSize: 16, fontWeight: '700' },
 })

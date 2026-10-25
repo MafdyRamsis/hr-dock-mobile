@@ -41,7 +41,7 @@ const localDateOf = v => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 const todayISO = () => localDateOf(new Date().toISOString())
-const CAT_COLORS  = { event: '#8854D0', policy: '#FFA801', hr: '#2ED573', general: '#8A8DA3' }
+const CAT_COLORS  = { event: '#3E5E80', policy: '#FFA801', hr: '#2ED573', general: '#8A8DA3' }
 const CAT_GRADIENT = { event: 'lavender', policy: 'sunshine', hr: 'mint', general: 'coral' }
 
 function useClock() {
@@ -378,7 +378,7 @@ export function EmployeeHome() {
             punch). It used to file a helpdesk ticket, so approving it never
             changed the attendance record. */}
         {todayLog && (
-          <TouchableOpacity style={s.corrLink} onPress={() => router.push({ pathname: '/(tabs)/requests', params: { open: 'missed' } })}>
+          <TouchableOpacity style={s.corrLink} onPress={() => router.push({ pathname: '/request-form', params: { type: 'missed' } })}>
             <Text style={s.corrLinkText}>{tr('Incorrect record? Request a correction', 'السجل غير صحيح؟ اطلب تصحيحه', 'السجل مش مظبوط؟ اطلب تصحيح')} {fwd}</Text>
           </TouchableOpacity>
         )}
@@ -398,9 +398,9 @@ export function EmployeeHome() {
 
         {/* Quick Stats */}
         <View style={s.statsRow}>
+          {can('requests') && <StatWidget icon="＋" value={tr('New', 'جديد')} label={tr('New request', 'طلب جديد')} gradient="coral" onPress={() => router.push('/new-request')} />}
           <StatWidget icon="🏖️" value={`${totalLeft}${tr('d', ' يوم')}`} label={tr('Leave left', 'الإجازات المتبقية', 'إجازات فاضلة')} gradient="sunshine" onPress={() => router.push('/leave-balance')} />
-          <StatWidget icon="📋" value={pending.length} label={tr('Pending', 'قيد الانتظار', 'مستني رد')} gradient="lavender" onPress={() => router.push('/(tabs)/leave')} />
-          {can('announcements') && <StatWidget icon="📣" value={announcements.length} label={tr('News', 'الأخبار', 'أخبار')} gradient="mint" onPress={() => router.push('/announcements')} />}
+          <StatWidget icon="📋" value={pending.length} label={tr('Leave pending', 'إجازات معلقة', 'إجازات مستنية رد')} gradient="lavender" onPress={() => router.push({ pathname: '/(tabs)/requests', params: { filter: 'pending' } })} />
         </View>
 
         {/* Insights */}
@@ -451,7 +451,7 @@ export function EmployeeHome() {
             gradient="lavender"
             title={p.leave_type}
             subtitle={`${date(p.start_date)} ${fwd} ${date(p.end_date)} · ${p.days_requested}${tr('d', ' يوم')}`}
-            onPress={() => router.push('/(tabs)/leave')}
+            onPress={() => router.push({ pathname: '/(tabs)/requests', params: { filter: 'pending' } })}
             right={<StatusBadge status={p.status} />}
           />
         ))}

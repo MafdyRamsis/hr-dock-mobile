@@ -29,7 +29,7 @@ export default function StatWidget({ icon, value, label, gradient = 'coral', onP
 const styles = StyleSheet.create({
   card: { flex: 1, borderRadius: 20, padding: 14, borderWidth: 1, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 14, elevation: 2 },
   bubble: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-  icon: { fontSize: 17 },
+  icon: { fontSize: 17, color: '#FFFFFF', fontWeight: '800' },
   value: { fontSize: 19, fontWeight: '900', marginBottom: 1 },
   label: { fontSize: 11, fontWeight: '600' },
 })

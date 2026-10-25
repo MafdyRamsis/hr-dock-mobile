@@ -20,8 +20,8 @@ const getPlanMeta = tr => ({
   mobile:         { emoji: '📱', color: '#10b981', bg: '#f0fdf4', label: tr('Mobile Allowance', 'بدل هاتف', 'بدل موبايل') },
   meal:           { emoji: '🍽️', color: '#f97316', bg: '#fff7ed', label: tr('Meal Allowance', 'بدل وجبة', 'بدل أكل') },
   gym:            { emoji: '💪', color: '#ec4899', bg: '#fdf2f8', label: tr('Gym / Wellness', 'نادٍ رياضي / صحة', 'جيم / صحة') },
-  education:      { emoji: '🎓', color: '#6366f1', bg: '#eef2ff', label: tr('Education Support', 'دعم تعليمي') },
-  other:          { emoji: '🎁', color: '#64748b', bg: '#f8fafc', label: tr('Other Benefit', 'ميزة أخرى', 'ميزة تانية') },
+  education:      { emoji: '🎓', color: '#3E5E80', bg: '#E6F6F7', label: tr('Education Support', 'دعم تعليمي') },
+  other:          { emoji: '🎁', color: '#56657A', bg: '#F5F4F0', label: tr('Other Benefit', 'ميزة أخرى', 'ميزة تانية') },
 })
 
 const getCompMeta = tr => ({
@@ -29,7 +29,7 @@ const getCompMeta = tr => ({
   transportation:  { emoji: '🚌', color: '#f59e0b', bg: '#fffbeb', label: tr('Transportation', 'بدل انتقال', 'مواصلات') },
   mobile:          { emoji: '📱', color: '#10b981', bg: '#f0fdf4', label: tr('Mobile Allowance', 'بدل هاتف', 'بدل موبايل') },
   meal:            { emoji: '🍽️', color: '#f97316', bg: '#fff7ed', label: tr('Meal Allowance', 'بدل وجبة', 'بدل أكل') },
-  other_allowance: { emoji: '🎁', color: '#64748b', bg: '#f8fafc', label: tr('Other Allowance', 'بدل آخر', 'بدل تاني') },
+  other_allowance: { emoji: '🎁', color: '#56657A', bg: '#F5F4F0', label: tr('Other Allowance', 'بدل آخر', 'بدل تاني') },
 })
 
 const coverageLabel = (v, tr) => ({
@@ -113,7 +113,7 @@ export default function BenefitsScreen() {
               <Text style={[s.summaryVal, { color: colors.text }]}>{allowances.length}</Text>
               <Text style={[s.summaryLabel, { color: colors.sub }]}>{tr('Allowances', 'البدلات')}</Text>
             </View>
-            <View style={[s.summaryCard, { backgroundColor: '#0F1829' }]}>
+            <View style={[s.summaryCard, { backgroundColor: '#132940' }]}>
               <Text style={[s.summaryVal, { color: 'white', fontSize: 14 }]}>{cur} {fmtAmt(totalAllowances)}</Text>
               <Text style={[s.summaryLabel, { color: 'rgba(255,255,255,0.6)' }]}>{tr('Monthly Allowances', 'البدلات الشهرية')}</Text>
             </View>

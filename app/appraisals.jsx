@@ -55,7 +55,7 @@ const safeParseRatings = raw => {
 
 function Stars({ rating, max = 5 }) {
   const { tr } = useLang()
-  if (!rating) return <Text style={{ color: '#94a3b8', fontSize: 12 }}>{tr('Not rated', 'لم يُقيَّم بعد', 'لسه متقيّمش')}</Text>
+  if (!rating) return <Text style={{ color: '#8494A6', fontSize: 12 }}>{tr('Not rated', 'لم يُقيَّم بعد', 'لسه متقيّمش')}</Text>
   const r = Math.round(Number(rating))
   return (
     <Text style={{ fontSize: 15, letterSpacing: ls(1) }}>
@@ -286,7 +286,7 @@ const s = StyleSheet.create({
   detailBody:     { fontSize: 13, lineHeight: 20 },
   competencyRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   competencyName: { flex: 1, fontSize: 12 },
-  barWrap:        { width: 80, height: 6, backgroundColor: '#e2e8f0', borderRadius: 3, overflow: 'hidden' },
+  barWrap:        { width: 80, height: 6, backgroundColor: '#E3E1DA', borderRadius: 3, overflow: 'hidden' },
   barFill:        { height: 6, borderRadius: 3 },
   barNum:         { width: 28, fontSize: 11, textAlign: 'right' },
   recommendBadge: { borderRadius: 10, padding: 12 },

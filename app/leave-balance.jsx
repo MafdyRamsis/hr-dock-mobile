@@ -20,15 +20,15 @@ const TYPE_ICONS = {
 }
 
 const TYPE_COLORS = {
-  annual:   { primary: '#2BC4BE', bg: '#f0fdfc' },
+  annual:   { primary: '#0E7C83', bg: '#f0fdfc' },
   casual:   { primary: '#f59e0b', bg: '#fffbeb' },
   medical:  { primary: '#ef4444', bg: '#fef2f2' },
   sick:     { primary: '#ef4444', bg: '#fef2f2' },
   maternity:{ primary: '#a855f7', bg: '#faf5ff' },
-  paternity:{ primary: '#3b82f6', bg: '#eff6ff' },
+  paternity:{ primary: '#16A8B0', bg: '#eff6ff' },
 }
 
-const DEFAULT_COLOR = { primary: '#0F1829', bg: '#f8fafc' }
+const DEFAULT_COLOR = { primary: '#132940', bg: '#F5F4F0' }
 
 function getColor(name = '') {
   const key = Object.keys(TYPE_COLORS).find(k => name.toLowerCase().includes(k))
@@ -94,11 +94,11 @@ export default function LeaveBalanceScreen() {
       </View>
 
       {loading ? (
-        <View style={s.center}><ActivityIndicator color="#2BC4BE" size="large" /></View>
+        <View style={s.center}><ActivityIndicator color="#0E7C83" size="large" /></View>
       ) : (
         <ScrollView
           contentContainerStyle={s.scroll}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor="#2BC4BE" />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor="#0E7C83" />}
         >
           {/* Summary hero */}
           <View style={s.hero}>
@@ -110,7 +110,7 @@ export default function LeaveBalanceScreen() {
             </View>
             <View style={s.heroLegend}>
               <View style={s.heroLegendItem}>
-                <View style={[s.heroLegendDot, { backgroundColor: '#2BC4BE' }]} />
+                <View style={[s.heroLegendDot, { backgroundColor: '#0E7C83' }]} />
                 <Text style={s.heroLegendText}>{tr('Used', 'المستخدم', 'اتاخد')}</Text>
               </View>
               <View style={s.heroLegendItem}>
@@ -196,7 +196,7 @@ export default function LeaveBalanceScreen() {
             </>
           )}
 
-          <TouchableOpacity style={s.newBtn} onPress={() => router.push('/(tabs)/leave')}>
+          <TouchableOpacity style={s.newBtn} onPress={() => router.push({ pathname: '/request-form', params: { type: 'leave' } })}>
             <Text style={s.newBtnText}>{tr('+ New Leave Request', '+ طلب إجازة جديد', '+ اطلب إجازة')}</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -206,48 +206,48 @@ export default function LeaveBalanceScreen() {
 }
 
 const s = StyleSheet.create({
-  safe:            { flex: 1, backgroundColor: '#F0F4FA' },
-  navBar:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  safe:            { flex: 1, backgroundColor: '#F5F4F0' },
+  navBar:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#EFEDE7' },
   backBtn:         { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  backArrow:       { fontSize: 20, color: '#0F1829' },
-  backText:        { fontSize: 15, color: '#0F1829', fontWeight: '600' },
-  navTitle:        { fontSize: 16, fontWeight: '800', color: '#0F1829' },
+  backArrow:       { fontSize: 20, color: '#132940' },
+  backText:        { fontSize: 15, color: '#132940', fontWeight: '600' },
+  navTitle:        { fontSize: 16, fontWeight: '800', color: '#132940' },
   center:          { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll:          { padding: 16, paddingBottom: 40 },
-  hero:            { backgroundColor: '#0F1829', borderRadius: 20, padding: 24, alignItems: 'center', marginBottom: 24 },
+  hero:            { backgroundColor: '#132940', borderRadius: 20, padding: 24, alignItems: 'center', marginBottom: 24 },
   heroLabel:       { color: 'rgba(255,255,255,0.55)', fontSize: 13, marginBottom: 8 },
   heroNum:         { color: 'white', fontSize: 64, fontWeight: '900', lineHeight: 72 },
   heroSub:         { color: 'rgba(255,255,255,0.4)', fontSize: 13, marginBottom: 16 },
   heroBar:         { width: '100%', height: 8, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 4, overflow: 'hidden', marginBottom: 12 },
-  heroFill:        { height: 8, backgroundColor: '#2BC4BE', borderRadius: 4 },
+  heroFill:        { height: 8, backgroundColor: '#0E7C83', borderRadius: 4 },
   heroLegend:      { flexDirection: 'row', gap: 20 },
   heroLegendItem:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
   heroLegendDot:   { width: 8, height: 8, borderRadius: 4 },
   heroLegendText:  { color: 'rgba(255,255,255,0.55)', fontSize: 12 },
-  sectionTitle:    { fontSize: 12, fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: ls(0.5), marginBottom: 12 },
+  sectionTitle:    { fontSize: 12, fontWeight: '700', color: '#56657A', textTransform: 'uppercase', letterSpacing: ls(0.5), marginBottom: 12 },
   emptyBox:        { alignItems: 'center', paddingVertical: 32 },
-  emptyText:       { color: '#94a3b8', fontSize: 14 },
+  emptyText:       { color: '#8494A6', fontSize: 14 },
   typeCard:        { borderRadius: 16, padding: 18, marginBottom: 12 },
   typeHeader:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, gap: 10 },
   typeLeft:        { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 },
   typeIcon:        { fontSize: 20 },
-  typeName:        { fontSize: 14, fontWeight: '700', color: '#0F1829', flexShrink: 1 },
+  typeName:        { fontSize: 14, fontWeight: '700', color: '#132940', flexShrink: 1 },
   typeRight:       { alignItems: 'flex-end', flexShrink: 0 },
   typeRemain:      { fontSize: 26, fontWeight: '900', lineHeight: 30 },
-  typeRemainLabel: { fontSize: 11, color: '#64748b', textAlign: 'right' },
+  typeRemainLabel: { fontSize: 11, color: '#56657A', textAlign: 'right' },
   typeBar:         { height: 8, borderRadius: 4, overflow: 'hidden', marginBottom: 14 },
   typeBarFill:     { height: 8, borderRadius: 4 },
   typeStats:       { flexDirection: 'row', alignItems: 'center' },
   typeStat:        { flex: 1, alignItems: 'center' },
-  typeStatDivider: { width: 1, height: 28, backgroundColor: '#e2e8f0' },
-  typeStatNum:     { fontSize: 18, fontWeight: '800', color: '#0F1829', marginBottom: 2 },
-  typeStatLabel:   { fontSize: 11, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: ls(0.3) },
+  typeStatDivider: { width: 1, height: 28, backgroundColor: '#E3E1DA' },
+  typeStatNum:     { fontSize: 18, fontWeight: '800', color: '#132940', marginBottom: 2 },
+  typeStatLabel:   { fontSize: 11, color: '#8494A6', textTransform: 'uppercase', letterSpacing: ls(0.3) },
   reqRow:          { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: 'white', borderRadius: 12, padding: 14, marginBottom: 8 },
   reqDot:          { width: 10, height: 10, borderRadius: 5 },
-  reqType:         { fontSize: 13, fontWeight: '600', color: '#1e293b', marginBottom: 2 },
-  reqDates:        { fontSize: 12, color: '#94a3b8' },
+  reqType:         { fontSize: 13, fontWeight: '600', color: '#1F3550', marginBottom: 2 },
+  reqDates:        { fontSize: 12, color: '#8494A6' },
   reqStatus:       { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   reqStatusText:   { fontSize: 11, fontWeight: '700', textTransform: 'capitalize' },
-  newBtn:          { backgroundColor: '#0F1829', borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 16 },
+  newBtn:          { backgroundColor: '#132940', borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 16 },
   newBtnText:      { color: 'white', fontSize: 15, fontWeight: '700' },
 })

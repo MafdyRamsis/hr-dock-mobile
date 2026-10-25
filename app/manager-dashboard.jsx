@@ -65,7 +65,7 @@ const STATUS_COLOR = {
   absent:   { bg: '#fee2e2', color: '#991b1b' },
   on_leave: { bg: '#dbeafe', color: '#1e40af' },
   half_day: { bg: '#fce7f3', color: '#9d174d' },
-  not_yet:  { bg: '#f1f5f9', color: '#475569' },
+  not_yet:  { bg: '#EFEDE7', color: '#3D4D61' },
 }
 
 // The phone's own calendar date — toISOString() is the UTC date, which is
@@ -135,7 +135,7 @@ export default function ManagerDashboard() {
     { key: 'late',     label: tr('Late', 'متأخرون', 'متأخرين'),     value: stats.late,      bg: '#fef9c3', color: '#854d0e' },
     { key: 'absent',   label: tr('Absent', 'غائبون', 'غياب'),   value: stats.absent,    bg: '#fee2e2', color: '#991b1b' },
     { key: 'on_leave', label: tr('On Leave', 'في إجازة', 'إجازة'), value: stats.on_leave,  bg: '#dbeafe', color: '#1e40af' },
-    { key: 'not_yet',  label: tr('Not in yet', 'لم يحضروا بعد', 'لسه مجوش'), value: stats.notYet, bg: '#f1f5f9', color: '#475569' },
+    { key: 'not_yet',  label: tr('Not in yet', 'لم يحضروا بعد', 'لسه مجوش'), value: stats.notYet, bg: '#EFEDE7', color: '#3D4D61' },
   ]
 
   return (
@@ -232,7 +232,7 @@ export default function ManagerDashboard() {
             </View>
           ) : todayLogs.map(l => {
             const st = l.status === 'present' && Number(l.late_minutes) > 0 ? 'late' : l.status
-            const sc = STATUS_COLOR[st] || { bg: '#f1f5f9', color: '#475569' }
+            const sc = STATUS_COLOR[st] || { bg: '#EFEDE7', color: '#3D4D61' }
             return (
               <View key={l.id || l.employee_id} style={[s.attCard, { backgroundColor: colors.card }]}>
                 <View style={s.attRow}>
