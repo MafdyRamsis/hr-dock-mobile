@@ -10,13 +10,13 @@ const MAP = {
   approved:  '#059669',
   pending:   '#D97706',
   rejected:  '#DC2626',
-  cancelled: '#64748B',
+  cancelled: '#56657A',
   present:   '#059669',
   absent:    '#DC2626',
   late:      '#D97706',
-  open:      '#6366F1',
-  closed:    '#64748B',
-  'in-progress': '#6366F1',
+  open:      '#3E5E80',
+  closed:    '#56657A',
+  'in-progress': '#3E5E80',
 }
 
 const statusLabel = (tr) => ({
@@ -36,7 +36,7 @@ const statusLabel = (tr) => ({
 export default function StatusBadge({ status }) {
   const { ar, tr } = useLang()
   const s = status?.toLowerCase().replace(/ /g, '-') || ''
-  const c = MAP[s] || '#64748B'
+  const c = MAP[s] || '#56657A'
   return (
     <View style={{ backgroundColor: `${c}26`, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 4, alignSelf: 'flex-start' }}>
       <Text style={{ fontSize: 11, fontWeight: '700', color: c, textTransform: 'capitalize' }}>

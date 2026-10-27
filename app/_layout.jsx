@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar'
 import { AuthProvider, useAuth } from '../src/context/AuthContext'
 import { ThemeProvider, useTheme } from '../src/context/ThemeContext'
 import { LanguageProvider, useLang } from '../src/context/LanguageContext'
+import * as Notifications from 'expo-notifications'
 import { registerForPushNotifications } from '../src/utils/notifications'
 
 function Guard() {
@@ -20,6 +21,17 @@ function Guard() {
     else if (user && mustChange && !onChangePw) router.replace('/change-password')
     else if (user && !mustChange && (inAuth || onChangePw)) router.replace('/(tabs)')
   }, [user, loading, user?.must_change_password])
+
+  // Tapping a push opens the screen it is about: request decisions → Requests,
+  // anything else → the notifications list.
+  useEffect(() => {
+    if (!user) return
+    const sub = Notifications.addNotificationResponseReceivedListener(r => {
+      const type = r?.notification?.request?.content?.data?.type || ''
+      router.push(/_decided$/.test(type) ? '/(tabs)/requests' : '/notifications')
+    })
+    return () => sub.remove()
+  }, [user])
 
   const { refreshTone } = useLang()
   useEffect(() => {

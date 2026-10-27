@@ -333,6 +333,6 @@ const s = StyleSheet.create({
   picker:            { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pickerItem:        { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 9 },
   pickerItemInactive:{ borderWidth: 1.5, borderColor: '#E3E6F3', backgroundColor: '#F5F6FC' },
-  pickerItemText:    { fontSize: 13, color: '#475569', fontWeight: '600' },
+  pickerItemText:    { fontSize: 13, color: '#3D4D61', fontWeight: '600' },
   pickerItemTextActive: { color: 'white', fontWeight: '800', fontSize: 13 },
 })

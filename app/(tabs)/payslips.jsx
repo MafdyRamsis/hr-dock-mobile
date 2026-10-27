@@ -141,8 +141,8 @@ export const buildPayslipHtml = (slip, run, lang = 'en') => {
   const end = ar ? 'left' : 'right'
   const money = v => `${cur(lang)} ${Number(v || 0).toLocaleString('en-US')}`
   const H = slipLines(slip, lang)
-  const row = (label, val, color='#1e293b', bold=false) =>
-    val > 0 ? `<tr><td style="padding:6px 0;color:#64748b;font-size:13px">${label}</td><td style="padding:6px 0;text-align:${end};font-size:13px;color:${color};font-weight:${bold?700:400}" dir="ltr">${money(val)}</td></tr>` : ''
+  const row = (label, val, color='#1F3550', bold=false) =>
+    val > 0 ? `<tr><td style="padding:6px 0;color:#56657A;font-size:13px">${label}</td><td style="padding:6px 0;text-align:${end};font-size:13px;color:${color};font-weight:${bold?700:400}" dir="ltr">${money(val)}</td></tr>` : ''
 
   return `<!DOCTYPE html><html dir="${ar ? 'rtl' : 'ltr'}" lang="${lang}"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <style>body{font-family:${ar ? "'Noto Naskh Arabic','Noto Sans Arabic',Tahoma," : ''}Arial,sans-serif;margin:0;padding:24px;background:#F8F9FD;color:#1A1B2E}
@@ -520,12 +520,12 @@ const s = StyleSheet.create({
   slipHeader:       { marginBottom: 20 },
   slipMonth:        { fontSize: 22, fontWeight: '900', color: '#1A1B2E', marginBottom: 2 },
   slipPeriod:       { fontSize: 12, color: '#8A8DA3', marginBottom: 6 },
-  slipEmp:          { fontSize: 15, fontWeight: '600', color: '#475569' },
+  slipEmp:          { fontSize: 15, fontWeight: '600', color: '#3D4D61' },
   netBox:           { borderRadius: 20, padding: 20, alignItems: 'center', marginBottom: 24, overflow: 'hidden' },
   netLabel:         { color: 'rgba(255,255,255,0.6)', fontSize: 12, marginBottom: 6 },
   netVal:           { color: 'white', fontSize: 32, fontWeight: '900' },
   section2:         { marginBottom: 20 },
-  sectionTitle2:    { fontSize: 12, fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: ls(0.5), marginBottom: 10 },
+  sectionTitle2:    { fontSize: 12, fontWeight: '700', color: '#56657A', textTransform: 'uppercase', letterSpacing: ls(0.5), marginBottom: 10 },
   netRow:           { backgroundColor: '#E3FBF3', borderRadius: 16, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   netRowLabel:      { fontSize: 15, fontWeight: '700', color: '#0E9F6E' },
   netRowVal:        { fontSize: 18, fontWeight: '900', color: '#0E9F6E' },
@@ -533,8 +533,8 @@ const s = StyleSheet.create({
 
 const sr = StyleSheet.create({
   row:   { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#F5F6FC' },
-  label: { fontSize: 13, color: '#64748b' },
-  val:   { fontSize: 13, color: '#1e293b', fontWeight: '500' },
+  label: { fontSize: 13, color: '#56657A' },
+  val:   { fontSize: 13, color: '#1F3550', fontWeight: '500' },
   bold:  { fontWeight: '800', color: '#1A1B2E', fontSize: 14 },
   minus: { color: '#E14F4A' },
 })

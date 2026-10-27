@@ -38,7 +38,8 @@
       },
       "package": "com.hrdock.mobile",
       "versionCode": 1,
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "googleServicesFile": "./google-services.json"
     },
     "plugins": [
       "expo-secure-store",

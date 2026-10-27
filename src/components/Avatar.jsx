@@ -30,7 +30,7 @@ export default function Avatar({
     return (
       <Image
         source={{ uri }}
-        style={[{ width: size, height: size, borderRadius: radius, backgroundColor: '#e2e8f0' }, style]}
+        style={[{ width: size, height: size, borderRadius: radius, backgroundColor: '#E3E1DA' }, style]}
         onError={() => setFailed(true)}
       />
     )

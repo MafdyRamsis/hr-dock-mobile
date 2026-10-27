@@ -9,6 +9,6 @@ describe('StatusBadge', () => {
 
   it('renders an unknown status safely', () => {
     const { getByText } = render(<StatusBadge status="Queued" />)
-    expect(getByText('Queued')).toHaveStyle({ color: '#64748B' })
+    expect(getByText('Queued')).toHaveStyle({ color: '#56657A' })
   })
 })

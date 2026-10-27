@@ -97,15 +97,15 @@ export default function LeadershipView({ mode = 'overview' }) {
           <Text style={[text,{ fontWeight:'700' }]}>{mode==='workforce' ? day : period}</Text>
           <TouchableOpacity onPress={() => move(1)} accessibilityLabel={tr('Next period','الفترة التالية')}><Text style={[s.arrow,text]}>›</Text></TouchableOpacity>
         </View>}
-        {loading && !data && <ActivityIndicator color="#6366f1" />}
+        {loading && !data && <ActivityIndicator color="#3E5E80" />}
         {!!error && <Card><Text accessibilityRole="alert" style={{ color:'#dc2626' }}>{error}</Text><TouchableOpacity onPress={load}><Text style={[text,{ paddingTop:14 }]}>{tr('Retry','إعادة المحاولة')}</Text></TouchableOpacity></Card>}
         {data?.period && <Text style={[muted,{ marginBottom:14 }]}>{tr('Payroll cycle','دورة الراتب')}: {data.period.from} → {data.period.to}</Text>}
-        {data?.counts && <View style={s.counts}>{Object.entries(data.counts).map(([key,n]) => <TouchableOpacity key={key} onPress={() => setStatus(status===key ? 'all' : key)} style={[s.stat,{ backgroundColor:status===key ? '#4338ca' : colors.card,borderColor:colors.border }]}><Text style={{ color:status===key ? '#fff' : colors.text,fontSize:26,fontWeight:'800' }}>{n}</Text><Text style={{ color:status===key ? '#fff' : colors.sub,fontSize:12 }}>{label(key)}</Text></TouchableOpacity>)}</View>}
+        {data?.counts && <View style={s.counts}>{Object.entries(data.counts).map(([key,n]) => <TouchableOpacity key={key} onPress={() => setStatus(status===key ? 'all' : key)} style={[s.stat,{ backgroundColor:status===key ? '#0E6A70' : colors.card,borderColor:colors.border }]}><Text style={{ color:status===key ? '#fff' : colors.text,fontSize:26,fontWeight:'800' }}>{n}</Text><Text style={{ color:status===key ? '#fff' : colors.sub,fontSize:12 }}>{label(key)}</Text></TouchableOpacity>)}</View>}
         {mode==='forecast' && data && <>
-          <Card style={{ backgroundColor:'#eef2ff' }}><Text style={{ color:'#4338ca' }}>{tr('Projected cycle-end net payroll','صافي الرواتب المتوقع بنهاية الدورة')}</Text><Text style={{ color:'#312e81',fontSize:30,fontWeight:'900',marginVertical:12 }}>{cur(data.projected_net)}</Text>
-            <Text style={{ color:'#4338ca' }}>{data.calculated_count}/{data.employee_count} {tr('employees calculated','موظف تم احتسابه')}</Text>
-            <Text style={{ color:'#4338ca',marginTop:8 }}>{tr('Previous cycle, same employees','الدورة السابقة لنفس الموظفين')}: {data.previous_net==null ? '—' : cur(data.previous_net)}</Text>
-            <Text style={{ color:'#4338ca' }}>{tr('Change','التغير')}: {data.change==null ? '—' : cur(data.change)}</Text>
+          <Card style={{ backgroundColor:'#E6F6F7' }}><Text style={{ color:'#0E6A70' }}>{tr('Projected cycle-end net payroll','صافي الرواتب المتوقع بنهاية الدورة')}</Text><Text style={{ color:'#312e81',fontSize:30,fontWeight:'900',marginVertical:12 }}>{cur(data.projected_net)}</Text>
+            <Text style={{ color:'#0E6A70' }}>{data.calculated_count}/{data.employee_count} {tr('employees calculated','موظف تم احتسابه')}</Text>
+            <Text style={{ color:'#0E6A70',marginTop:8 }}>{tr('Previous cycle, same employees','الدورة السابقة لنفس الموظفين')}: {data.previous_net==null ? '—' : cur(data.previous_net)}</Text>
+            <Text style={{ color:'#0E6A70' }}>{tr('Change','التغير')}: {data.change==null ? '—' : cur(data.change)}</Text>
           </Card>
           <Card style={{borderColor:'#a7f3d0'}}>
             <Text style={text}>{tr('Estimated net earned to date','صافي الاستحقاق التقديري حتى اليوم')}</Text>
@@ -123,7 +123,7 @@ export default function LeadershipView({ mode = 'overview' }) {
         {mode==='performance' && data && <Text style={[muted,{ marginBottom:15 }]}>{data.employees_without_goals} {tr('employees without goals. Red flag: progress is over 20 points behind the review timeline.','موظف بلا أهداف. التنبيه يعني تأخر التقدم بأكثر من ٢٠ نقطة عن مدة التقييم.')}</Text>}
         {data?.rows && (mode!=='forecast' || data.individual_details) && <>
           <TextInput accessibilityLabel={tr('Search employees','بحث الموظفين')} value={search} onChangeText={setSearch} placeholder={tr('Search name, code or goal','ابحث بالاسم أو الكود أو الهدف')} placeholderTextColor={colors.sub} style={[s.search,text,{ borderColor:colors.border }]} />
-          {departments.length>1 && <ScrollView horizontal contentContainerStyle={{ gap:8,paddingBottom:14 }}><TouchableOpacity onPress={() => setDepartment('all')}><Text style={[muted,{ padding:8 }]}>{tr('All departments','كل الإدارات')}</Text></TouchableOpacity>{departments.map(d => <TouchableOpacity key={d} onPress={() => setDepartment(d)}><Text style={{ color:department===d ? '#6366f1' : colors.sub,padding:8 }}>{d}</Text></TouchableOpacity>)}</ScrollView>}
+          {departments.length>1 && <ScrollView horizontal contentContainerStyle={{ gap:8,paddingBottom:14 }}><TouchableOpacity onPress={() => setDepartment('all')}><Text style={[muted,{ padding:8 }]}>{tr('All departments','كل الإدارات')}</Text></TouchableOpacity>{departments.map(d => <TouchableOpacity key={d} onPress={() => setDepartment(d)}><Text style={{ color:department===d ? '#3E5E80' : colors.sub,padding:8 }}>{d}</Text></TouchableOpacity>)}</ScrollView>}
           {status!=='all' && <TouchableOpacity onPress={() => setStatus('all')}><Text style={[muted,{ marginBottom:12 }]}>{tr('Clear status filter','إلغاء تصفية الحالة')} ×</Text></TouchableOpacity>}
           {(mode==='overview' ? rows.slice(0,8) : rows).map(r => <Card key={r.id || r.employee_id}>
             <Text style={[text,{ fontWeight:'800',fontSize:16 }]}>{r.employee_name}</Text><Text style={muted}>{r.employee_number || r.title}</Text>
@@ -131,7 +131,7 @@ export default function LeadershipView({ mode = 'overview' }) {
               {r.accrual?.available && <Text style={[muted,{marginTop:8}]}>{tr('Estimated earned to date','\u0627\u0644\u0645\u0633\u062a\u062d\u0642 \u0627\u0644\u062a\u0642\u062f\u064a\u0631\u064a \u062d\u062a\u0649 \u0627\u0644\u064a\u0648\u0645')}: {cur(r.accrual.estimated_net)}</Text>}
               <Text style={[muted,{ marginTop:8 }]}>{tr('Overtime','إضافي')}: {cur(r.overtime_pay)} · {tr('Late / absence','تأخير / غياب')}: {cur(r.late_deductions+r.absence_deductions)}</Text>
               {r.warnings.map((w,i) => <Text key={i} style={{ color:'#b45309',marginTop:8 }}>{w}</Text>)}</>
-              : mode==='performance' ? <><Text style={[text,{ marginTop:10 }]}>{tr('Target','المستهدف')}: {r.target || '—'}</Text><Text style={[text,{ marginTop:8 }]}>{r.progress}% · {label(r.health)}</Text><View style={{ height:6,backgroundColor:colors.border,borderRadius:4,marginTop:12 }}><View style={{ width:`${r.progress}%`,height:6,backgroundColor:r.health==='red_flag' ? '#ef4444' : '#6366f1',borderRadius:4 }} /></View></>
+              : mode==='performance' ? <><Text style={[text,{ marginTop:10 }]}>{tr('Target','المستهدف')}: {r.target || '—'}</Text><Text style={[text,{ marginTop:8 }]}>{r.progress}% · {label(r.health)}</Text><View style={{ height:6,backgroundColor:colors.border,borderRadius:4,marginTop:12 }}><View style={{ width:`${r.progress}%`,height:6,backgroundColor:r.health==='red_flag' ? '#ef4444' : '#3E5E80',borderRadius:4 }} /></View></>
                 : <><Text style={[text,{ marginTop:8 }]}>{label(r.status)} · {r.department_name || ''}</Text><Text style={[muted,{ marginTop:8 }]}>{tr('In','دخول')} {time(r.check_in)} · {tr('Out','خروج')} {time(r.check_out)}</Text></>}
             {mode==='performance' && user?.role!=='ceo' && <GoalProgressEditor goal={r} onSaved={load} />}
           </Card>)}

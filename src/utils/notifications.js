@@ -1,7 +1,7 @@
 import * as Notifications from 'expo-notifications'
 import * as Device from 'expo-device'
 import Constants from 'expo-constants'
-import { Platform } from 'react-native'
+import { Platform, I18nManager } from 'react-native'
 import api from '../services/api'
 
 Notifications.setNotificationHandler({
@@ -36,7 +36,8 @@ export async function registerForPushNotifications() {
     const projectId = Constants.expoConfig?.extra?.eas?.projectId
     if (!projectId) return null
     const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data
-    await api.patch('/auth/push-token', { push_token: token })
+    // lang: pushes arrive in the language the app is in (the app reloads on a language change).
+    await api.patch('/auth/push-token', { push_token: token, lang: I18nManager.isRTL ? 'ar' : 'en' })
     return token
   } catch (e) {
     // Most common cause on Android: Firebase/FCM credentials missing from the build.

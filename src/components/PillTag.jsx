@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet } from 'react-native'
 
 /* Full-pill tag — used for category chips, priority markers, leave types. */
-export default function PillTag({ label, color = '#8854D0', bg, textColor, icon, size = 'md', style }) {
+export default function PillTag({ label, color = '#3E5E80', bg, textColor, icon, size = 'md', style }) {
   const isSm = size === 'sm'
   return (
     <View

@@ -50,7 +50,7 @@ export default function ApprovalsScreen() {
     {enabled && <TouchableOpacity onPress={() => router.push('/coverage')} style={{padding:14,backgroundColor:colors.card,borderRadius:12,marginBottom:15}}><Text style={{color:colors.text}}>{tr('Check team coverage before approving leave','راجع تغطية الفريق قبل اعتماد الإجازات')} ›</Text></TouchableOpacity>}
     {!enabled ? <Text style={{ color:colors.sub }}>{tr('Approvals are not enabled for this account.','الموافقات غير مفعلة لهذا الحساب.')}</Text> : <>
       {!!error && <TouchableOpacity onPress={load}><Text accessibilityRole="alert" style={{ color:'#dc2626',marginBottom:15 }}>{error} · {tr('Retry','إعادة المحاولة')}</Text></TouchableOpacity>}
-      {loading && <ActivityIndicator color="#6366f1" />}
+      {loading && <ActivityIndicator color="#3E5E80" />}
       {!loading && !error && !items.length && <Card><Text style={{ color:colors.text }}>{tr('You are all caught up.','لا توجد قرارات معلقة.')}</Text></Card>}
       {items.map(item => <Card key={item.instance_id}>
         <Text style={{ color:colors.text,fontWeight:'800',fontSize:17 }}>{item.employee_name}</Text>
@@ -60,7 +60,7 @@ export default function ApprovalsScreen() {
         {item.amount != null && <Text style={{ color:colors.text }}>{cur(item.amount)}</Text>}
         {!!item.reason && <Text style={{ color:colors.sub,marginTop:8 }}>{item.reason}</Text>}
         <TextInput accessibilityLabel={tr('Decision note','ملاحظة القرار')} placeholder={tr('Add a note (optional)','أضف ملاحظة (اختياري)')} placeholderTextColor={colors.sub} value={notes[item.instance_id] || ''} onChangeText={v => setNotes(n => ({ ...n,[item.instance_id]:v }))} style={{ color:colors.text,borderColor:colors.border,borderWidth:1,padding:12,borderRadius:10,marginTop:12 }} />
-        <View style={{ flexDirection:'row',gap:10,marginTop:14 }}>{['approve','reject'].map(d => <TouchableOpacity key={d} accessibilityRole="button" disabled={!!busy} onPress={() => decide(item,d)} style={{ flex:1,padding:13,borderRadius:12,backgroundColor:d==='approve' ? '#4338ca' : '#fee2e2',opacity:busy ? 0.5 : 1 }}><Text style={{ textAlign:'center',fontWeight:'700',color:d==='approve' ? '#fff' : '#991b1b' }}>{d==='approve' ? tr('Approve','موافقة') : tr('Reject','رفض')}</Text></TouchableOpacity>)}</View>
+        <View style={{ flexDirection:'row',gap:10,marginTop:14 }}>{['approve','reject'].map(d => <TouchableOpacity key={d} accessibilityRole="button" disabled={!!busy} onPress={() => decide(item,d)} style={{ flex:1,padding:13,borderRadius:12,backgroundColor:d==='approve' ? '#0E6A70' : '#fee2e2',opacity:busy ? 0.5 : 1 }}><Text style={{ textAlign:'center',fontWeight:'700',color:d==='approve' ? '#fff' : '#991b1b' }}>{d==='approve' ? tr('Approve','موافقة') : tr('Reject','رفض')}</Text></TouchableOpacity>)}</View>
       </Card>)}
     </>}
   </ScrollView></SafeAreaView>
