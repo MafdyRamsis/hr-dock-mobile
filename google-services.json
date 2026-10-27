@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "61647777902",
+    "project_id": "hr-dock",
+    "storage_bucket": "hr-dock.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:61647777902:android:0a277599045add6bd8f67f",
+        "android_client_info": {
+          "package_name": "com.hrdock.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD_e-focl3nOqRKoQEfGda0W4b9I-8MNTI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
