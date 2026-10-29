@@ -125,3 +125,17 @@ test('statuses fold into four filters', () => {
   expect(matchesFilter({ status: 'cancelled' }, 'rejected')).toBe(true)
   expect(matchesFilter({ status: 'draft' }, 'pending')).toBe(true)
 })
+
+test('shift for one day: found by search, sends the date and shift, and lists my own', () => {
+  expect(groupedTypes({ can: all, role: 'employee' }, 'one day').flatMap(g => g.items).map(t => t.key)).toContain('shift_day')
+  const t = resolveType('shift_day')
+  const v = { ...initialValues(t, '2026-10-25'), date: '2026-10-30', shift_id: 'S1', reason: 'Site visit' }
+  expect(validate(t, v)).toBeNull()
+  expect(validate(t, { ...v, shift_id: '' })).not.toBeNull()
+  const s = buildSubmission(t, v, ctx)
+  expect(s.path).toBe('/shift-overrides')
+  expect(s.body).toEqual({ employee_id: EMP, shift_id: 'S1', override_date: '2026-10-30', reason: 'Site visit' })
+  const src = listSources({ employeeId: EMP, can: all }).find(x => x.kind === 'shift_day')
+  expect(src.path).toBe(`/shift-overrides?employee_id=${EMP}`)
+  expect(src.map({ override_date: '2026-10-30', shift_name: 'Field', shift_start: '08:30:00', shift_end: '16:30:00' })).toMatchObject({ type: 'shift_day', from: '2026-10-30', detail: ['Field · 08:30–16:30', 'Field · 08:30–16:30'] })
+})
