@@ -135,7 +135,8 @@ export const TYPES = [
       return { path: '/attendance/missions', body }
     } },
   { key: 'excuse', group: 'work', abbr: L('LA', 'ت'),
-    label: L('Late arrival / early leave', 'تأخير / انصراف مبكر'), hint: L('Permission for part of the day', 'إذن لجزء من اليوم'),
+    label: L('Permission (late / early)', 'إذن (تأخير / انصراف مبكر)'), hint: L('Arrive late or leave early for part of the day', 'حضور متأخر أو انصراف مبكر لجزء من اليوم'),
+    terms: ['excuse', 'late arrival', 'early leave', 'استئذان', 'عذر'],
     fields: [
       { key: 'kind', kind: 'segment', options: [{ value: 'late_arrival', label: L('Arrive late', 'حضور متأخر') }, { value: 'early_departure', label: L('Leave early', 'انصراف مبكر') }], default: 'late_arrival' },
       { key: 'date', kind: 'date', label: L('Date', 'التاريخ'), required: true, defaultToday: true },
@@ -294,7 +295,7 @@ export function groupedTypes(ctx, query = '') {
   const q = String(query || '').trim().toLowerCase()
   // Match at the start of a word, so "mission" doesn't find "permission".
   const hit = s => (' ' + s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ')).includes(' ' + q)
-  const types = visibleTypes(ctx).filter(t => !q || [...t.label, ...t.hint].some(hit))
+  const types = visibleTypes(ctx).filter(t => !q || [...t.label, ...t.hint, ...(t.terms || [])].some(hit))
   return GROUPS.map(g => ({ ...g, items: types.filter(t => t.group === g.key) })).filter(g => g.items.length)
 }
 

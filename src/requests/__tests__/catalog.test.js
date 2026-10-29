@@ -21,6 +21,9 @@ test('HR switches hide request types', () => {
 test('search finds request types in English and Arabic', () => {
   expect(groupedTypes({ can: all, role: 'employee' }, 'mission').flatMap(g => g.items).map(t => t.key)).toEqual(['mission'])
   expect(groupedTypes({ can: all, role: 'employee' }, 'مأمورية').flatMap(g => g.items).map(t => t.key)).toEqual(['mission'])
+  // A late / early permission is found under any of its everyday names.
+  for (const q of ['permission', 'excuse', 'late', 'إذن', 'استئذان'])
+    expect(groupedTypes({ can: all, role: 'employee' }, q).flatMap(g => g.items).map(t => t.key)).toContain('excuse')
 })
 
 test('part-day mission sends times and no end date', () => {
