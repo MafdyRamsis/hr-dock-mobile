@@ -170,6 +170,15 @@ export const TYPES = [
     ],
     validate: v => (!(Number(v.hours) > 0) ? L('Please enter valid hours.', 'يرجى إدخال عدد ساعات صحيح.') : null),
     submit: (v, c) => ({ path: '/overtime', body: { employee_id: c.employeeId, date: v.date, hours: Number(v.hours), overtime_type: v.overtime_type, compensation_type: v.compensation_type, reason: v.reason } }) },
+  { key: 'shift_day', group: 'work', abbr: L('1D', 'ي'),
+    label: L('Shift for one day', 'وردية ليوم واحد'), hint: L('Work another shift on one date only', 'العمل في وردية أخرى ليوم واحد فقط'),
+    terms: ['shift', 'one day', 'swap', 'وردية', 'تبديل'],
+    fields: [
+      { key: 'date', kind: 'date', label: L('Date', 'التاريخ'), required: true },
+      { key: 'shift_id', kind: 'select', optionsFrom: 'shifts', label: L('Shift for that day', 'الوردية لهذا اليوم'), required: true },
+      reason(),
+    ],
+    submit: (v, c) => ({ path: '/shift-overrides', body: { employee_id: c.employeeId, shift_id: v.shift_id, override_date: v.date, reason: v.reason } }) },
   { key: 'shift', group: 'work', abbr: L('SC', 'و'),
     label: L('Shift change', 'تغيير الوردية'), hint: L('Work a different shift', 'العمل في وردية أخرى'),
     fields: [
@@ -283,7 +292,7 @@ export const TYPES = [
 export const typeByKey = key => TYPES.find(t => t.key === key)
 
 // Old deep links (Home "request a correction", notifications…) used these.
-export const ALIASES = { late: 'excuse', early: 'excuse', ticket: 'helpdesk', day_off: 'dayoff', shift_change: 'shift' }
+export const ALIASES = { late: 'excuse', early: 'excuse', ticket: 'helpdesk', day_off: 'dayoff', shift_change: 'shift', shift_override: 'shift_day' }
 export const resolveType = key => typeByKey(ALIASES[key] || key)
 
 // The types this person may start, honouring HR's mobile feature switches.
@@ -364,6 +373,7 @@ export function listSources({ employeeId, userId, can = () => true, role } = {})
     can('requests') && { kind: 'excuse', path: `/attendance/excuses?${q}limit=50`, map: r => ({ type: 'excuse', title: L('Late / early permission', 'إذن تأخير / انصراف'), from: day(r.date), detail: r.from_time ? [`${t2(r.from_time)}–${t2(r.to_time)}`, `${t2(r.from_time)}–${t2(r.to_time)}`] : null, note: r.rejection_reason }) },
     can('requests') && { kind: 'mission', path: `/attendance/missions?${q}limit=50`, map: r => ({ type: 'mission', from: day(r.date), to: day(r.end_date), detail: [[r.is_full_day ? 'Full day' : `${t2(r.from_time)}–${t2(r.to_time)}`, r.destination].filter(Boolean).join(' · '), [r.is_full_day ? 'يوم كامل' : `${t2(r.from_time)}–${t2(r.to_time)}`, r.destination].filter(Boolean).join(' · ')], note: r.rejection_reason }) },
     can('requests') && { kind: 'correction', path: `/attendance/corrections?${q}limit=50`, map: r => ({ type: 'missed', from: day(r.date), detail: String(r.correction_type || '').includes('out') ? L('Check-out', 'الانصراف') : L('Check-in', 'الحضور'), note: r.rejection_reason }) },
+    can('requests') && { kind: 'shift_day', path: `/shift-overrides?${q}`.replace(/[?&]$/, ''), map: r => ({ type: 'shift_day', from: day(r.override_date), detail: r.shift_name ? [[r.shift_name, r.shift_start ? `${t2(r.shift_start)}–${t2(r.shift_end)}` : null].filter(Boolean).join(' · '), [r.shift_name_ar || r.shift_name, r.shift_start ? `${t2(r.shift_start)}–${t2(r.shift_end)}` : null].filter(Boolean).join(' · ')] : null, note: r.rejection_reason }) },
     can('requests') && { kind: 'travel', path: `/travel?${q}limit=50`, map: r => ({ type: 'travel', from: day(r.departure_date), to: day(r.return_date), detail: r.destination ? [r.destination, r.destination] : null, note: r.rejection_reason }) },
     can('expenses') && { kind: 'expense', path: `/expenses?${q}limit=50`, map: r => ({ type: 'expense', from: day(r.expense_date), detail: r.amount != null ? [`EGP ${Number(r.amount).toLocaleString('en-US')}`, `${Number(r.amount).toLocaleString('en-US')} ج.م`] : null, note: r.rejection_reason }) },
     can('requests') && { kind: 'employee_request', path: '/employee-requests', mine: r => me(r) || (userId && r.requested_by === userId), map: r => {
