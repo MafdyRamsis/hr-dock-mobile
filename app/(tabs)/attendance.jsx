@@ -4,6 +4,7 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl, A
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient'
 import * as Location from 'expo-location'
+import { useRouter } from 'expo-router'
 import api from '../../src/services/api'
 import { useAuth } from '../../src/context/AuthContext'
 import { enqueuePunch, flushPunches, pendingPunches, isRetryable, uuidv4 } from '../../src/utils/punchQueue'
@@ -147,6 +148,7 @@ export default function AttendanceScreen() {
   const { colors } = useTheme()
   const { tr, date, monthYear } = useLang()
   const { user, cycleStartDay = 1 } = useAuth()
+  const router = useRouter()
   const [today,      setToday]      = useState(null)
   const [employeeId, setEmployeeId] = useState(null)
   const [logs,       setLogs]       = useState([])
@@ -290,6 +292,17 @@ export default function AttendanceScreen() {
     try {
       const res = await api.post(path, { source: 'mobile', client_punch_id, ...loc })
       if (res.status === 202) Alert.alert(tr('Sent for review', 'أُرسلت للمراجعة', 'اتبعتت للمراجعة'), res.data?.message || '')
+      else if (kind === 'check_out' && !today?.check_in) {
+        // Forgot to check in: the check-out is saved; offer the missed-punch request.
+        Alert.alert(
+          tr('Check-out saved', 'تم تسجيل الانصراف', 'بصمة الخروج اتسجلت'),
+          tr('Today has no check-in. Send a missed-punch request with the time you arrived so HR can fix it.', 'لا يوجد تسجيل حضور اليوم. أرسل طلب بصمة منسية بوقت وصولك لتصحيحه من الموارد البشرية.', 'النهارده مفيش بصمة دخول. ابعت طلب بصمة منسية بالوقت اللي وصلت فيه عشان الـ HR يصححها.'),
+          [
+            { text: tr('Later', 'لاحقًا', 'بعدين'), style: 'cancel' },
+            { text: tr('Request now', 'اطلب الآن', 'اطلب دلوقتي'), onPress: () => router.push({ pathname: '/request-form', params: { type: 'missed' } }) },
+          ],
+        )
+      }
       await load()
     } catch (err) {
       if (isRetryable(err)) {
@@ -313,8 +326,16 @@ export default function AttendanceScreen() {
   }
   const handleCheckIn  = () => punch('check_in')
   const handleCheckOut = () => punch('check_out')
+  const handleForgotCheckIn = () => Alert.alert(
+    tr('Check out without check-in?', 'تسجيل الانصراف بدون حضور؟', 'تسجل خروج من غير دخول؟'),
+    tr('You have not checked in today. Your check-out will be saved and the day marked "missing check-in".', 'لم تسجّل الحضور اليوم. سيتم حفظ الانصراف وتمييز اليوم بأنه "بدون تسجيل حضور".', 'إنت مسجلتش دخول النهارده. بصمة الخروج هتتحفظ واليوم هيتعلّم إنه "من غير بصمة دخول".'),
+    [
+      { text: tr('Cancel', 'إلغاء', 'إلغاء'), style: 'cancel' },
+      { text: tr('Check out', 'تسجيل الانصراف', 'سجّل خروج'), onPress: () => punch('check_out') },
+    ],
+  )
 
-  const canCheckIn  = !today?.check_in
+  const canCheckIn  = !today?.check_in && !today?.check_out
   const canCheckOut = today?.check_in && !today?.check_out
 
   if (loading) return (
@@ -387,6 +408,12 @@ export default function AttendanceScreen() {
             </TouchableOpacity>
           )}
 
+          {canCheckIn && (
+            <TouchableOpacity onPress={handleForgotCheckIn} disabled={actioning} activeOpacity={0.7} style={s.forgotBtn} accessibilityRole="button">
+              <Text style={s.forgotText}>🏁 {tr('Forgot to check in? Check out now', 'نسيت تسجيل الحضور؟ سجّل الانصراف الآن', 'نسيت بصمة الدخول؟ سجّل خروج دلوقتي')}</Text>
+            </TouchableOpacity>
+          )}
+
           {canCheckOut && (
             <TouchableOpacity onPress={handleCheckOut} disabled={actioning} activeOpacity={0.85} style={s.actionTouchable}>
               <LinearGradient colors={GRADIENTS.coral} style={s.actionBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
@@ -396,6 +423,12 @@ export default function AttendanceScreen() {
                   <Text style={s.actionTime}>{fmtTime(now)}</Text>
                 </>}
               </LinearGradient>
+            </TouchableOpacity>
+          )}
+
+          {!today?.check_in && today?.check_out && (
+            <TouchableOpacity onPress={() => router.push({ pathname: '/request-form', params: { type: 'missed' } })} activeOpacity={0.8} style={s.forgotBtn} accessibilityRole="button">
+              <Text style={s.forgotText}>{tr('Checked out — no check-in today. Tap to send a missed-punch request', 'تم الانصراف — لا يوجد حضور اليوم. اضغط لإرسال طلب بصمة منسية', 'سجلت خروج من غير دخول. دوس هنا وابعت طلب بصمة منسية')}</Text>
             </TouchableOpacity>
           )}
 
@@ -544,6 +577,8 @@ const s = StyleSheet.create({
   actionIcon:  { fontSize: 22 },
   actionText:  { color: 'white', fontSize: 18, fontWeight: '800' },
   actionTime:  { color: 'rgba(255,255,255,0.75)', fontSize: 13 },
+  forgotBtn:   { marginTop: 10, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,122,107,0.55)', alignItems: 'center' },
+  forgotText:  { color: '#FF7A6B', fontSize: 14, fontWeight: '600', textAlign: 'center' },
   doneBox:     { backgroundColor: 'rgba(84,227,196,0.15)', borderRadius: 14, padding: 14, alignItems: 'center' },
   doneText:    { color: '#54E3C4', fontWeight: '800', fontSize: 14 },
   calCard:     { marginBottom: 16 },
