@@ -45,3 +45,11 @@ export async function registerForPushNotifications() {
     return null
   }
 }
+
+// Where tapping a push should go, by its notification type.
+export function pushTarget(type = '') {
+  if (/_decided$/.test(type)) return '/(tabs)/requests'
+  if (type === 'approval_requested' || type === 'approval_escalated') return '/(tabs)/approvals'
+  return '/notifications'
+}
+

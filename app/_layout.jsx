@@ -6,7 +6,7 @@ import { AuthProvider, useAuth } from '../src/context/AuthContext'
 import { ThemeProvider, useTheme } from '../src/context/ThemeContext'
 import { LanguageProvider, useLang } from '../src/context/LanguageContext'
 import * as Notifications from 'expo-notifications'
-import { registerForPushNotifications } from '../src/utils/notifications'
+import { registerForPushNotifications, pushTarget } from '../src/utils/notifications'
 
 function Guard() {
   const { user, loading } = useAuth()
@@ -24,12 +24,12 @@ function Guard() {
   }, [user, loading, user?.must_change_password])
 
   // Tapping a push opens the screen it is about: request decisions → Requests,
-  // anything else → the notifications list.
+  // a request waiting for your approval → Approvals, anything else → the
+  // notifications list.
   useEffect(() => {
     if (!user) return
     const sub = Notifications.addNotificationResponseReceivedListener(r => {
-      const type = r?.notification?.request?.content?.data?.type || ''
-      router.push(/_decided$/.test(type) ? '/(tabs)/requests' : '/notifications')
+      router.push(pushTarget(r?.notification?.request?.content?.data?.type))
     })
     return () => sub.remove()
   }, [user])
