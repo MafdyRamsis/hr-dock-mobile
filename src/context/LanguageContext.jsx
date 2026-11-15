@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useMemo, useCallback } 
 import { I18nManager } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
 import { EN, AR, AR_FRIENDLY } from '../i18n/strings'
-import { fmtDate, fmtMonthYear, monthName, dayName, currency } from '../i18n/format'
+import { fmtDate, fmtMonthYear, monthName, dayName, currency, fmtNum } from '../i18n/format'
 import api from '../services/api'
 
 const DICT = { en: EN, ar: AR }
@@ -14,6 +14,8 @@ const DICT = { en: EN, ar: AR }
  *    (same setting as the web app): "friendly" Egyptian (default) or "formal". When a
  *    friendly version is given it is used for friendly companies; otherwise `ar` is used.
  *  - date(...), month(...): formatting in the current language
+ *  - cur: the currency word ("EGP" / "ج.م") — text, not a function
+ *  - money(amount): "EGP 12,500" in the current language
  */
 const makeValue = (lang, tone, setLanguage, refreshTone) => {
   const ar = lang === 'ar'
@@ -29,6 +31,7 @@ const makeValue = (lang, tone, setLanguage, refreshTone) => {
     month: (m, short) => monthName(m, lang, short),
     day: (d, short) => dayName(d, lang, short),
     cur: currency(lang),
+    money: (v) => `${currency(lang)} ${fmtNum(v)}`,
     setLanguage,
     refreshTone,
   }

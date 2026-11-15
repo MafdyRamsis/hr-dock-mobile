@@ -4,7 +4,7 @@ import ApprovalsScreen from '../../../app/(tabs)/approvals'
 import api from '../../services/api'
 let mockAuth
 jest.mock('../../context/AuthContext',()=>({useAuth:()=>mockAuth}))
-jest.mock('../../context/LanguageContext',()=>({useLang:()=>({tr:en=>en,date:v=>v,cur:v=>String(v)})}))
+// Real LanguageContext (default English value) — see LeadershipView.test.jsx.
 jest.mock('../../context/ThemeContext',()=>({useTheme:()=>({colors:{bg:'#fff',text:'#111',sub:'#666'}})}))
 jest.mock('../../services/api',()=>({get:jest.fn(),post:jest.fn()}))
 jest.mock('expo-router',()=>({useRouter:()=>({push:jest.fn()})}))
@@ -40,4 +40,10 @@ test('confirmation opened by a previous account cannot submit a decision',async(
   view.rerender(<ApprovalsScreen/>);
   await act(async()=>confirm.onPress())
   expect(api.post).not.toHaveBeenCalled()
+})
+
+test('requests with an amount show it as money (regression: cur is text, not a function)',async()=>{
+  api.get.mockResolvedValue(response([{instance_id:'loan',employee_name:'Loan Employee',request_type:'loan',amount:15000}]))
+  render(<ApprovalsScreen/>);
+  expect(await screen.findByText('EGP 15,000')).toBeTruthy()
 })

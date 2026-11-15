@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { I18nManager, View, Text, TouchableOpacity } from 'react-native'
 import { Stack, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { AuthProvider, useAuth } from '../src/context/AuthContext'
@@ -48,6 +49,26 @@ function ThemedApp() {
       <StatusBar style={isDark ? 'light' : 'light'} />
       <Stack screenOptions={{ headerShown: false }} />
     </>
+  )
+}
+
+// A mistake while drawing any screen shows this instead of closing the app.
+// It sits outside the theme/language providers, so it styles itself and reads
+// the layout direction for the language.
+export function ErrorBoundary({ retry }) {
+  const ar = I18nManager.isRTL
+  return (
+    <View style={{ flex: 1, backgroundColor: '#0F1E33', alignItems: 'center', justifyContent: 'center', padding: 28 }}>
+      <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800', textAlign: 'center', marginBottom: 10 }}>
+        {ar ? 'حدث خطأ في هذه الشاشة' : 'Something went wrong on this screen'}
+      </Text>
+      <Text style={{ color: '#B8C4D4', textAlign: 'center', marginBottom: 24, lineHeight: 21 }}>
+        {ar ? 'بياناتك بأمان. حاول مرة أخرى، وإذا تكرر الخطأ أبلغ الموارد البشرية.' : 'Your data is safe. Try again, and if it keeps happening let HR know.'}
+      </Text>
+      <TouchableOpacity accessibilityRole="button" onPress={retry} style={{ backgroundColor: '#14B8A6', paddingVertical: 13, paddingHorizontal: 28, borderRadius: 12 }}>
+        <Text style={{ color: '#fff', fontWeight: '700' }}>{ar ? 'حاول مرة أخرى' : 'Try again'}</Text>
+      </TouchableOpacity>
+    </View>
   )
 }
 

@@ -6,7 +6,8 @@ import api from '../../services/api'
 let mockAuth
 afterEach(()=>{jest.useRealTimers();jest.restoreAllMocks()})
 jest.mock('../../context/AuthContext',()=>({useAuth:()=>mockAuth}))
-jest.mock('../../context/LanguageContext',()=>({useLang:()=>({tr:en=>en,cur:v=>`EGP ${v}`,date:v=>String(v)})}))
+// Real LanguageContext (default English value): a fake `cur` function once hid a
+// crash — `cur` is the currency word, amounts go through money().
 jest.mock('../../context/ThemeContext',()=>({useTheme:()=>({colors:{bg:'#fff',text:'#111',sub:'#666',card:'#fff',border:'#ddd'}})}))
 jest.mock('../../services/api',()=>({get:jest.fn()}))
 jest.mock('expo-router',()=>({useRouter:()=>({push:jest.fn()})}))
@@ -21,8 +22,8 @@ beforeEach(()=>{
 })
 test('shows projected payroll and estimated earned pay as different amounts',async()=>{
   render(<LeadershipView mode="forecast"/>);
-  expect(await screen.findByText('EGP 25000')).toBeTruthy()
-  expect(screen.getByText('EGP 12000')).toBeTruthy()
+  expect(await screen.findByText('EGP 25,000')).toBeTruthy()
+  expect(screen.getByText('EGP 12,000')).toBeTruthy()
   expect(screen.getByText(/Payroll cycle.*2026-09-21/)).toBeTruthy()
   expect(screen.getByText(/This is not a withdrawable balance/)).toBeTruthy()
 })
@@ -31,6 +32,20 @@ test('totals-only access does not show individual salary rows',async()=>{
   render(<LeadershipView mode="forecast"/>);
   expect(await screen.findByText('Team totals access only.')).toBeTruthy()
   expect(screen.queryByText('Private Employee')).toBeNull()
+})
+test('full-access forecast renders every amount (regression: TestFlight crash 14 Nov 2026)',async()=>{
+  const rows=[{employee_id:'e1',employee_name:'Sara Adel',employee_number:'E-1',projected_net:9000.5,previous_net:8500,change:500.5,
+    accrual:{available:true,estimated_net:4200},overtime_pay:300,late_deductions:50,absence_deductions:0,warnings:['Missing check-out on 2026-11-03']},
+    {employee_id:'e2',employee_name:'Omar Nabil',projected_net:16000,previous_net:null,change:null,overtime_pay:0,late_deductions:0,absence_deductions:0,warnings:[]}]
+  api.get.mockResolvedValue({data:{data:{...data,previous_net:24000,change:1000,individual_details:true,rows}}})
+  render(<LeadershipView mode="forecast"/>);
+  expect(await screen.findByText('EGP 25,000')).toBeTruthy()
+  expect(screen.getByText(/Previous cycle, same employees: EGP 24,000/)).toBeTruthy()
+  expect(screen.getByText('EGP 9,000.5')).toBeTruthy()
+  expect(screen.getByText(/Estimated earned to date: EGP 4,200/)).toBeTruthy()
+  expect(screen.getByText(/Late \/ absence: EGP 50/)).toBeTruthy()
+  expect(screen.getByText('Missing check-out on 2026-11-03')).toBeTruthy()
+  expect(screen.getByText(/Previous: — · Change: —/)).toBeTruthy()
 })
 test('employees cannot fetch executive forecasts by opening a deep link',async()=>{
   mockAuth.user.role='employee';render(<LeadershipView mode="forecast"/>);
@@ -43,7 +58,7 @@ test('failed requests show a retry and recover without a fabricated zero total',
   expect(await screen.findByText('Forecast unavailable')).toBeTruthy()
   expect(screen.queryByText('EGP 0')).toBeNull()
   fireEvent.press(screen.getByText('Retry'))
-  expect(await screen.findByText('EGP 25000')).toBeTruthy()
+  expect(await screen.findByText('EGP 25,000')).toBeTruthy()
 })
 
 test('changing workspace never renders the previous roster as salary detail',async()=>{
@@ -61,7 +76,7 @@ test('foreground rollover advances the default payroll cycle and forecast cutoff
   jest.setSystemTime(new Date('2026-10-20T12:00:00Z'))
   render(<LeadershipView mode="forecast"/>)
   await act(async()=>{})
-  expect(screen.getByText('EGP 25000')).toBeTruthy()
+  expect(screen.getByText('EGP 25,000')).toBeTruthy()
   expect(api.get).toHaveBeenLastCalledWith('/leadership/forecast',expect.objectContaining({params:{month:10,year:2026,as_of:'2026-10-20'}}))
   jest.setSystemTime(new Date('2026-10-21T12:00:00Z'))
   const onActive=AppState.addEventListener.mock.calls.at(-1)[1]
