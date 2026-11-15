@@ -165,6 +165,7 @@ export default function MoreScreen() {
             {can('leave') && <MenuItem icon="airplane-outline" label={tr('Leave balances', 'أرصدة الإجازات')} onPress={() => router.push('/leave-balance')} />}
             {lead && can('attendance') && <MenuItem icon="time-outline" label={tr('My attendance', 'حضوري')} onPress={() => router.push('/(tabs)/attendance')} />}
             {lead && can('payslips') && <MenuItem icon="wallet-outline" label={tr('My pay', 'راتبي')} onPress={() => router.push('/(tabs)/payslips')} />}
+            {executive && can('team_approvals') && <MenuItem icon="checkmark-done-outline" label={tr('Approvals', 'الموافقات')} onPress={() => router.push('/(tabs)/approvals')} />}
             {executive && can('requests') && <MenuItem icon="list-outline" label={tr('My requests', 'طلباتي')} onPress={() => router.push('/(tabs)/requests')} />}
             <MenuItem icon="flag-outline" label={tr('Goals', 'أهدافي')} onPress={() => router.push('/my-goals')} />
             <MenuItem icon="clipboard-outline" label={tr('Appraisals', 'تقييم الأداء')} onPress={() => router.push('/appraisals')} />
