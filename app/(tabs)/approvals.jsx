@@ -12,7 +12,7 @@ export default function ApprovalsScreen() {
   const router = useRouter()
   const { can, user } = useAuth()
   const { colors } = useTheme()
-  const { tr, date, cur } = useLang()
+  const { tr, date, money } = useLang()
   const [loaded,setItems] = useState(null)
   const [error,setError] = useState('')
   const [loading,setLoading] = useState(true)
@@ -57,7 +57,7 @@ export default function ApprovalsScreen() {
         <Text style={{ color:colors.sub,marginTop:8 }}>{String(item.request_type).replaceAll('_',' ')}</Text>
         {(item.start_date || item.date) && <Text style={{ color:colors.text,marginTop:8 }}>{date(item.start_date || item.date)}{item.end_date ? ` → ${date(item.end_date)}` : ''}</Text>}
         {item.hours != null && <Text style={{ color:colors.text }}>{item.hours} {tr('hours','ساعة')}</Text>}
-        {item.amount != null && <Text style={{ color:colors.text }}>{cur(item.amount)}</Text>}
+        {item.amount != null && <Text style={{ color:colors.text }}>{money(item.amount)}</Text>}
         {!!item.reason && <Text style={{ color:colors.sub,marginTop:8 }}>{item.reason}</Text>}
         <TextInput accessibilityLabel={tr('Decision note','ملاحظة القرار')} placeholder={tr('Add a note (optional)','أضف ملاحظة (اختياري)')} placeholderTextColor={colors.sub} value={notes[item.instance_id] || ''} onChangeText={v => setNotes(n => ({ ...n,[item.instance_id]:v }))} style={{ color:colors.text,borderColor:colors.border,borderWidth:1,padding:12,borderRadius:10,marginTop:12 }} />
         <View style={{ flexDirection:'row',gap:10,marginTop:14 }}>{['approve','reject'].map(d => <TouchableOpacity key={d} accessibilityRole="button" disabled={!!busy} onPress={() => decide(item,d)} style={{ flex:1,padding:13,borderRadius:12,backgroundColor:d==='approve' ? '#0E6A70' : '#fee2e2',opacity:busy ? 0.5 : 1 }}><Text style={{ textAlign:'center',fontWeight:'700',color:d==='approve' ? '#fff' : '#991b1b' }}>{d==='approve' ? tr('Approve','موافقة') : tr('Reject','رفض')}</Text></TouchableOpacity>)}</View>

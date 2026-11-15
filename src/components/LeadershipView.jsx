@@ -13,7 +13,7 @@ import { activePayrollMonth } from '../utils/payrollCycle'
 const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
 export default function LeadershipView({ mode = 'overview' }) {
   const { user, can, cycleStartDay = 1 } = useAuth()
-  const { tr, cur, date } = useLang()
+  const { tr, money, date } = useLang()
   const { colors } = useTheme()
   const router = useRouter()
   const [currentDay, setCurrentDay] = useState(today)
@@ -102,15 +102,15 @@ export default function LeadershipView({ mode = 'overview' }) {
         {data?.period && <Text style={[muted,{ marginBottom:14 }]}>{tr('Payroll cycle','دورة الراتب')}: {data.period.from} → {data.period.to}</Text>}
         {data?.counts && <View style={s.counts}>{Object.entries(data.counts).map(([key,n]) => <TouchableOpacity key={key} onPress={() => setStatus(status===key ? 'all' : key)} style={[s.stat,{ backgroundColor:status===key ? '#0E6A70' : colors.card,borderColor:colors.border }]}><Text style={{ color:status===key ? '#fff' : colors.text,fontSize:26,fontWeight:'800' }}>{n}</Text><Text style={{ color:status===key ? '#fff' : colors.sub,fontSize:12 }}>{label(key)}</Text></TouchableOpacity>)}</View>}
         {mode==='forecast' && data && <>
-          <Card style={{ backgroundColor:'#E6F6F7' }}><Text style={{ color:'#0E6A70' }}>{tr('Projected cycle-end net payroll','صافي الرواتب المتوقع بنهاية الدورة')}</Text><Text style={{ color:'#312e81',fontSize:30,fontWeight:'900',marginVertical:12 }}>{cur(data.projected_net)}</Text>
+          <Card style={{ backgroundColor:'#E6F6F7' }}><Text style={{ color:'#0E6A70' }}>{tr('Projected cycle-end net payroll','صافي الرواتب المتوقع بنهاية الدورة')}</Text><Text style={{ color:'#312e81',fontSize:30,fontWeight:'900',marginVertical:12 }}>{money(data.projected_net)}</Text>
             <Text style={{ color:'#0E6A70' }}>{data.calculated_count}/{data.employee_count} {tr('employees calculated','موظف تم احتسابه')}</Text>
-            <Text style={{ color:'#0E6A70',marginTop:8 }}>{tr('Previous cycle, same employees','الدورة السابقة لنفس الموظفين')}: {data.previous_net==null ? '—' : cur(data.previous_net)}</Text>
-            <Text style={{ color:'#0E6A70' }}>{tr('Change','التغير')}: {data.change==null ? '—' : cur(data.change)}</Text>
+            <Text style={{ color:'#0E6A70',marginTop:8 }}>{tr('Previous cycle, same employees','الدورة السابقة لنفس الموظفين')}: {data.previous_net==null ? '—' : money(data.previous_net)}</Text>
+            <Text style={{ color:'#0E6A70' }}>{tr('Change','التغير')}: {data.change==null ? '—' : money(data.change)}</Text>
           </Card>
           <Card style={{borderColor:'#a7f3d0'}}>
             <Text style={text}>{tr('Estimated net earned to date','صافي الاستحقاق التقديري حتى اليوم')}</Text>
-            <Text style={{color:'#059669',fontSize:28,fontWeight:'900',marginVertical:12}}>{data.earned_estimate_available ? cur(data.earned_net_to_date) : tr('Needs payroll data review','يتطلب مراجعة بيانات الرواتب')}</Text>
-            {data.earned_estimate_available && <Text style={muted}>{tr('Earned gross','إجمالي الاستحقاق')}: {cur(data.earned_gross_to_date)} · {tr('Monthly reserves','المخصصات الشهرية')}: {cur(data.monthly_reserves_to_date)}</Text>}
+            <Text style={{color:'#059669',fontSize:28,fontWeight:'900',marginVertical:12}}>{data.earned_estimate_available ? money(data.earned_net_to_date) : tr('Needs payroll data review','يتطلب مراجعة بيانات الرواتب')}</Text>
+            {data.earned_estimate_available && <Text style={muted}>{tr('Earned gross','إجمالي الاستحقاق')}: {money(data.earned_gross_to_date)} · {tr('Monthly reserves','المخصصات الشهرية')}: {money(data.monthly_reserves_to_date)}</Text>}
             <Text style={[muted,{marginTop:10,lineHeight:21}]}>{tr('Regular pay accrues over covered days. Dated approved earnings count through today; undated one-time items wait until cycle end. Tax, insurance and installment amounts are estimated reserves. This is not a withdrawable balance.','يُوزع الأجر المنتظم على الأيام المشمولة، وتُحتسب المستحقات المؤرخة المعتمدة حتى اليوم. تُؤجل البنود غير المؤرخة لنهاية الدورة. الضرائب والتأمينات والأقساط مخصصات تقديرية، وهذا ليس رصيداً متاحاً للسحب.')}</Text>
           </Card>
           <Card><Text style={text}>{data.pending_count} {tr('pending requests excluded','طلب معلق غير محتسب')} · {data.warning_count} {tr('data warnings','تنبيه بيانات')}</Text>
@@ -127,9 +127,9 @@ export default function LeadershipView({ mode = 'overview' }) {
           {status!=='all' && <TouchableOpacity onPress={() => setStatus('all')}><Text style={[muted,{ marginBottom:12 }]}>{tr('Clear status filter','إلغاء تصفية الحالة')} ×</Text></TouchableOpacity>}
           {(mode==='overview' ? rows.slice(0,8) : rows).map(r => <Card key={r.id || r.employee_id}>
             <Text style={[text,{ fontWeight:'800',fontSize:16 }]}>{r.employee_name}</Text><Text style={muted}>{r.employee_number || r.title}</Text>
-            {mode==='forecast' ? <><Text style={[text,{ fontSize:22,fontWeight:'800',marginTop:10 }]}>{cur(r.projected_net)}</Text><Text style={muted}>{tr('Previous','السابق')}: {r.previous_net==null ? '—' : cur(r.previous_net)} · {tr('Change','التغير')}: {r.change==null ? '—' : cur(r.change)}</Text>
-              {r.accrual?.available && <Text style={[muted,{marginTop:8}]}>{tr('Estimated earned to date','\u0627\u0644\u0645\u0633\u062a\u062d\u0642 \u0627\u0644\u062a\u0642\u062f\u064a\u0631\u064a \u062d\u062a\u0649 \u0627\u0644\u064a\u0648\u0645')}: {cur(r.accrual.estimated_net)}</Text>}
-              <Text style={[muted,{ marginTop:8 }]}>{tr('Overtime','إضافي')}: {cur(r.overtime_pay)} · {tr('Late / absence','تأخير / غياب')}: {cur(r.late_deductions+r.absence_deductions)}</Text>
+            {mode==='forecast' ? <><Text style={[text,{ fontSize:22,fontWeight:'800',marginTop:10 }]}>{money(r.projected_net)}</Text><Text style={muted}>{tr('Previous','السابق')}: {r.previous_net==null ? '—' : money(r.previous_net)} · {tr('Change','التغير')}: {r.change==null ? '—' : money(r.change)}</Text>
+              {r.accrual?.available && <Text style={[muted,{marginTop:8}]}>{tr('Estimated earned to date','\u0627\u0644\u0645\u0633\u062a\u062d\u0642 \u0627\u0644\u062a\u0642\u062f\u064a\u0631\u064a \u062d\u062a\u0649 \u0627\u0644\u064a\u0648\u0645')}: {money(r.accrual.estimated_net)}</Text>}
+              <Text style={[muted,{ marginTop:8 }]}>{tr('Overtime','إضافي')}: {money(r.overtime_pay)} · {tr('Late / absence','تأخير / غياب')}: {money(r.late_deductions+r.absence_deductions)}</Text>
               {r.warnings.map((w,i) => <Text key={i} style={{ color:'#b45309',marginTop:8 }}>{w}</Text>)}</>
               : mode==='performance' ? <><Text style={[text,{ marginTop:10 }]}>{tr('Target','المستهدف')}: {r.target || '—'}</Text><Text style={[text,{ marginTop:8 }]}>{r.progress}% · {label(r.health)}</Text><View style={{ height:6,backgroundColor:colors.border,borderRadius:4,marginTop:12 }}><View style={{ width:`${r.progress}%`,height:6,backgroundColor:r.health==='red_flag' ? '#ef4444' : '#3E5E80',borderRadius:4 }} /></View></>
                 : <><Text style={[text,{ marginTop:8 }]}>{label(r.status)} · {r.department_name || ''}</Text><Text style={[muted,{ marginTop:8 }]}>{tr('In','دخول')} {time(r.check_in)} · {tr('Out','خروج')} {time(r.check_out)}</Text></>}
