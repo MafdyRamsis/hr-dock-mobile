@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { I18nManager, View, Text, TouchableOpacity } from 'react-native'
 import { Stack, useRouter, useSegments } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
 import { AuthProvider, useAuth } from '../src/context/AuthContext'
 import { ThemeProvider, useTheme } from '../src/context/ThemeContext'
@@ -36,10 +37,29 @@ function Guard() {
 
   const { refreshTone } = useLang()
   useEffect(() => {
-    if (user) { registerForPushNotifications(); refreshTone() }
+    if (user) { if (!user.is_demo) registerForPushNotifications(); refreshTone() }
   }, [user])
 
   return null
+}
+
+// Shown on every screen of the read-only demo workspace, so a visitor always
+// knows the data is made up and can leave the demo in one tap.
+function DemoBanner() {
+  const { user, logout } = useAuth()
+  const { tr } = useLang()
+  const insets = useSafeAreaInsets()
+  if (!user?.is_demo) return null
+  return (
+    <View style={{ backgroundColor: '#E8583C', paddingTop: insets.top + 6, paddingBottom: 8, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+      <Text style={{ color: '#fff', fontSize: 12.5, fontWeight: '700', flex: 1 }}>
+        {tr('Demo · sample data, changes are off', 'عرض تجريبي · بيانات وهمية ولا يمكن التعديل', 'ديمو · بيانات وهمية ومفيش تعديل')}
+      </Text>
+      <TouchableOpacity accessibilityRole="button" onPress={logout} hitSlop={8}>
+        <Text style={{ color: '#fff', fontSize: 12.5, fontWeight: '800', textDecorationLine: 'underline' }}>{tr('Exit demo', 'إنهاء العرض', 'اخرج من الديمو')}</Text>
+      </TouchableOpacity>
+    </View>
+  )
 }
 
 function ThemedApp() {
@@ -47,6 +67,7 @@ function ThemedApp() {
   return (
     <>
       <StatusBar style={isDark ? 'light' : 'light'} />
+      <DemoBanner />
       <Stack screenOptions={{ headerShown: false }} />
     </>
   )

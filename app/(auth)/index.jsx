@@ -13,8 +13,8 @@ import { GRADIENTS, useTheme } from '../../src/context/ThemeContext'
 import { ls, fwd } from '../../src/utils/rtl'
 
 export default function LoginScreen() {
-  const { login, loginWithBiometric, pending2fa, verify2fa, cancel2fa } = useAuth()
-  const { t, lang, setLanguage } = useLang()
+  const { login, startDemo, loginWithBiometric, pending2fa, verify2fa, cancel2fa } = useAuth()
+  const { t, tr, lang, setLanguage } = useLang()
   const { colors, isDark } = useTheme()
   const [code, setCode] = useState('')
   const [email,          setEmail]          = useState('')
@@ -24,6 +24,7 @@ export default function LoginScreen() {
   const [loading,        setLoading]        = useState(false)
   const [biometricReady, setBiometricReady] = useState(false)
   const [bioLoading,     setBioLoading]     = useState(false)
+  const [demoLoading,    setDemoLoading]    = useState(null)
 
   useEffect(() => {
     SecureStore.getItemAsync('workspace').then(v => { if (v) setWorkspace(v) })
@@ -53,6 +54,18 @@ export default function LoginScreen() {
       setError(err.response?.data?.message || t('login_failed'))
     } finally {
       setLoading(false)
+    }
+  }
+
+  // No employer account? Open the read-only demo workspace.
+  const handleDemo = async (role) => {
+    setError(''); setDemoLoading(role)
+    try {
+      await startDemo(role)
+    } catch (err) {
+      setError(err.response?.data?.message || tr('The demo is not available right now. Please try again later.', 'العرض التجريبي غير متاح حاليًا. حاول مرة أخرى لاحقًا.', 'الديمو مش متاح دلوقتي. جرّب تاني بعدين.'))
+    } finally {
+      setDemoLoading(null)
     }
   }
 
@@ -226,6 +239,32 @@ export default function LoginScreen() {
                 </View>
               </View>
 
+              {/* ── Demo workspace: lets anyone without an account look around ── */}
+              <View style={[s.demoBox, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                <Text style={[s.demoTitle, { color: colors.text }]}>
+                  {tr('No account yet? Try HR Dock', 'ليس لديك حساب؟ جرّب HR Dock', 'لسه معندكش حساب؟ جرّب HR Dock')}
+                </Text>
+                <Text style={[s.demoSub, { color: colors.sub }]}>
+                  {tr('Explore a sample company with made-up data. Nothing can be changed in the demo.', 'استكشف شركة تجريبية ببيانات وهمية. لا يمكن تعديل أي شيء في العرض التجريبي.', 'اتفرّج على شركة تجريبية ببيانات وهمية. مفيش حاجة تتغيّر في الديمو.')}
+                </Text>
+                <View style={s.demoRow}>
+                  {[['employee', tr('As an employee', 'كموظف', 'كموظف')], ['manager', tr('As a manager', 'كمدير', 'كمدير')]].map(([role, label]) => (
+                    <TouchableOpacity
+                      key={role}
+                      accessibilityRole="button"
+                      onPress={() => handleDemo(role)}
+                      disabled={!!demoLoading || loading}
+                      activeOpacity={0.85}
+                      style={[s.demoBtn, { borderColor: colors.primary }, !!demoLoading && s.btnDisabled]}
+                    >
+                      {demoLoading === role
+                        ? <ActivityIndicator color={colors.primary} />
+                        : <Text style={[s.demoBtnText, { color: colors.primary }]}>{label}</Text>}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
               <TouchableOpacity onPress={() => setLanguage(lang === 'ar' ? 'en' : 'ar')} style={[s.langBtn, { backgroundColor: `${colors.lavender}16` }]} activeOpacity={0.8}>
                 <Text style={[s.langText, { color: colors.lavender }]}>{lang === 'ar' ? 'English' : 'العربية'}</Text>
               </TouchableOpacity>
@@ -270,6 +309,12 @@ const s = StyleSheet.create({
   trustRow:    { flexDirection: 'row', gap: 8, justifyContent: 'space-between' },
   trustChip:   { flex: 1, borderWidth: 1, borderRadius: 10, paddingVertical: 9, alignItems: 'center' },
   trustText:   { fontSize: 10, fontWeight: '700' },
+  demoBox:     { borderWidth: 1, borderRadius: 16, padding: 16, marginTop: 22 },
+  demoTitle:   { fontSize: 15, fontWeight: '800', marginBottom: 4 },
+  demoSub:     { fontSize: 12.5, lineHeight: 18, marginBottom: 12 },
+  demoRow:     { flexDirection: 'row', gap: 10 },
+  demoBtn:     { flex: 1, borderWidth: 1.5, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
+  demoBtnText: { fontSize: 14, fontWeight: '800' },
   langBtn:     { alignSelf: 'center', marginTop: 24, paddingVertical: 9, paddingHorizontal: 18, borderRadius: 999 },
   langText:    { fontSize: 13.5, fontWeight: '800' },
   footer:      { textAlign: 'center', marginTop: 18, fontSize: 12 },
