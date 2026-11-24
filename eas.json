@@ -47,6 +47,15 @@
       "android": {
         "buildType": "apk"
       }
+    },
+    "public": {
+      "extends": "production",
+      "channel": "public",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.hr-dock.com/api/v1",
+        "APP_VARIANT": "public"
+      },
+      "autoIncrement": true
     }
   },
   "submit": {

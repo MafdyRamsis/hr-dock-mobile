@@ -102,6 +102,15 @@ export function AuthProvider({ children }) {
     return { requires2fa: false, user: u }
   }
 
+  // Read-only demo workspace for people without an employer account
+  // (App Store listing). role: 'employee' | 'manager'.
+  const startDemo = async (role = 'employee') => {
+    const res = await api.post('/auth/demo', { role })
+    const { token: t, user: u } = res.data.data
+    await finishLogin(t, { ...u, is_demo: true })
+    return u
+  }
+
   const verify2fa = async (code) => {
     if (!pending2fa) throw new Error(L('No sign-in in progress.', 'لا توجد عملية تسجيل دخول جارية.'))
     const res = await api.post(
@@ -163,7 +172,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, pending2fa, login, verify2fa, cancel2fa, loginWithBiometric, logout, updateUser, features, can, cycleStartDay }}>
+    <AuthContext.Provider value={{ user, token, loading, pending2fa, login, startDemo, verify2fa, cancel2fa, loginWithBiometric, logout, updateUser, features, can, cycleStartDay }}>
       {children}
     </AuthContext.Provider>
   )
